@@ -10,7 +10,6 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
                       CollectionProperty, PointerProperty, IntProperty, 
                       BoolProperty, FloatVectorProperty)
                       
-                      
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
@@ -21,7 +20,6 @@ bl_info = {
     "description": "Quickly adjust world HDRI rotation and selection",
     "category": "3D View",
 }
-
 
 def get_hdri_previews():
     if not hasattr(get_hdri_previews, "preview_collection"):
@@ -154,7 +152,7 @@ class HDRI_OT_check_updates(Operator):
                 temp_dir = tempfile.mkdtemp()
                 zip_ref.extractall(temp_dir)
             
-            # Locate the extracted files (assuming structure Quick-HDRI-Controls-main/)
+            # Locate the extracted files (assuming structure `Quick-HDRI-Controls-main/`)
             extracted_folder = os.path.join(temp_dir, "Quick-HDRI-Controls-main")
             
             # Copy and overwrite all files from extracted folder to the add-on path
@@ -182,7 +180,6 @@ class HDRI_OT_check_updates(Operator):
             self.report({'ERROR'}, f"Update failed: {str(e)}")
             return {'CANCELLED'}
 
- 
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
 
@@ -588,6 +585,7 @@ class HDRI_PT_controls(Panel):
         spacing = preferences.spacing_scale
         use_compact = preferences.use_compact_ui
         show_strength = preferences.show_strength_slider
+        show_rotation = preferences.show_rotation_values
         
         # Early returns with styled messages
         if not preferences.hdri_directory:
@@ -751,14 +749,9 @@ class HDRI_PT_controls(Panel):
                 col.use_property_split = True
                 
                 if mapping:
-                    if use_radians:
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X (rad)")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y (rad)")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z (rad)")
-                    else:
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                    col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
+                    col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
+                    col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
                 
                 if show_strength:
                     col.separator()
@@ -774,14 +767,9 @@ class HDRI_PT_controls(Panel):
                 col.label(text="Rotation:")
                 
                 if mapping:
-                    if use_radians:
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X (rad)")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y (rad)")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z (rad)")
-                    else:
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                    col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
+                    col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
+                    col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
                 
                 # Strength column
                 if show_strength:

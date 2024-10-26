@@ -136,54 +136,31 @@ class HDRI_OT_check_updates(Operator):
     bl_description = "Check and download updates from GitHub"
     
     def execute(self, context):
-        github_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
+        update_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/quick_hdri.py"
         addon_path = os.path.dirname(os.path.realpath(__file__))
         
         try:
-            # Create a temporary directory
-            with tempfile.TemporaryDirectory() as temp_dir:
-                zip_path = os.path.join(temp_dir, "update.zip")
-                
-                # Download the zip file
-                self.report({'INFO'}, "Downloading update...")
-                urllib.request.urlretrieve(github_url, zip_path)
-                
-                # Extract the zip file
-                self.report({'INFO'}, "Extracting files...")
-                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                    zip_ref.extractall(temp_dir)
-                
-                # Find the extracted directory
-                extracted_dir = None
-                for item in os.listdir(temp_dir):
-                    if os.path.isdir(os.path.join(temp_dir, item)) and item.startswith("Quick-HDRI-Controls"):
-                        extracted_dir = os.path.join(temp_dir, item)
-                        break
-                
-                if not extracted_dir:
-                    self.report({'ERROR'}, "Could not find extracted files")
-                    return {'CANCELLED'}
-                
-                # Create backup of current version
-                backup_dir = os.path.join(os.path.dirname(addon_path), 
-                                        f"quick_hdri_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-                shutil.copytree(addon_path, backup_dir)
-                
-                # Copy new files
-                for item in os.listdir(extracted_dir):
-                    if item.endswith('.py'):
-                        src = os.path.join(extracted_dir, item)
-                        dst = os.path.join(addon_path, item)
-                        shutil.copy2(src, dst)
-                
-                self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
-                return {'FINISHED'}
+            # Create backup of current version
+            backup_dir = os.path.join(os.path.dirname(addon_path), 
+                                    f"quick_hdri_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            current_file = os.path.join(addon_path, "quick_hdri.py")
+            backup_file = os.path.join(backup_dir, "quick_hdri.py")
+            
+            # Backup current version
+            self.report({'INFO'}, "Creating backup...")
+            shutil.copy2(current_file, backup_file)
+            
+            # Download new version
+            self.report({'INFO'}, "Downloading update...")
+            urllib.request.urlretrieve(update_url, current_file)
+            
+            self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
+            return {'FINISHED'}
                 
         except urllib.error.URLError:
             self.report({'ERROR'}, "Could not connect to GitHub. Please check your internet connection.")
-            return {'CANCELLED'}
-        except zipfile.BadZipFile:
-            self.report({'ERROR'}, "Downloaded file is corrupted. Please try again.")
             return {'CANCELLED'}
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")

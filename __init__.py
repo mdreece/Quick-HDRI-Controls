@@ -13,7 +13,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (0, 9),
+    "version": (0, 8),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -27,49 +27,6 @@ def get_hdri_previews():
         get_hdri_previews.preview_collection = pcoll
     return get_hdri_previews.preview_collection
 
-def get_folders(context):
-    """Get list of subfolders in HDRI directory"""
-    preferences = context.preferences.addons[__name__].preferences
-    base_dir = preferences.hdri_directory
-    current_dir = context.scene.hdri_settings.current_folder
-
-    if not current_dir:
-        current_dir = base_dir
-    
-    items = []
-    if not os.path.exists(current_dir):
-        return items
-
-    # Check if current directory is actually inside base directory
-    try:
-        rel_path = os.path.relpath(current_dir, base_dir)
-        if rel_path.startswith('..'):
-            # If we somehow got outside the base directory, reset to base
-            context.scene.hdri_settings.current_folder = base_dir
-            current_dir = base_dir
-    except ValueError:
-        # If on different drive or invalid path, reset to base
-        context.scene.hdri_settings.current_folder = base_dir
-        current_dir = base_dir
-
-    # Add parent directory option only if we're in a subfolder of base_dir
-    if current_dir != base_dir:
-        items.append(("parent", "..", "Go to parent folder", 'FILE_PARENT', 0))
-
-    # Add subfolders
-    for i, dirname in enumerate(sorted(os.listdir(current_dir)), 1):
-        full_path = os.path.join(current_dir, dirname)
-        if os.path.isdir(full_path):
-            # Verify this subdirectory is still within base_dir
-            try:
-                rel_path = os.path.relpath(full_path, base_dir)
-                if not rel_path.startswith('..'):
-                    items.append((full_path, dirname, "Enter folder", 'FILE_FOLDER', i))
-            except ValueError:
-                continue
-    
-    return items
-
 def generate_previews(self, context):
     """Generate preview items for HDRIs in current folder"""
     enum_items = []
@@ -77,8 +34,8 @@ def generate_previews(self, context):
     if not hasattr(context.scene, "hdri_settings"):
         return enum_items
         
-    current_dir = context.scene.hdri_settings.current_folder
     preferences = context.preferences.addons[__name__].preferences
+    current_dir = preferences.hdri_directory
     
     if not current_dir or not os.path.exists(current_dir):
         return enum_items
@@ -123,82 +80,55 @@ def generate_previews(self, context):
         ))
             
     return enum_items
+    
+def get_folders(context):
+    """Get list of subfolders in HDRI directory"""
+    preferences = context.preferences.addons[__name__].preferences
+    base_dir = preferences.hdri_directory
+    current_dir = context.scene.hdri_settings.current_folder
+
+    if not current_dir:
+        current_dir = base_dir
+    
+    items = []
+    if not os.path.exists(current_dir):
+        return items
+
+    # Check if current directory is actually inside base directory
+    try:
+        rel_path = os.path.relpath(current_dir, base_dir)
+        if rel_path.startswith('..'):
+            # If we somehow got outside the base directory, reset to base
+            context.scene.hdri_settings.current_folder = base_dir
+            current_dir = base_dir
+    except ValueError:
+        # If on different drive or invalid path, reset to base
+        context.scene.hdri_settings.current_folder = base_dir
+        current_dir = base_dir
+
+    # Add parent directory option only if we're in a subfolder of base_dir
+    if current_dir != base_dir:
+        items.append(("parent", "..", "Go to parent folder", 'FILE_PARENT', 0))
+
+    # Add subfolders
+    for i, dirname in enumerate(sorted(os.listdir(current_dir)), 1):
+        full_path = os.path.join(current_dir, dirname)
+        if os.path.isdir(full_path):
+            # Verify this subdirectory is still within base_dir
+            try:
+                rel_path = os.path.relpath(full_path, base_dir)
+                if not rel_path.startswith('..'):
+                    items.append((full_path, dirname, "Enter folder", 'FILE_FOLDER', i))
+            except ValueError:
+                continue
+    
+    return items
 
 def update_background_strength(self, context):
     if context.scene.world and context.scene.world.use_nodes:
         for node in context.scene.world.node_tree.nodes:
             if node.type == 'BACKGROUND':
                 node.inputs['Strength'].default_value = self.background_strength
-
-class HDRI_OT_browser_popup(Operator):
-    bl_idname = "world.hdri_browser_popup"
-    bl_label = "HDRI Browser"
-    bl_description = "Browse and select HDRIs in a popup window"
-    bl_options = {'REGISTER', 'UNDO'}
-    
-    def draw(self, context):
-        layout = self.layout
-        preferences = context.preferences.addons[__name__].preferences
-        hdri_settings = context.scene.hdri_settings
-        
-        # Current path display
-        current_folder = context.scene.hdri_settings.current_folder
-        base_dir = preferences.hdri_directory
-        
-        box = layout.box()
-        if current_folder:
-            try:
-                if os.path.normpath(current_folder) == os.path.normpath(base_dir):
-                    display_path = "/ HDRI" if not preferences.show_file_path else base_dir
-                    box.label(text=display_path, icon='WORLD_DATA')
-                else:
-                    if preferences.show_file_path:
-                        display_path = current_folder
-                    else:
-                        rel_path = os.path.relpath(current_folder, base_dir)
-                        display_path = f"/ {rel_path}"
-                    box.label(text=display_path, icon='FILE_FOLDER')
-            except ValueError:
-                context.scene.hdri_settings.current_folder = base_dir
-                box.label(text="/ Home", icon='HOME')
-        
-        # Folder Grid
-        folders = get_folders(context)
-        if folders:
-            folder_grid = box.grid_flow(
-                row_major=True,
-                columns=preferences.grid_columns,
-                align=True
-            )
-            for folder_path, name, _, icon, _ in folders:
-                op = folder_grid.operator("world.change_hdri_folder",
-                    text=name,
-                    icon=icon,
-                    depress=(folder_path == current_folder))
-                op.folder_path = folder_path
-        
-        layout.separator()
-        
-        # HDRI Preview Grid
-        layout.template_icon_view(
-            hdri_settings,
-            "hdri_preview",
-            show_labels=True,
-            scale=preferences.preview_scale
-        )
-        
-        # Load Button
-        row = layout.row(align=True)
-        row.scale_y = 1.2
-        row.operator("world.load_selected_hdri",
-            text="Load Selected HDRI",
-            icon='IMPORT')
-    
-    def execute(self, context):
-        return {'FINISHED'}
-    
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
  
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
@@ -222,7 +152,7 @@ class HDRI_OT_check_updates(Operator):
                 temp_dir = tempfile.mkdtemp()
                 zip_ref.extractall(temp_dir)
             
-            # Locate the extracted files (assuming structure `Quick-HDRI-Controls-main/`)
+            # Locate the extracted files
             extracted_folder = os.path.join(temp_dir, "Quick-HDRI-Controls-main")
             
             # Copy and overwrite all files from extracted folder to the add-on path
@@ -249,6 +179,55 @@ class HDRI_OT_check_updates(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
             return {'CANCELLED'}
+            
+class HDRI_OT_change_folder(Operator):
+    bl_idname = "world.change_hdri_folder"
+    bl_label = "Change Folder"
+    bl_description = "Change current HDRI folder"
+    
+    folder_path: StringProperty()
+    
+    def execute(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        base_dir = preferences.hdri_directory
+        
+        if self.folder_path == "parent":
+            current = context.scene.hdri_settings.current_folder
+            new_path = os.path.dirname(current)
+            
+            # Verify we're not going above base directory
+            try:
+                rel_path = os.path.relpath(new_path, base_dir)
+                if rel_path.startswith('..'):
+                    self.report({'WARNING'}, "Cannot navigate above HDRI directory")
+                    return {'CANCELLED'}
+            except ValueError:
+                self.report({'WARNING'}, "Invalid path")
+                return {'CANCELLED'}
+                
+            context.scene.hdri_settings.current_folder = new_path
+        else:
+            # Verify the new path is within base directory
+            try:
+                rel_path = os.path.relpath(self.folder_path, base_dir)
+                if rel_path.startswith('..'):
+                    self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
+                    return {'CANCELLED'}
+                context.scene.hdri_settings.current_folder = self.folder_path
+            except ValueError:
+                self.report({'WARNING'}, "Invalid path")
+                return {'CANCELLED'}
+        
+        # Clear previews
+        pcoll = get_hdri_previews()
+        pcoll.clear()
+        
+        # Force UI update
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+        
+        return {'FINISHED'}
 
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
@@ -320,14 +299,6 @@ class QuickHDRIPreferences(AddonPreferences):
         min=0.5,
         max=2.0,
         step=0.1
-    )
-    
-    grid_columns: IntProperty(
-        name="Grid Columns",
-        description="Number of columns in folder grid",
-        default=3,
-        min=1,
-        max=6
     )
     
     # Visual Settings
@@ -414,7 +385,6 @@ class QuickHDRIPreferences(AddonPreferences):
         col.prop(self, "preview_scale")
         col.prop(self, "button_scale")
         col.prop(self, "spacing_scale")
-        col.prop(self, "grid_columns")
         
         # Visual Settings
         box = layout.box()
@@ -446,12 +416,6 @@ class HDRISettings(PropertyGroup):
         subtype='DIR_PATH'
     )
     
-    show_browser: BoolProperty(
-        name="Show Browser",
-        description="Show/Hide HDRI Browser section",
-        default=True
-    )
-    
     show_preview: BoolProperty(
         name="Show Preview",
         description="Show/Hide HDRI Preview section",
@@ -474,14 +438,17 @@ class HDRISettings(PropertyGroup):
         precision=3,
         update=update_background_strength
     )
+    
+    show_browser: BoolProperty(
+        name="Show Browser",
+        description="Show/Hide Folder Browser section",
+        default=True
+    )
 
 def refresh_previews(self, context):
     """Refresh the preview collection"""
     pcoll = get_hdri_previews()
     pcoll.clear()
-    
-    if hasattr(context.scene, "hdri_settings"):
-        context.scene.hdri_settings.current_folder = self.hdri_directory
 
 def ensure_world_nodes():
     """Ensure world nodes exist and are properly connected"""
@@ -578,61 +545,12 @@ class HDRI_OT_load_selected(Operator):
             self.report({'ERROR'}, "HDRI file not found")
             return {'CANCELLED'}
         
-        # Ensure nodes exist
+# Ensure nodes exist
         mapping, env_tex, node_background = ensure_world_nodes()
         
         # Load the image
         img = bpy.data.images.load(filepath, check_existing=True)
         env_tex.image = img
-        
-        return {'FINISHED'}
-
-class HDRI_OT_change_folder(Operator):
-    bl_idname = "world.change_hdri_folder"
-    bl_label = "Change Folder"
-    bl_description = "Change current HDRI folder"
-    
-    folder_path: StringProperty()
-    
-    def execute(self, context):
-        preferences = context.preferences.addons[__name__].preferences
-        base_dir = preferences.hdri_directory
-        
-        if self.folder_path == "parent":
-            current = context.scene.hdri_settings.current_folder
-            new_path = os.path.dirname(current)
-            
-            # Verify we're not going above base directory
-            try:
-                rel_path = os.path.relpath(new_path, base_dir)
-                if rel_path.startswith('..'):
-                    self.report({'WARNING'}, "Cannot navigate above HDRI directory")
-                    return {'CANCELLED'}
-            except ValueError:
-                self.report({'WARNING'}, "Invalid path")
-                return {'CANCELLED'}
-                
-            context.scene.hdri_settings.current_folder = new_path
-        else:
-            # Verify the new path is within base directory
-            try:
-                rel_path = os.path.relpath(self.folder_path, base_dir)
-                if rel_path.startswith('..'):
-                    self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
-                    return {'CANCELLED'}
-                context.scene.hdri_settings.current_folder = self.folder_path
-            except ValueError:
-                self.report({'WARNING'}, "Invalid path")
-                return {'CANCELLED'}
-        
-        # Clear previews
-        pcoll = get_hdri_previews()
-        pcoll.clear()
-        
-        # Force UI update
-        for area in context.screen.areas:
-            if area.type == 'VIEW_3D':
-                area.tag_redraw()
         
         return {'FINISHED'}
 
@@ -650,19 +568,12 @@ class HDRI_PT_controls(Panel):
         layout.use_property_decorate = False
         hdri_settings = context.scene.hdri_settings
         
-        # Scale factors from preferences
-        button_scale = preferences.button_scale
-        spacing = preferences.spacing_scale
-        use_compact = preferences.use_compact_ui
-        show_strength = preferences.show_strength_slider
-        show_rotation = preferences.show_rotation_values
-        
         # Early returns with styled messages
         if not preferences.hdri_directory:
             box = layout.box()
             box.alert = True
             col = box.column(align=True)
-            col.scale_y = 1.2 * button_scale
+            col.scale_y = 1.2 * preferences.button_scale
             col.label(text="HDRI Directory Not Set", icon='ERROR')
             col.operator("preferences.addon_show", text="Open Preferences", icon='PREFERENCES').module = __name__
             return
@@ -671,7 +582,7 @@ class HDRI_PT_controls(Panel):
         if not world or not world.use_nodes:
             box = layout.box()
             col = box.column(align=True)
-            col.scale_y = 1.2 * button_scale
+            col.scale_y = 1.2 * preferences.button_scale
             col.operator("world.setup_hdri_nodes", 
                 text="Initialize HDRI System",
                 icon='WORLD_DATA')
@@ -694,7 +605,7 @@ class HDRI_PT_controls(Panel):
             box = layout.box()
             box.alert = True
             col = box.column(align=True)
-            col.scale_y = 1.2 * button_scale
+            col.scale_y = 1.2 * preferences.button_scale
             col.operator("world.setup_hdri_nodes", 
                 text="Repair HDRI System",
                 icon='FILE_REFRESH')
@@ -702,42 +613,98 @@ class HDRI_PT_controls(Panel):
 
         # Main UI
         main_column = layout.column(align=True)
+
+        # Folder Browser Section
+        browser_box = main_column.box()
+        row = browser_box.row(align=True)
+        row.scale_y = preferences.button_scale
+        row.prop(hdri_settings, "show_browser", 
+                icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
+                icon_only=True)
+        sub = row.row(align=True)
+        sub.alert = False
+        sub.active = hdri_settings.show_browser
+        sub.label(text="Folder Browser", icon='FILE_FOLDER')
+
+        if hdri_settings.show_browser:
+            browser_box.scale_y = preferences.button_scale
         
-        # HDRI Browser Button
-        row = main_column.row(align=True)
-        row.scale_y = 1.2 * button_scale
-        row.operator("world.hdri_browser_popup",
-            text="Browse HDRIs",
-            icon='FILEBROWSER')
+            # Current path display
+            current_folder = context.scene.hdri_settings.current_folder
+            base_dir = preferences.hdri_directory
         
-        # Current HDRI Preview Section
-        if env_tex and env_tex.image:
-            preview_box = main_column.box()
-            preview_box.scale_y = 0.8  # Slightly reduce the height
+            if current_folder:
+                try:
+                    if os.path.normpath(current_folder) == os.path.normpath(base_dir):
+                        display_path = "/ HDRI" if not preferences.show_file_path else base_dir
+                        browser_box.label(text=display_path, icon='WORLD_DATA')
+                    else:
+                        if preferences.show_file_path:
+                            display_path = current_folder
+                        else:
+                            rel_path = os.path.relpath(current_folder, base_dir)
+                            display_path = f"/ {rel_path}"
+                        browser_box.label(text=display_path, icon='FILE_FOLDER')
+                except ValueError:
+                    context.scene.hdri_settings.current_folder = base_dir
+                    browser_box.label(text="/ Home", icon='HOME')
+        
+            # Folder navigation grid
+            folders = get_folders(context)
+            if folders:
+                grid = browser_box.grid_flow(row_major=True, columns=3, align=True)
+                grid.scale_y = preferences.button_scale
+                for folder_path, name, _, icon, _ in folders:
+                    op = grid.operator("world.change_hdri_folder",
+                        text=name,
+                        icon=icon,
+                        depress=(folder_path == current_folder))
+                    op.folder_path = folder_path
+
+        main_column.separator(factor=0.5 * preferences.spacing_scale)
+        
+        # HDRI Preview Section
+        preview_box = main_column.box()
+        row = preview_box.row(align=True)
+        row.scale_y = preferences.button_scale
+        row.prop(hdri_settings, "show_preview", 
+                icon='TRIA_DOWN' if hdri_settings.show_preview else 'TRIA_RIGHT',
+                icon_only=True)
+        sub = row.row(align=True)
+        sub.alert = False
+        sub.active = hdri_settings.show_preview
+        sub.label(text="HDRI Selection", icon='IMAGE_DATA')
+        
+        if hdri_settings.show_preview:
+            preview_box.scale_y = preferences.button_scale
             
             # Show current HDRI name
-            row = preview_box.row()
-            row.alignment = 'CENTER'
-            row.label(text=env_tex.image.name, icon='IMAGE_DATA')
+            if env_tex and env_tex.image:
+                row = preview_box.row()
+                row.alert = False
+                row.alignment = 'CENTER'
+                row.scale_y = preferences.button_scale
+                row.label(text=env_tex.image.name, icon='CHECKMARK')
+                preview_box.separator(factor=0.5 * preferences.spacing_scale)
             
-            # Add a small preview of the current HDRI
-            preview_row = preview_box.row()
-            preview_row.scale_y = 1.0
-            preview_row.template_icon_view(
-                hdri_settings,
-                "hdri_preview",
-                show_labels=False,
-                scale=8,  # Smaller scale for the main panel
-                scale_popup=1.0
+            preview_box.template_icon_view(
+                hdri_settings, "hdri_preview",
+                show_labels=True,
+                scale=preferences.preview_scale
             )
-            preview_row.enabled = False  # Make it non-interactive
+            
+            row = preview_box.row(align=True)
+            row.scale_y = 1.2 * preferences.button_scale
+            row.operator("world.load_selected_hdri",
+                text="Load Selected HDRI",
+                icon='IMPORT')
         
-        main_column.separator(factor=0.5 * spacing)
+        main_column.separator(factor=0.5 * preferences.spacing_scale)
         
         # Rotation Controls Section
         rotation_box = main_column.box()
         row = rotation_box.row(align=True)
-        row.scale_y = button_scale
+        row.scale_y = preferences.button_scale
         row.prop(hdri_settings, "show_rotation", 
                 icon='TRIA_DOWN' if hdri_settings.show_rotation else 'TRIA_RIGHT',
                 icon_only=True)
@@ -748,14 +715,14 @@ class HDRI_PT_controls(Panel):
         
         if hdri_settings.show_rotation:
             sub.operator("world.reset_hdri_rotation", text="", icon='LOOP_BACK')
-            if show_strength:
+            if preferences.show_strength_slider:
                 sub.operator("world.reset_hdri_strength", text="", icon='FILE_REFRESH')
         
             # Layout adjustments based on compact mode
-            if use_compact:
+            if preferences.use_compact_ui:
                 # Compact layout
                 col = rotation_box.column(align=True)
-                col.scale_y = button_scale
+                col.scale_y = preferences.button_scale
                 col.use_property_split = True
                 
                 if mapping:
@@ -763,7 +730,7 @@ class HDRI_PT_controls(Panel):
                     col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
                     col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
                 
-                if show_strength:
+                if preferences.show_strength_slider:
                     col.separator()
                     col.prop(hdri_settings, "background_strength", text="Strength")
             else:
@@ -772,7 +739,7 @@ class HDRI_PT_controls(Panel):
                 
                 # Rotation column
                 col = split.column(align=True)
-                col.scale_y = button_scale
+                col.scale_y = preferences.button_scale
                 col.use_property_split = True
                 col.label(text="Rotation:")
                 
@@ -782,33 +749,13 @@ class HDRI_PT_controls(Panel):
                     col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
                 
                 # Strength column
-                if show_strength:
+                if preferences.show_strength_slider:
                     col = split.column(align=True)
-                    col.scale_y = button_scale
+                    col.scale_y = preferences.button_scale
                     col.use_property_split = True
                     col.label(text="Strength:")
                     col.prop(hdri_settings, "background_strength", text="Value")
-        
-        # Settings button and version
-        if not use_compact:
-            main_column.separator(factor=0.3 * spacing)
-        row = main_column.row()
-        
-        # Version label on the left
-        version_sub = row.row()
-        version_sub.alignment = 'LEFT'
-        version_sub.scale_y = button_scale * 0.8
-        version_text = f"v{bl_info['version'][0]}.{bl_info['version'][1]}"
-        version_sub.label(text=version_text)
-        
-        # Settings button on the right
-        settings_sub = row.row()
-        settings_sub.alignment = 'RIGHT'
-        settings_sub.scale_y = button_scale * 0.8
-        settings_sub.operator("preferences.addon_show",
-            text="",
-            icon='PREFERENCES').module = __name__
-
+                    
 def draw_hdri_menu(self, context):
     layout = self.layout
     layout.separator()
@@ -822,7 +769,6 @@ classes = (
     HDRI_OT_setup_nodes,
     HDRI_OT_load_selected,
     HDRI_OT_change_folder,
-    HDRI_OT_browser_popup,
     HDRI_PT_controls,
     HDRI_OT_check_updates,
 )

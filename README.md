@@ -59,16 +59,25 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 3. You'll see three main sections:
 
 #### Folder Browser
+
+![image](https://github.com/user-attachments/assets/9fb2f24a-6fe1-400e-aaa5-c49526d3818b)
+
 - Navigate through your HDRI folders
 - Click folder names to enter them
 - Use ".." to go back up
 
 #### HDRI Selection
+
+![image](https://github.com/user-attachments/assets/16a63525-8a63-41e3-8ec4-a8ba2588b312)
+
 - See thumbnails of your HDRIs
 - Click one to select it
 - Hit "Load Selected HDRI" to use it
 
 #### HDRI Settings
+
+![image](https://github.com/user-attachments/assets/926e4556-cafb-4351-a0be-2b98aad66dca)
+
 - Adjust X, Y, Z rotation
 - Control the lighting strength
 - Quick reset buttons for both

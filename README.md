@@ -25,6 +25,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 ## Installation
 
 1. Download the latest release zip file
+
+![image](https://github.com/user-attachments/assets/0baaf264-0775-452b-a9d2-fc85be647507)
+ - Click Code
+ - Click Download ZIP
+
 2. In Blender, go to Edit > Preferences > Add-ons
 3. Click "Install" and select the downloaded zip
 4. Enable the addon by checking the box next to "3D View: Quick HDRI Controls"

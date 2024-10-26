@@ -134,8 +134,8 @@ def update_background_strength(self, context):
  
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
-    bl_label = "Check for Updates"
-    bl_description = "Download and update addon from GitHub"
+    bl_label = "Run Updates"
+    bl_description = "If Version remains the same, no new updates"
     
     def execute(self, context):
         update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"

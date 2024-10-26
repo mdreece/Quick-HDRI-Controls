@@ -135,62 +135,46 @@ def update_background_strength(self, context):
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
     bl_label = "Check for Updates"
-    bl_description = "Check and download updates from GitHub"
+    bl_description = "Download and update addon from GitHub"
     
     def execute(self, context):
-        # URLs and paths for downloading and extracting
-        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/refs/heads/main/__init__.py"
-        zip_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
-        
-        local_version = bl_info["version"]
+        update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
         addon_path = os.path.dirname(os.path.realpath(__file__))
-        zip_path = os.path.join(addon_path, "temp_update.zip")
-        extract_path = os.path.join(addon_path, "Quick-HDRI-Controls-main")
-        target_path = os.path.join(addon_path, "QuickHDRI")
-
+        
         try:
-            # Step 1: Check for the latest version on GitHub
-            with urllib.request.urlopen(version_url) as response:
-                github_content = response.read().decode("utf-8")
-
-            # Extract version from the GitHub content (assuming it's in the bl_info at the top)
-            github_version = tuple(map(int, github_content.split("version = (")[1].split(")")[0].split(",")))
+            # Download zip file to a temporary location
+            self.report({'INFO'}, "Downloading update...")
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
+                urllib.request.urlretrieve(update_url, temp_zip.name)
+                temp_zip_path = temp_zip.name
             
-            # Step 2: Compare versions
-            if local_version >= github_version:
-                self.report({'INFO'}, "No update needed. You already have the latest version.")
-                return {'CANCELLED'}
-
-            # Step 3: Download the .zip file for the new version if update is needed
-            self.report({'INFO'}, "New update found! Downloading update...")
-            urllib.request.urlretrieve(zip_url, zip_path)
-
-            # Step 4: Extract the .zip file
+            # Extract the zip file
             self.report({'INFO'}, "Extracting update...")
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(addon_path)
-
-            # Step 5: Handle potential nested folder structure
-            extracted_folder = os.path.join(addon_path, "Quick-HDRI-Controls-main")
-            nested_folder = os.path.join(extracted_folder, "Quick-HDRI-Controls-main")
+            with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+                temp_dir = tempfile.mkdtemp()
+                zip_ref.extractall(temp_dir)
             
-            # If there's a nested folder, move its contents up one level
-            if os.path.exists(nested_folder):
-                for item in os.listdir(nested_folder):
-                    shutil.move(os.path.join(nested_folder, item), extracted_folder)
-                shutil.rmtree(nested_folder)
-
-            # Step 6: Rename the extracted folder to 'QuickHDRI'
-            if os.path.exists(target_path):
-                shutil.rmtree(target_path)  # Remove existing folder if any
-            shutil.move(extracted_folder, target_path)
-
-            # Step 7: Delete the downloaded .zip file
-            os.remove(zip_path)
-
+            # Locate the extracted files (assuming structure `Quick-HDRI-Controls-main/`)
+            extracted_folder = os.path.join(temp_dir, "Quick-HDRI-Controls-main")
+            
+            # Copy and overwrite all files from extracted folder to the add-on path
+            for root, dirs, files in os.walk(extracted_folder):
+                rel_path = os.path.relpath(root, extracted_folder)
+                dest_path = os.path.join(addon_path, rel_path)
+                
+                if not os.path.exists(dest_path):
+                    os.makedirs(dest_path)
+                
+                for file in files:
+                    shutil.copy2(os.path.join(root, file), os.path.join(dest_path, file))
+            
+            # Clean up temporary files
+            os.remove(temp_zip_path)
+            shutil.rmtree(temp_dir)
+            
             self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
             return {'FINISHED'}
-        
+                
         except urllib.error.URLError:
             self.report({'ERROR'}, "Could not connect to GitHub. Please check your internet connection.")
             return {'CANCELLED'}

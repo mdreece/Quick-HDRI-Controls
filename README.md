@@ -152,14 +152,14 @@ Stay up to date:
 
 ## Requirements
 
-- Blender 4.2.0 or newer
+- Tested on Blender 4.2.0, but coukd work for previos versions
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures
 
 ## Support
 
 Need help? Found a bug? Have a suggestion?
-- Open an issue on GitHub
+- Open an issue on GitHub or direct message on instagram
 - Check existing issues for solutions
 - Include steps to reproduce any bugs
 

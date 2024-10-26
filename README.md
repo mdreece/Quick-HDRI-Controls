@@ -19,7 +19,7 @@ A Blender addon for quickly managing and adjusting HDRI environments. Streamline
 
 ## Installation
 
-1. Download the latest release from the [releases page](https://github.com/yourusername/Quick-HDRI-Controls/releases)
+1. Download the latest release from the [releases page](https://github.com/mdreece/Quick-HDRI-Controls/releases)
 2. In Blender, go to `Edit > Preferences > Add-ons`
 3. Click `Install...` and select the downloaded `.py` file
 4. Enable the addon by checking the box next to `3D View: Quick HDRI Controls`
@@ -113,10 +113,6 @@ If "Initialize HDRI System" appears:
 1. Click `Check for Updates` in preferences
 2. Restart Blender after update completion
 
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on the process.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -128,8 +124,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- 📫 Report issues via [GitHub Issues](https://github.com/yourusername/Quick-HDRI-Controls/issues)
-- 💬 Join discussions in [Discussions](https://github.com/yourusername/Quick-HDRI-Controls/discussions)
+- 📫 Report issues via [GitHub Issues](https://github.com/mdreece/Quick-HDRI-Controls/issues)
+- 💬 Join discussions in [Discussions](https://github.com/mdreece/Quick-HDRI-Controls/discussions)
 
 ---
 Made with ❤️ for the Blender Community

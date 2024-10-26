@@ -588,8 +588,6 @@ class HDRI_PT_controls(Panel):
         spacing = preferences.spacing_scale
         use_compact = preferences.use_compact_ui
         show_strength = preferences.show_strength_slider
-        show_rotation = preferences.show_rotation_values
-        use_radians = preferences.use_radians
         
         # Early returns with styled messages
         if not preferences.hdri_directory:

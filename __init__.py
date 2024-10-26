@@ -154,7 +154,7 @@ class HDRI_OT_check_updates(Operator):
                 temp_dir = tempfile.mkdtemp()
                 zip_ref.extractall(temp_dir)
             
-            # Locate the extracted files (assuming structure `Quick-HDRI-Controls-main/`)
+            # Locate the extracted files (assuming structure Quick-HDRI-Controls-main/)
             extracted_folder = os.path.join(temp_dir, "Quick-HDRI-Controls-main")
             
             # Copy and overwrite all files from extracted folder to the add-on path
@@ -276,22 +276,6 @@ class QuickHDRIPreferences(AddonPreferences):
         default=False
     )
     
-    # Animation Settings
-    enable_smooth_rotation: BoolProperty(
-        name="Smooth Rotation",
-        description="Enable smooth rotation animation",
-        default=False
-    )
-    
-    rotation_speed: FloatProperty(
-        name="Rotation Speed",
-        description="Speed of rotation animation",
-        default=1.0,
-        min=0.1,
-        max=5.0,
-        step=0.1
-    )
-    
     # Interface Settings
     show_strength_slider: BoolProperty(
         name="Show Strength Slider",
@@ -303,12 +287,6 @@ class QuickHDRIPreferences(AddonPreferences):
         name="Show Rotation Values",
         description="Show numerical values for rotation",
         default=True
-    )
-    
-    use_radians: BoolProperty(
-        name="Use Radians",
-        description="Display rotation values in radians instead of degrees",
-        default=False
     )
     
     strength_max: FloatProperty(
@@ -332,7 +310,7 @@ class QuickHDRIPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         
-        #Update Options
+        # Update Options
         box = layout.box()
         box.label(text="Updates:", icon='URL')
         row = box.row(align=True)
@@ -379,23 +357,12 @@ class QuickHDRIPreferences(AddonPreferences):
         row = col.row()
         row.prop(self, "show_file_path")
         
-        # Animation Settings
-        box = layout.box()
-        box.label(text="Animation Settings:", icon='ACTION')
-        
-        col = box.column(align=True)
-        col.prop(self, "enable_smooth_rotation")
-        if self.enable_smooth_rotation:
-            col.prop(self, "rotation_speed")
-        
         # Interface Settings
         box = layout.box()
         box.label(text="Interface Settings:", icon='WINDOW')
         
         col = box.column(align=True)
         col.prop(self, "show_strength_slider")
-        col.prop(self, "use_radians")
-        
         col.prop(self, "strength_max")
         col.prop(self, "rotation_increment")
 

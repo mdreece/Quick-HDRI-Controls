@@ -1,14 +1,3 @@
-bl_info = {
-    "name": "Quick HDRI Controls",
-    "author": "Dave Nectariad Rome",
-    "version": (0, 6),
-    "blender": (4, 2, 0),
-    "location": "3D Viewport > Header",
-    "warning": "Alpha Version (in-development)",
-    "description": "Quickly adjust world HDRI rotation and selection",
-    "category": "3D View",
-}
-
 import urllib.request
 import zipfile
 import shutil
@@ -20,6 +9,19 @@ from bpy.types import (Panel, Operator, AddonPreferences, PropertyGroup)
 from bpy.props import (FloatProperty, StringProperty, EnumProperty, 
                       CollectionProperty, PointerProperty, IntProperty, 
                       BoolProperty, FloatVectorProperty)
+                      
+                      
+bl_info = {
+    "name": "Quick HDRI Controls",
+    "author": "Dave Nectariad Rome",
+    "version": (0, 6),
+    "blender": (4, 2, 0),
+    "location": "3D Viewport > Header",
+    "warning": "Alpha Version (in-development)",
+    "description": "Quickly adjust world HDRI rotation and selection",
+    "category": "3D View",
+}
+
 
 def get_hdri_previews():
     if not hasattr(get_hdri_previews, "preview_collection"):
@@ -136,31 +138,54 @@ class HDRI_OT_check_updates(Operator):
     bl_description = "Check and download updates from GitHub"
     
     def execute(self, context):
-        # URL of the .zip file on GitHub
+        # URLs and paths for downloading and extracting
+        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/refs/heads/main/__init__.py"
         zip_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
         
-        # Paths for addon and temporary download locations
+        local_version = bl_info["version"]
         addon_path = os.path.dirname(os.path.realpath(__file__))
         zip_path = os.path.join(addon_path, "temp_update.zip")
         extract_path = os.path.join(addon_path, "Quick-HDRI-Controls-main")
         target_path = os.path.join(addon_path, "QuickHDRI")
 
         try:
-            # Step 1: Download the .zip file
-            self.report({'INFO'}, "Downloading update...")
+            # Step 1: Check for the latest version on GitHub
+            with urllib.request.urlopen(version_url) as response:
+                github_content = response.read().decode("utf-8")
+
+            # Extract version from the GitHub content (assuming it's in the bl_info at the top)
+            github_version = tuple(map(int, github_content.split("version = (")[1].split(")")[0].split(",")))
+            
+            # Step 2: Compare versions
+            if local_version >= github_version:
+                self.report({'INFO'}, "No update needed. You already have the latest version.")
+                return {'CANCELLED'}
+
+            # Step 3: Download the .zip file for the new version if update is needed
+            self.report({'INFO'}, "New update found! Downloading update...")
             urllib.request.urlretrieve(zip_url, zip_path)
 
-            # Step 2: Extract the .zip file
+            # Step 4: Extract the .zip file
             self.report({'INFO'}, "Extracting update...")
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(addon_path)
 
-            # Step 3: Rename the extracted folder to 'QuickHDRI'
+            # Step 5: Handle potential nested folder structure
+            extracted_folder = os.path.join(addon_path, "Quick-HDRI-Controls-main")
+            nested_folder = os.path.join(extracted_folder, "Quick-HDRI-Controls-main")
+            
+            # If there's a nested folder, move its contents up one level
+            if os.path.exists(nested_folder):
+                for item in os.listdir(nested_folder):
+                    shutil.move(os.path.join(nested_folder, item), extracted_folder)
+                shutil.rmtree(nested_folder)
+
+            # Step 6: Rename the extracted folder to 'QuickHDRI'
             if os.path.exists(target_path):
                 shutil.rmtree(target_path)  # Remove existing folder if any
-            shutil.move(extract_path, target_path)
+            shutil.move(extracted_folder, target_path)
 
-            # Step 4: Delete the downloaded .zip file
+            # Step 7: Delete the downloaded .zip file
             os.remove(zip_path)
 
             self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
@@ -172,6 +197,7 @@ class HDRI_OT_check_updates(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
             return {'CANCELLED'}
+
  
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__

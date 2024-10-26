@@ -41,6 +41,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
 ![image](https://github.com/user-attachments/assets/001ed482-c246-430a-b5d3-c7c652e41953)
+
 2. Click it to open the controls panel
 3. You'll see three main sections:
 

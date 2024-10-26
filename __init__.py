@@ -14,7 +14,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (0, 7),
+    "version": (0, 8),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",

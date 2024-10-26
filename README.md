@@ -32,9 +32,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
+
 ![image](https://github.com/user-attachments/assets/f6899f91-a0aa-462c-b26f-8720187b4791)
 
 3. Select which file types you want to use (HDR, EXR, PNG, JPG)
+
 ![image](https://github.com/user-attachments/assets/5c3fc0bc-981f-4684-b1a8-4053eda39bcb)
 
 4. Close the preferences
@@ -42,6 +44,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 ### Using the Addon
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
+
 ![image](https://github.com/user-attachments/assets/001ed482-c246-430a-b5d3-c7c652e41953)
 
 2. Click it to open the controls panel
@@ -96,6 +99,7 @@ To access these options:
 1. Go to Edit > Preferences > Add-ons
 2. Find Quick HDRI Controls
 3. Expand the preferences section
+
 ![image](https://github.com/user-attachments/assets/f7afa023-cc64-44b6-9faf-852082643e6a)
 
 
@@ -121,6 +125,7 @@ To access these options:
 Stay up to date:
 1. Open addon preferences
 2. Click "Check for Updates"
+
 ![image](https://github.com/user-attachments/assets/3b7e297b-7208-43ac-9986-af65fb24452d)
 
 3. Restart Blender

@@ -6,8 +6,6 @@
 
 A Blender addon for quickly managing and adjusting HDRI environments. Streamline your HDRI workflow with an intuitive interface for browsing, loading, and adjusting environment lighting.
 
-![Quick HDRI Controls Preview](screenshots/preview.png)
-
 ## Features
 
 - 🖼️ Visual HDRI browser with thumbnails

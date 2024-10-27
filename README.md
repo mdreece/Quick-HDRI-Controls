@@ -149,6 +149,7 @@ Stay up to date:
 ![image](https://github.com/user-attachments/assets/3b7e297b-7208-43ac-9986-af65fb24452d)
 
 3. Restart Blender
+(You may need to relink your HDRI directory in preferences)
 
 ## Requirements
 

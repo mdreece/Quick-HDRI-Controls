@@ -153,7 +153,7 @@ Stay up to date:
 
 ## Requirements
 
-- Tested on Blender 4.2.0, but coukd work for previos versions
+- Tested on Blender 4.2.0 (could work on previous versions)
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures
 

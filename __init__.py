@@ -13,7 +13,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 0),
+    "version": (1, 1),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -35,10 +35,23 @@ def generate_previews(self, context):
         return enum_items
         
     preferences = context.preferences.addons[__name__].preferences
-    current_dir = preferences.hdri_directory
+    base_dir = preferences.hdri_directory
+    
+    # Use current_folder if set, otherwise use base directory
+    current_dir = context.scene.hdri_settings.current_folder or base_dir
     
     if not current_dir or not os.path.exists(current_dir):
         return enum_items
+        
+    # Verify current directory is within base directory
+    try:
+        rel_path = os.path.relpath(current_dir, base_dir)
+        if rel_path.startswith('..'):
+            context.scene.hdri_settings.current_folder = base_dir
+            current_dir = base_dir
+    except ValueError:
+        context.scene.hdri_settings.current_folder = base_dir
+        current_dir = base_dir
     
     pcoll = get_hdri_previews()
     
@@ -59,6 +72,7 @@ def generate_previews(self, context):
     
     image_paths = []
     
+    # Only look for images in the current directory (not in subfolders)
     for fn in os.listdir(current_dir):
         if fn.lower().endswith(tuple(extensions)):
             image_paths.append(fn)
@@ -218,7 +232,7 @@ class HDRI_OT_change_folder(Operator):
                 self.report({'WARNING'}, "Invalid path")
                 return {'CANCELLED'}
         
-        # Clear previews
+        # Clear previews to force regeneration
         pcoll = get_hdri_previews()
         pcoll.clear()
         
@@ -228,6 +242,15 @@ class HDRI_OT_change_folder(Operator):
                 area.tag_redraw()
         
         return {'FINISHED'}
+
+def refresh_previews(self, context):
+    """Refresh the preview collection when settings change"""
+    pcoll = get_hdri_previews()
+    pcoll.clear()
+    
+    # Reset current folder to base directory when HDRI directory changes
+    if hasattr(context.scene, "hdri_settings"):
+        context.scene.hdri_settings.current_folder = self.hdri_directory
 
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__

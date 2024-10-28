@@ -36,9 +36,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 2. In Blender, go to Edit > Preferences > Add-ons
 3. Click the drop down and click "Install" and select the downloaded zip
+   
 ![BL Install](https://github.com/user-attachments/assets/a9ff17d3-c39c-43e1-94ce-615e2468b158)
 
-5. Enable the addon by checking the box next to "3D View: Quick HDRI Controls"
+4. Enable the addon by checking the box next to "3D View: Quick HDRI Controls"
+   
 ![BL Enable](https://github.com/user-attachments/assets/568ecc23-6b9f-4bf9-b187-026ff2fe358c)
 
 
@@ -139,6 +141,7 @@ To access these options:
 ![BL Preference UI](https://github.com/user-attachments/assets/a55864cf-0508-4976-9270-5f7be4758012)
 
 ### Visual Settings
+
 ![BL Preference Visual](https://github.com/user-attachments/assets/1bc2bafd-61f3-4c5c-b476-2dafbc6e52ed)
 
 
@@ -169,13 +172,16 @@ Stay up to date:
 
 2. Click on 'Check for Updates'
  - If there are updates a message will prompt to update
+   
 ![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)
 
  - If no updates are available, the following message will prompt
+   
 ![Update to date](https://github.com/user-attachments/assets/663565f0-a41a-436b-b05a-d9fb7e9a1ed3)
 
 3. Auto-Check Updates can be clicked.
  - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls
+   
 ![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
  
 

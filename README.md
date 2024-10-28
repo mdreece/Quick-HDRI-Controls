@@ -139,7 +139,9 @@ Keyboard shortcut can be set for quickly pulling up the panel in the 3D viewport
  - Set you current shortcut combination
  - Consists of Ctrl, Commnad, Alt, Del
  - A-Z key options
-BE SURE TO APPLY CHANGES IN PREFERENCES UI
+ - Confirm with OS or blender shortcuts to ensure no issues
+   
+#BE SURE TO APPLY CHANGES IN PREFERENCES UI
 When the key combination is pressed, the HDRI panel will appear where the cursor is
 
 ![QHDRI_SC_viewport](https://github.com/user-attachments/assets/f85ce798-47bc-4f36-a854-c3490ea432fb)

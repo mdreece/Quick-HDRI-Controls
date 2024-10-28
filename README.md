@@ -168,7 +168,7 @@ To access these options:
 Stay up to date:
 1. Open addon preferences
    
-![BL Preference Updates](https://github.com/user-attachments/assets/803a0c91-c0d9-4d72-b8c7-474e98b1ee2b)
+![update check](https://github.com/user-attachments/assets/aa19b8e9-6195-4358-9efa-d539272afe93)
 
 2. Click on 'Check for Updates'
  - If there are updates a message will prompt to update
@@ -180,6 +180,9 @@ Stay up to date:
 ![Update to date](https://github.com/user-attachments/assets/663565f0-a41a-436b-b05a-d9fb7e9a1ed3)
 
 3. Auto-Check Updates can be clicked.
+
+![BL Preference Updates](https://github.com/user-attachments/assets/2fee90dd-5197-4ffd-8605-fc366f6d3831)
+
  - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls
    
 ![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)

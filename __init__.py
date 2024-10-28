@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from datetime import datetime
 import bpy
+import re
 import os
 from bpy.types import (Panel, Operator, AddonPreferences, PropertyGroup)
 from bpy.props import (FloatProperty, StringProperty, EnumProperty, 
@@ -13,7 +14,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 3),
+    "version": (1, 4),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -143,6 +144,36 @@ def update_background_strength(self, context):
         for node in context.scene.world.node_tree.nodes:
             if node.type == 'BACKGROUND':
                 node.inputs['Strength'].default_value = self.background_strength
+                
+def check_for_update_on_startup():
+    """Check for updates on Blender startup if enabled in preferences."""
+    preferences = bpy.context.preferences.addons[__name__].preferences
+    if not preferences.enable_auto_update_check:
+        return  # Exit if auto-update is not enabled
+
+    current_version = bl_info['version']
+    online_version = None
+    try:
+        # Fetch online version from GitHub
+        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/refs/heads/main/__init__.py"
+        req = urllib.request.Request(version_url, headers={'User-Agent': 'Mozilla/5.0'})
+        
+        with urllib.request.urlopen(req) as response:
+            content = response.read().decode('utf-8')
+            for line in content.split('\n'):
+                if '"version":' in line:
+                    version_numbers = re.findall(r'\d+', line)
+                    if len(version_numbers) >= 2:
+                        online_version = (int(version_numbers[0]), int(version_numbers[1]))
+                    break
+
+        # If the online version is higher, set the alert in user preferences
+        if online_version and online_version > current_version:
+            preferences.update_available = True
+        else:
+            preferences.update_available = False
+    except Exception as e:
+        print(f"Startup update check error: {str(e)}")
  
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
@@ -321,44 +352,51 @@ def refresh_previews(self, context):
     if hasattr(context.scene, "hdri_settings"):
         context.scene.hdri_settings.current_folder = self.hdri_directory
 
-class QuickHDRIPreferences(AddonPreferences):
+class QuickHDRIPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
 
+    # Properties for auto-update and update alert
+    enable_auto_update_check: bpy.props.BoolProperty(
+        name="Enable Auto-Update Check on Startup",
+        description="Automatically check for updates when Blender starts",
+        default=False
+    )
+    update_available: bpy.props.BoolProperty(name="Update Available", default=False)
+
     # Directory and File Type Settings
-    hdri_directory: StringProperty(
+    hdri_directory: bpy.props.StringProperty(
         name="HDRI Directory",
         subtype='DIR_PATH',
         description="Directory containing HDRI files",
-        default="",
-        update=lambda self, context: refresh_previews(self, context)
+        default=""
     )
     
-    use_hdr: BoolProperty(
+    use_hdr: bpy.props.BoolProperty(
         name="HDR",
         description="Include .hdr files",
         default=True
     )
     
-    use_exr: BoolProperty(
+    use_exr: bpy.props.BoolProperty(
         name="EXR",
         description="Include .exr files",
         default=True
     )
     
-    use_png: BoolProperty(
+    use_png: bpy.props.BoolProperty(
         name="PNG",
         description="Include .png files",
         default=True
     )
     
-    use_jpg: BoolProperty(
+    use_jpg: bpy.props.BoolProperty(
         name="JPG",
         description="Include .jpg and .jpeg files",
         default=True
     )
     
     # UI Layout Settings
-    ui_scale: IntProperty(
+    ui_scale: bpy.props.IntProperty(
         name="Panel Width",
         description="Width of the HDRI control panel",
         default=10,
@@ -367,7 +405,7 @@ class QuickHDRIPreferences(AddonPreferences):
         subtype='PIXEL'
     )
     
-    preview_scale: IntProperty(
+    preview_scale: bpy.props.IntProperty(
         name="Preview Size",
         description="Size of HDRI preview thumbnails",
         default=8,
@@ -375,7 +413,7 @@ class QuickHDRIPreferences(AddonPreferences):
         max=20
     )
     
-    button_scale: FloatProperty(
+    button_scale: bpy.props.FloatProperty(
         name="Button Scale",
         description="Scale of UI buttons",
         default=1.0,
@@ -384,7 +422,7 @@ class QuickHDRIPreferences(AddonPreferences):
         step=0.05
     )
     
-    spacing_scale: FloatProperty(
+    spacing_scale: bpy.props.FloatProperty(
         name="Spacing Scale",
         description="Scale of UI element spacing",
         default=1.0,
@@ -394,32 +432,32 @@ class QuickHDRIPreferences(AddonPreferences):
     )
     
     # Visual Settings
-    use_compact_ui: BoolProperty(
+    use_compact_ui: bpy.props.BoolProperty(
         name="Compact UI",
         description="Use compact UI layout",
         default=True
     )
     
-    show_file_path: BoolProperty(
+    show_file_path: bpy.props.BoolProperty(
         name="Show Full Path",
         description="Show full file path instead of relative path",
         default=False
     )
     
     # Interface Settings
-    show_strength_slider: BoolProperty(
+    show_strength_slider: bpy.props.BoolProperty(
         name="Show Strength Slider",
         description="Show the strength slider in the main UI",
         default=True
     )
     
-    show_rotation_values: BoolProperty(
+    show_rotation_values: bpy.props.BoolProperty(
         name="Show Rotation Values",
         description="Show numerical values for rotation",
         default=True
     )
     
-    strength_max: FloatProperty(
+    strength_max: bpy.props.FloatProperty(
         name="Max Strength",
         description="Maximum value for strength slider",
         default=2.0,
@@ -428,7 +466,7 @@ class QuickHDRIPreferences(AddonPreferences):
         step=0.1
     )
     
-    rotation_increment: FloatProperty(
+    rotation_increment: bpy.props.FloatProperty(
         name="Rotation Increment",
         description="Increment for rotation controls",
         default=5.0,
@@ -439,41 +477,37 @@ class QuickHDRIPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        
-        # Update Options
+
+        # "Updates" section box
         box = layout.box()
         box.label(text="Updates:", icon='URL')
-        
-        # GitHub link row
-        github_row = box.row(align=True)
-        github_row.scale_y = 1.2
-        github_op = github_row.operator(
-            "wm.url_open", 
-            text="Documentation", 
-            icon='URL'
-        )
-        github_op.url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
-        
-        # Update button row
+
+        # Auto-update toggle and update check button
+        box.prop(self, "enable_auto_update_check")  # Checkbox for auto-update
+
+        # Check for updates and download option if an update is available
         row = box.row(align=True)
-        row.scale_y = 1.2
-        update_op = row.operator("world.check_hdri_updates", 
-                                text="Check for Updates", 
-                                icon='FILE_REFRESH')
+        row.operator("world.check_hdri_updates", text="Check for Updates", icon='FILE_REFRESH')
+        if self.update_available:
+            row.operator("world.download_hdri_update", text="Download Update")
+        
+        # Documentation link row
+        row = box.row(align=True)
+        row.operator(
+            "wm.url_open",
+            text="Documentation",
+            icon='URL'
+        ).url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
         
         layout.separator()
-        
+
         # File Settings
         box = layout.box()
         box.label(text="File Settings:", icon='FILE_FOLDER')
-        
-        # HDRI Directory with file type filters
         col = box.column(align=True)
         col.prop(self, "hdri_directory")
         
-        # File type filters in a row
-        row = box.row()
-        row.label(text="File Types:")
+        # File type filters
         row = box.row(align=True)
         row.prop(self, "use_hdr", toggle=True)
         row.prop(self, "use_exr", toggle=True)
@@ -483,7 +517,6 @@ class QuickHDRIPreferences(AddonPreferences):
         # UI Layout Settings
         box = layout.box()
         box.label(text="Layout Settings:", icon='PREFERENCES')
-        
         col = box.column(align=True)
         col.prop(self, "ui_scale")
         col.prop(self, "preview_scale")
@@ -493,19 +526,18 @@ class QuickHDRIPreferences(AddonPreferences):
         # Visual Settings
         box = layout.box()
         box.label(text="Visual Settings:", icon='RESTRICT_VIEW_OFF')
-        
         col = box.column(align=True)
-        row = col.row()
-        row.prop(self, "show_file_path")
+        col.prop(self, "show_file_path")
         
         # Interface Settings
         box = layout.box()
         box.label(text="Interface Settings:", icon='WINDOW')
-        
         col = box.column(align=True)
         col.prop(self, "show_strength_slider")
         col.prop(self, "strength_max")
         col.prop(self, "rotation_increment")
+
+
 
 class HDRISettings(PropertyGroup):
     hdri_preview: EnumProperty(
@@ -671,6 +703,13 @@ class HDRI_PT_controls(Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
         hdri_settings = context.scene.hdri_settings
+        
+        # If update available, highlight in red
+        if preferences.update_available:
+            row = layout.row()
+            row.alert = True
+            row.label(text="HDRI Controls - Update Available!", icon='ERROR')
+            row.operator("world.download_hdri_update", text="Download Update")
         
         # Early returns with styled messages
         if not preferences.hdri_directory:
@@ -900,19 +939,23 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
+    bpy.types.Scene.hdri_settings = bpy.props.PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
+
+    # Run update check at startup if enabled
+    check_for_update_on_startup()
 
 def unregister():
     bpy.types.VIEW3D_HT_header.remove(draw_hdri_menu)
-    
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
         
     del bpy.types.Scene.hdri_settings
-    
+
     if hasattr(get_hdri_previews, "preview_collection"):
         bpy.utils.previews.remove(get_hdri_previews.preview_collection)
 
 if __name__ == "__main__":
     register()
+

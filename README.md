@@ -56,6 +56,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 ![BL Preference HDRI directory](https://github.com/user-attachments/assets/42ecdba8-43d0-4267-a542-096ab243024f)
 
+ - If this is not done, when attempting to use you will be prompted to set it anyway
+   
+![HDRI not set](https://github.com/user-attachments/assets/9d81e5da-5e77-4dba-86b4-d18fd86ebae5)
+
+
 3. Select which file types you want to use (HDR, EXR, PNG, JPG)
 
 ![BL Preference File Settings](https://github.com/user-attachments/assets/463e9a20-765b-4d38-86b6-3dab8f0cecd2)

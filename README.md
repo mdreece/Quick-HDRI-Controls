@@ -1,4 +1,4 @@
-# Quick HDRI Controls v1.3 for Blender
+# Quick HDRI Controls v1.5 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.2.0+-green.svg)
 ![Version](https://img.shields.io/badge/Version-0.9-blue.svg)
@@ -9,7 +9,8 @@
 
 Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
 
-![image](https://github.com/user-attachments/assets/a942a5b2-b34d-466d-8e30-63e610576e42)
+![QHDRI Full](https://github.com/user-attachments/assets/01504b2e-3130-41be-a87b-1eed2b103dca)
+
 
 
 
@@ -27,26 +28,35 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Download the latest release zip file
 
-![image](https://github.com/user-attachments/assets/0baaf264-0775-452b-a9d2-fc85be647507)
+![Github_Download](https://github.com/user-attachments/assets/ec266f02-a1e1-4a8a-ae84-43ded0813717)
+
+
  - Click Code
  - Click Download ZIP
 
 2. In Blender, go to Edit > Preferences > Add-ons
-3. Click "Install" and select the downloaded zip
-4. Enable the addon by checking the box next to "3D View: Quick HDRI Controls"
+3. Click the drop down and click "Install" and select the downloaded zip
+![BL Install](https://github.com/user-attachments/assets/a9ff17d3-c39c-43e1-94ce-615e2468b158)
+
+5. Enable the addon by checking the box next to "3D View: Quick HDRI Controls"
+![BL Enable](https://github.com/user-attachments/assets/568ecc23-6b9f-4bf9-b187-026ff2fe358c)
+
 
 ## Quick Start Guide
 
 ### First Time Setup
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
-2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
-![image](https://github.com/user-attachments/assets/f6899f91-a0aa-462c-b26f-8720187b4791)
+![BL Preference Full](https://github.com/user-attachments/assets/851f7ab2-1c82-44fb-9e68-9e539ba4ea07)
+
+3. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
+
+![BL Preference HDRI directory](https://github.com/user-attachments/assets/42ecdba8-43d0-4267-a542-096ab243024f)
 
 3. Select which file types you want to use (HDR, EXR, PNG, JPG)
 
-![image](https://github.com/user-attachments/assets/5c3fc0bc-981f-4684-b1a8-4053eda39bcb)
+![BL Preference File Settings](https://github.com/user-attachments/assets/463e9a20-765b-4d38-86b6-3dab8f0cecd2)
 
 4. Close the preferences
 
@@ -54,18 +64,20 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
 
-![image](https://github.com/user-attachments/assets/001ed482-c246-430a-b5d3-c7c652e41953)
+![HDRI start](https://github.com/user-attachments/assets/3b7320bd-0bb2-487b-98c8-2e59ec2e7486)
 
-2. Click it to open the controls panel
+
+2. Click it and then 'Initialize HDRI System'
 3. You'll see three main sections:
 
-![image](https://github.com/user-attachments/assets/16651a75-2e1b-431e-a561-2da4576d72ea)
+![QHDRI Full](https://github.com/user-attachments/assets/8723a08b-0207-4113-92b2-08c325bf7dd2)
+
 
 
 
 #### Folder Browser
 
-![image](https://github.com/user-attachments/assets/9fb2f24a-6fe1-400e-aaa5-c49526d3818b)
+![QHDRI folder browse](https://github.com/user-attachments/assets/3b40729b-7f12-4647-b6a2-5e52056eac90)
 
 - Navigate through your HDRI folders
 - Click folder names to enter them
@@ -73,7 +85,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 #### HDRI Selection
 
-![image](https://github.com/user-attachments/assets/16a63525-8a63-41e3-8ec4-a8ba2588b312)
+![QHDRI Select](https://github.com/user-attachments/assets/592c02f9-4029-4697-88b5-2705aa1b6737)
 
 - See thumbnails of your HDRIs
 - Click one to select it
@@ -81,11 +93,13 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 #### HDRI Settings
 
-![image](https://github.com/user-attachments/assets/926e4556-cafb-4351-a0be-2b98aad66dca)
+![QHDRI Settings](https://github.com/user-attachments/assets/281bd94b-ea2e-420a-b146-d9f2e7212f04)
 
 - Adjust X, Y, Z rotation
 - Control the lighting strength
 - Quick reset buttons for both
+  - Addon version
+  - Quick access to preferences
 
 ## Tips & Tricks
 

@@ -13,7 +13,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 1),
+    "version": (1, 2),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -374,10 +374,22 @@ class QuickHDRIPreferences(AddonPreferences):
         # Update Options
         box = layout.box()
         box.label(text="Updates:", icon='URL')
+        
+        # GitHub link row
+        github_row = box.row(align=True)
+        github_row.scale_y = 1.2
+        github_op = github_row.operator(
+            "wm.url_open", 
+            text="Documentation", 
+            icon='URL'
+        )
+        github_op.url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
+        
+        # Update button row
         row = box.row(align=True)
         row.scale_y = 1.2
         update_op = row.operator("world.check_hdri_updates", 
-                                text="Check for Updates", 
+                                text="Update", 
                                 icon='FILE_REFRESH')
         
         layout.separator()
@@ -778,6 +790,25 @@ class HDRI_PT_controls(Panel):
                     col.use_property_split = True
                     col.label(text="Strength:")
                     col.prop(hdri_settings, "background_strength", text="Value")
+                    
+        # Add separator before footer
+        main_column.separator(factor=1.0 * preferences.spacing_scale)
+        
+        # Footer row with version and settings
+        footer = main_column.row(align=True)
+        footer.scale_y = 0.8  # Make the footer slightly smaller
+        
+        # Version number on the left
+        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
+        
+        # Settings button on the right
+        settings_btn = footer.operator(
+            "preferences.addon_show",
+            text="",
+            icon='PREFERENCES',
+            emboss=False,
+        )
+        settings_btn.module = __name__
                     
 def draw_hdri_menu(self, context):
     layout = self.layout

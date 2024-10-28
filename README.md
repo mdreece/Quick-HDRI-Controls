@@ -150,8 +150,9 @@ Stay up to date:
 
 ![image](https://github.com/user-attachments/assets/3b7e297b-7208-43ac-9986-af65fb24452d)
 
-3. Restart Blender
-(You may need to relink your HDRI directory in preferences)
+3. If you are up to date, a message will prompt.
+4. If there is a new version, you will be prompted if you want to download/update
+   (You may have to remap your HDRI directory in preferences. Working on updating so there is no need)
 
 ## Requirements
 

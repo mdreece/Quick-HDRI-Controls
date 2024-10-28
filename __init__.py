@@ -13,7 +13,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 2),
+    "version": (1, 3),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -146,18 +146,79 @@ def update_background_strength(self, context):
  
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
-    bl_label = "Run Updates"
-    bl_description = "If Version remains the same, no new updates"
+    bl_label = "Check for Updates"
+    bl_description = "Check if a new version is available on GitHub"
+
+    def get_online_version(self):
+        """Fetch version info from GitHub"""
+        try:
+            # Create a request with appropriate headers
+            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
+            req = urllib.request.Request(
+                version_url,
+                headers={'User-Agent': 'Mozilla/5.0'}  # Add user agent to avoid rejection
+            )
+            
+            with urllib.request.urlopen(req) as response:
+                content = response.read().decode('utf-8')
+                
+                # Find the version line in the content
+                for line in content.split('\n'):
+                    if '"version":' in line:
+                        # Extract version numbers
+                        import re
+                        version_numbers = re.findall(r'\d+', line)
+                        if len(version_numbers) >= 2:
+                            return (int(version_numbers[0]), int(version_numbers[1]))
+        except Exception as e:
+            print(f"Update check error: {str(e)}")  # For debugging
+            return None
+        return None
+
+    def execute(self, context):
+        # Get current version from bl_info
+        current_version = bl_info['version']
+        
+        # Get online version
+        online_version = self.get_online_version()
+        
+        if online_version is None:
+            self.report({'ERROR'}, "Could not connect to GitHub. Please check your internet connection.")
+            return {'CANCELLED'}
+        
+        # Compare versions
+        if online_version <= current_version:
+            self.report({'INFO'}, f"Quick HDRI Controls is up to date (v{current_version[0]}.{current_version[1]})")
+            return {'FINISHED'}
+        
+        # Ask user if they want to update
+        def draw_popup(self, context):
+            self.layout.label(text=f"New version available: v{online_version[0]}.{online_version[1]}")
+            self.layout.label(text=f"Current version: v{current_version[0]}.{current_version[1]}")
+            self.layout.operator("world.download_hdri_update", text="Download Update")
+            
+        context.window_manager.popup_menu(draw_popup, title="Update Available", icon='INFO')
+        return {'FINISHED'}
+
+class HDRI_OT_download_update(Operator):
+    bl_idname = "world.download_hdri_update"
+    bl_label = "Download Update"
+    bl_description = "Download and install the latest version"
     
     def execute(self, context):
-        update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
-        addon_path = os.path.dirname(os.path.realpath(__file__))
-        
         try:
+            # Create request with headers
+            update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
+            req = urllib.request.Request(
+                update_url,
+                headers={'User-Agent': 'Mozilla/5.0'}  # Add user agent
+            )
+            
             # Download zip file to a temporary location
             self.report({'INFO'}, "Downloading update...")
             with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
-                urllib.request.urlretrieve(update_url, temp_zip.name)
+                with urllib.request.urlopen(req) as response:
+                    temp_zip.write(response.read())
                 temp_zip_path = temp_zip.name
             
             # Extract the zip file
@@ -168,6 +229,14 @@ class HDRI_OT_check_updates(Operator):
             
             # Locate the extracted files
             extracted_folder = os.path.join(temp_dir, "Quick-HDRI-Controls-main")
+            
+            # Verify the extracted folder exists
+            if not os.path.exists(extracted_folder):
+                self.report({'ERROR'}, "Update package has unexpected structure")
+                return {'CANCELLED'}
+            
+            # Get addon path
+            addon_path = os.path.dirname(os.path.realpath(__file__))
             
             # Copy and overwrite all files from extracted folder to the add-on path
             for root, dirs, files in os.walk(extracted_folder):
@@ -187,8 +256,8 @@ class HDRI_OT_check_updates(Operator):
             self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
             return {'FINISHED'}
                 
-        except urllib.error.URLError:
-            self.report({'ERROR'}, "Could not connect to GitHub. Please check your internet connection.")
+        except urllib.error.URLError as e:
+            self.report({'ERROR'}, f"Connection error: {str(e)}")
             return {'CANCELLED'}
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
@@ -389,7 +458,7 @@ class QuickHDRIPreferences(AddonPreferences):
         row = box.row(align=True)
         row.scale_y = 1.2
         update_op = row.operator("world.check_hdri_updates", 
-                                text="Update", 
+                                text="Check for Updates", 
                                 icon='FILE_REFRESH')
         
         layout.separator()
@@ -825,6 +894,7 @@ classes = (
     HDRI_OT_change_folder,
     HDRI_PT_controls,
     HDRI_OT_check_updates,
+    HDRI_OT_download_update,
 )
 
 def register():
@@ -846,4 +916,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-

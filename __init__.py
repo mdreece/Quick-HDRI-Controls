@@ -15,7 +15,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 7),
+    "version": (1, 6),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -159,8 +159,11 @@ def check_for_update_on_startup():
     online_version = None
     try:
         # Fetch online version from GitHub
-        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/quick_hdri_controls.py"
-        req = urllib.request.Request(version_url, headers={'User-Agent': 'Mozilla/5.0'})
+        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
+        req = urllib.request.Request(
+            version_url,
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
         
         with urllib.request.urlopen(req) as response:
             content = response.read().decode('utf-8')
@@ -179,51 +182,6 @@ def check_for_update_on_startup():
     except Exception as e:
         print(f"Startup update check error: {str(e)}")
         
-class HDRI_OT_popup_controls(Operator):
-    bl_idname = "world.hdri_popup_controls"
-    bl_label = "HDRI Quick Controls"
-    bl_description = "Show HDRI controls at cursor position"
-    bl_options = {'REGISTER'}
-
-    def draw(self, context):
-        layout = self.layout
-        # Use the panel's draw method for consistency
-        HDRI_PT_controls.draw(self, context)
-
-    def execute(self, context):
-        return {'FINISHED'}
-    
-    def invoke(self, context, event):
-        prefs = context.preferences.addons[__name__].preferences
-        wm = context.window_manager
-        return wm.invoke_popup(self, width=prefs.ui_scale * 20)
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-    bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
-    bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
-
-    # Add keymap entry with platform-specific handling
-    wm = bpy.context.window_manager
-    kc = wm.keyconfigs.addon
-    if kc:
-        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
-        
-        # Get preferences
-        prefs = bpy.context.preferences.addons[__name__].preferences
-        
-        # Create new keymap item
-        kmi = km.keymap_items.new(
-            HDRI_OT_popup_controls.bl_idname,
-            type=prefs.popup_key,
-            value='PRESS',
-            oskey=prefs.popup_ctrl if sys.platform == 'darwin' else False,  # Command key for MacOS
-            ctrl=prefs.popup_ctrl if sys.platform != 'darwin' else False,   # Ctrl key for Windows/Linux
-            shift=prefs.popup_shift,
-            alt=prefs.popup_alt
-        )
-        addon_keymaps.append((km, kmi))
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
     bl_label = "Check for Updates"
@@ -232,7 +190,7 @@ class HDRI_OT_check_updates(Operator):
     def get_online_version(self):
         """Fetch version info from GitHub"""
         try:
-            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/quick_hdri_controls.py"
+            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
             req = urllib.request.Request(
                 version_url,
                 headers={'User-Agent': 'Mozilla/5.0'}
@@ -247,7 +205,7 @@ class HDRI_OT_check_updates(Operator):
                         if len(version_numbers) >= 2:
                             return (int(version_numbers[0]), int(version_numbers[1]))
         except Exception as e:
-            print(f"Update check error: {str(e)}")
+            print(f"Update check error: {str(e)}")  # For debugging
             return None
         return None
 
@@ -325,6 +283,52 @@ class HDRI_OT_download_update(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
             return {'CANCELLED'}
+            
+class HDRI_OT_popup_controls(Operator):
+    bl_idname = "world.hdri_popup_controls"
+    bl_label = "HDRI Quick Controls"
+    bl_description = "Show HDRI controls at cursor position"
+    bl_options = {'REGISTER'}
+
+    def draw(self, context):
+        layout = self.layout
+        # Use the panel's draw method for consistency
+        HDRI_PT_controls.draw(self, context)
+
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        prefs = context.preferences.addons[__name__].preferences
+        wm = context.window_manager
+        return wm.invoke_popup(self, width=prefs.ui_scale * 20)
+
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
+    bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
+
+    # Add keymap entry with platform-specific handling
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
+        
+        # Get preferences
+        prefs = bpy.context.preferences.addons[__name__].preferences
+        
+        # Create new keymap item
+        kmi = km.keymap_items.new(
+            HDRI_OT_popup_controls.bl_idname,
+            type=prefs.popup_key,
+            value='PRESS',
+            oskey=prefs.popup_ctrl if sys.platform == 'darwin' else False,  # Command key for MacOS
+            ctrl=prefs.popup_ctrl if sys.platform != 'darwin' else False,   # Ctrl key for Windows/Linux
+            shift=prefs.popup_shift,
+            alt=prefs.popup_alt
+        )
+        addon_keymaps.append((km, kmi))
 
 class HDRI_OT_change_folder(Operator):
     bl_idname = "world.change_hdri_folder"

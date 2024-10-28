@@ -133,6 +133,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 ## Keyboard Shortcut
 Keyboard shortcut can be set for quickly pulling up the panel in the 3D viewport
+
 Windows/Linux:
 
 ![QHDRIC_Shortcut](https://github.com/user-attachments/assets/2386ee2a-7904-42e4-92fb-05bf0d9c8e85)

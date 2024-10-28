@@ -204,7 +204,7 @@ Stay up to date:
 ## Support
 
 Need help? Found a bug? Have a suggestion?
-- Open an issue on GitHub or direct message on instagram
+- Open an issue on GitHub or direct message on instagram @montanadreece (https://www.instagram.com/montanadreece/)
 - Check existing issues for solutions
 - Include steps to reproduce any bugs
 

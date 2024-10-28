@@ -14,7 +14,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 4),
+    "version": (1, 5),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -478,64 +478,68 @@ class QuickHDRIPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        # "Updates" section box
+        # Header with introduction and quick access to the directory
         box = layout.box()
-        box.label(text="Updates:", icon='URL')
+        box.label(text="Quick HDRI Controls", icon='WORLD')
+        box.label(text="Easily adjust world HDRI rotation and selection.")
+        box.prop(self, "hdri_directory", text="HDRI Directory")
 
-        # Auto-update toggle and update check button
-        box.prop(self, "enable_auto_update_check")  # Checkbox for auto-update
-
-        # Check for updates and download option if an update is available
-        row = box.row(align=True)
-        row.operator("world.check_hdri_updates", text="Check for Updates", icon='FILE_REFRESH')
-        if self.update_available:
-            row.operator("world.download_hdri_update", text="Download Update")
+        # Automatic Updates & Information
+        box = layout.box()
+        box.label(text="Automatic Updates & Information", icon='SYSTEM')
         
-        # Documentation link row
+        # Auto-update and documentation links
         row = box.row(align=True)
+        row.prop(self, "enable_auto_update_check", text="Auto-Check for Updates")
         row.operator(
             "wm.url_open",
             text="Documentation",
             icon='URL'
         ).url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
         
+        # Check and download updates if available
+        row = box.row(align=True)
+        row.operator("world.check_hdri_updates", text="Check for Updates", icon='FILE_REFRESH')
+        if self.update_available:
+            row.operator("world.download_hdri_update", text="Download Update")
+
+        # Separator for visual spacing
         layout.separator()
 
-        # File Settings
+        # User Interface Settings
         box = layout.box()
-        box.label(text="File Settings:", icon='FILE_FOLDER')
+        box.label(text="User Interface Settings", icon='PREFERENCES')
         col = box.column(align=True)
-        col.prop(self, "hdri_directory")
+        col.prop(self, "ui_scale", text="Panel Width")
+        col.prop(self, "preview_scale", text="Preview Size")
+        col.prop(self, "button_scale", text="Button Scale")
+        col.prop(self, "spacing_scale", text="Spacing Scale")
         
-        # File type filters
+        # Separator for visual spacing
+        layout.separator()
+
+        # File Filters & Settings
+        box = layout.box()
+        box.label(text="File Filters & Settings", icon='FILE_FOLDER')
+        
+        # Show full path and file types as toggles
+        col = box.column(align=True)
+        col.prop(self, "show_file_path", text="Show Full Path in Browser")
+        
         row = box.row(align=True)
         row.prop(self, "use_hdr", toggle=True)
         row.prop(self, "use_exr", toggle=True)
         row.prop(self, "use_png", toggle=True)
         row.prop(self, "use_jpg", toggle=True)
-        
-        # UI Layout Settings
+
+        # Additional visual settings
         box = layout.box()
-        box.label(text="Layout Settings:", icon='PREFERENCES')
+        box.label(text="Visual & Interaction Settings", icon='RESTRICT_VIEW_OFF')
+
         col = box.column(align=True)
-        col.prop(self, "ui_scale")
-        col.prop(self, "preview_scale")
-        col.prop(self, "button_scale")
-        col.prop(self, "spacing_scale")
-        
-        # Visual Settings
-        box = layout.box()
-        box.label(text="Visual Settings:", icon='RESTRICT_VIEW_OFF')
-        col = box.column(align=True)
-        col.prop(self, "show_file_path")
-        
-        # Interface Settings
-        box = layout.box()
-        box.label(text="Interface Settings:", icon='WINDOW')
-        col = box.column(align=True)
-        col.prop(self, "show_strength_slider")
-        col.prop(self, "strength_max")
-        col.prop(self, "rotation_increment")
+        col.prop(self, "show_strength_slider", text="Display Strength Slider")
+        col.prop(self, "strength_max", text="Max Strength")
+        col.prop(self, "rotation_increment", text="Rotation Increment")
 
 
 

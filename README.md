@@ -1,4 +1,4 @@
-# Quick HDRI Controls v1.5 for Blender
+# Quick HDRI Controls v1.6 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.2.0+-green.svg)
 ![Version](https://img.shields.io/badge/Version-1.5-blue.svg)
@@ -49,7 +49,8 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 
-![BL Preference Full](https://github.com/user-attachments/assets/851f7ab2-1c82-44fb-9e68-9e539ba4ea07)
+![preferences](https://github.com/user-attachments/assets/88547e1e-2597-4693-a2d2-96de8c26ac63)
+
 
 2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
@@ -129,6 +130,20 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 - Rotate on the Z-axis to change light direction
 - X and Y rotation help with reflection angles
 - Reset buttons quickly restore default values
+
+## Keyboard Shortcut
+Keyboard shortcut can be set for quickly pulling up the panel in the 3D viewport
+
+![QHDRIC_Shortcut](https://github.com/user-attachments/assets/2386ee2a-7904-42e4-92fb-05bf0d9c8e85)
+
+ - Set you current shortcut combination
+ - Consists of Ctrl, Alt, Del
+ - A-Z key options
+When the key combination is pressed, the HDRI panel will appear where the cursor is
+
+![QHDRI_SC_viewport](https://github.com/user-attachments/assets/f85ce798-47bc-4f36-a854-c3490ea432fb)
+
+
 
 ## Customization
 

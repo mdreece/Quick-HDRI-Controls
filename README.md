@@ -2,7 +2,6 @@
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.2.0+-green.svg)
 ![Version](https://img.shields.io/badge/Version-1.5-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

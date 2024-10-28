@@ -50,7 +50,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 ![BL Preference Full](https://github.com/user-attachments/assets/851f7ab2-1c82-44fb-9e68-9e539ba4ea07)
 
-3. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
+2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
 ![BL Preference HDRI directory](https://github.com/user-attachments/assets/42ecdba8-43d0-4267-a542-096ab243024f)
 
@@ -136,7 +136,11 @@ To access these options:
 2. Find Quick HDRI Controls
 3. Expand the preferences section
 
-![image](https://github.com/user-attachments/assets/f7afa023-cc64-44b6-9faf-852082643e6a)
+![BL Preference UI](https://github.com/user-attachments/assets/a55864cf-0508-4976-9270-5f7be4758012)
+
+### Visual Settings
+![BL Preference Visual](https://github.com/user-attachments/assets/1bc2bafd-61f3-4c5c-b476-2dafbc6e52ed)
+
 
 
 ## Troubleshooting
@@ -160,13 +164,21 @@ To access these options:
 
 Stay up to date:
 1. Open addon preferences
-2. Click "Check for Updates"
+   
+![BL Preference Updates](https://github.com/user-attachments/assets/803a0c91-c0d9-4d72-b8c7-474e98b1ee2b)
 
-![image](https://github.com/user-attachments/assets/3b7e297b-7208-43ac-9986-af65fb24452d)
+2. Click on 'Check for Updates'
+ - If there are updates a message will prompt to update
+![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)
 
-3. If you are up to date, a message will prompt.
-4. If there is a new version, you will be prompted if you want to download/update
-   (You may have to remap your HDRI directory in preferences. Working on updating so there is no need)
+ - If no updates are available, the following message will prompt
+![Update to date](https://github.com/user-attachments/assets/663565f0-a41a-436b-b05a-d9fb7e9a1ed3)
+
+3. Auto-Check Updates can be clicked.
+ - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls
+![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
+ 
+
 
 ## Requirements
 

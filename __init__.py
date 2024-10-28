@@ -15,7 +15,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 6),
+    "version": (1, 7),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -677,11 +677,11 @@ class QuickHDRIPreferences(AddonPreferences):
         # Current shortcut display
         current_shortcut = []
         if self.popup_ctrl:
-            current_shortcut.append("Command" if is_mac else "Ctrl")
+            current_shortcut.append("⌘ Command" if is_mac else "Ctrl")
         if self.popup_shift:
-            current_shortcut.append("Shift")
+            current_shortcut.append("⇧ Shift")
         if self.popup_alt:
-            current_shortcut.append("Option" if is_mac else "Alt")
+            current_shortcut.append("⌥ Option" if is_mac else "Alt")
         current_shortcut.append(self.popup_key)
         
         row = box.row()
@@ -690,9 +690,15 @@ class QuickHDRIPreferences(AddonPreferences):
         # Shortcut configuration
         col = box.column(align=True)
         row = col.row(align=True)
-        row.prop(self, "popup_ctrl", text="Command" if is_mac else "Ctrl", toggle=True)
-        row.prop(self, "popup_shift", toggle=True)
-        row.prop(self, "popup_alt", text="Option" if is_mac else "Alt", toggle=True)
+        
+        if is_mac:
+            row.prop(self, "popup_ctrl", text="⌘ Command", toggle=True)
+            row.prop(self, "popup_shift", text="⇧ Shift", toggle=True)
+            row.prop(self, "popup_alt", text="⌥ Option", toggle=True)
+        else:
+            row.prop(self, "popup_ctrl", text="Ctrl", toggle=True)
+            row.prop(self, "popup_shift", text="Shift", toggle=True)
+            row.prop(self, "popup_alt", text="Alt", toggle=True)
         
         row = col.row()
         row.prop(self, "popup_key", text="Key")

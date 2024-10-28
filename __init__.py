@@ -14,7 +14,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 6),
+    "version": (1, 5),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -56,9 +56,6 @@ def generate_previews(self, context):
     
     pcoll = get_hdri_previews()
     
-    # Clear any existing previews to free memory
-    pcoll.clear()
-    
     # Get enabled file types from preferences
     extensions = set()
     if preferences.use_hdr:
@@ -81,12 +78,13 @@ def generate_previews(self, context):
         if fn.lower().endswith(tuple(extensions)):
             image_paths.append(fn)
     
-    # Sort paths for consistent ordering
     for i, fn in enumerate(sorted(image_paths)):
         filepath = os.path.join(current_dir, fn)
         
-        # Always load fresh preview
-        thumb = pcoll.load(filepath, filepath, 'IMAGE')
+        if filepath not in pcoll:
+            thumb = pcoll.load(filepath, filepath, 'IMAGE')
+        else:
+            thumb = pcoll[filepath]
             
         enum_items.append((
             filepath,
@@ -303,21 +301,7 @@ class HDRI_OT_change_folder(Operator):
     
     folder_path: StringProperty()
     
-    def clear_preview_memory(self, context):
-        """Clear preview collection and remove unused images"""
-        # Clear preview collection
-        pcoll = get_hdri_previews()
-        pcoll.clear()
-        
-        # Remove unused image datablocks
-        for img in bpy.data.images:
-            if img.users == 0:
-                bpy.data.images.remove(img)
-    
     def execute(self, context):
-        # Clear previews from current folder
-        self.clear_preview_memory(context)
-        
         preferences = context.preferences.addons[__name__].preferences
         base_dir = preferences.hdri_directory
         
@@ -348,6 +332,10 @@ class HDRI_OT_change_folder(Operator):
                 self.report({'WARNING'}, "Invalid path")
                 return {'CANCELLED'}
         
+        # Clear previews to force regeneration
+        pcoll = get_hdri_previews()
+        pcoll.clear()
+        
         # Force UI update
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
@@ -357,14 +345,8 @@ class HDRI_OT_change_folder(Operator):
 
 def refresh_previews(self, context):
     """Refresh the preview collection when settings change"""
-    # Clear existing previews and memory
     pcoll = get_hdri_previews()
     pcoll.clear()
-    
-    # Remove unused images
-    for img in bpy.data.images:
-        if img.users == 0:
-            bpy.data.images.remove(img)
     
     # Reset current folder to base directory when HDRI directory changes
     if hasattr(context.scene, "hdri_settings"):
@@ -980,4 +962,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-

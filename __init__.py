@@ -153,7 +153,7 @@ class HDRI_OT_check_updates(Operator):
         """Fetch version info from GitHub"""
         try:
             # Create a request with appropriate headers
-            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
+            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/refs/heads/main/__init__.py"
             req = urllib.request.Request(
                 version_url,
                 headers={'User-Agent': 'Mozilla/5.0'}  # Add user agent to avoid rejection

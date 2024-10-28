@@ -130,8 +130,7 @@ You can customize:
 - Panel width
 - Preview size
 - Button scale
-- UI spacing
-- Interface layout
+- Spacing scale
 
 To access these options:
 1. Go to Edit > Preferences > Add-ons

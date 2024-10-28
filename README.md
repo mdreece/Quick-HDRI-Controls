@@ -185,11 +185,11 @@ Stay up to date:
    
 ![Update to date](https://github.com/user-attachments/assets/663565f0-a41a-436b-b05a-d9fb7e9a1ed3)
 
-3. Auto-Check Updates can be clicked.
+3. Auto-Check Updates can be enabled
 
 ![BL Preference Updates](https://github.com/user-attachments/assets/2fee90dd-5197-4ffd-8605-fc366f6d3831)
 
- - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls
+ - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls if there is a pending update
    
 ![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
  

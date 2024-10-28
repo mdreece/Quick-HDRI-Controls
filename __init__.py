@@ -3,6 +3,7 @@ import zipfile
 import shutil
 import tempfile
 from datetime import datetime
+import sys
 import bpy
 import re
 import os
@@ -14,13 +15,16 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 5),
+    "version": (1, 6),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
     "category": "3D View",
 }
+
+# Store keymap entries to remove them when unregistering
+addon_keymaps = []
 
 def get_hdri_previews():
     if not hasattr(get_hdri_previews, "preview_collection"):
@@ -95,7 +99,7 @@ def generate_previews(self, context):
         ))
             
     return enum_items
-    
+
 def get_folders(context):
     """Get list of subfolders in HDRI directory"""
     preferences = context.preferences.addons[__name__].preferences
@@ -144,7 +148,7 @@ def update_background_strength(self, context):
         for node in context.scene.world.node_tree.nodes:
             if node.type == 'BACKGROUND':
                 node.inputs['Strength'].default_value = self.background_strength
-                
+
 def check_for_update_on_startup():
     """Check for updates on Blender startup if enabled in preferences."""
     preferences = bpy.context.preferences.addons[__name__].preferences
@@ -155,7 +159,7 @@ def check_for_update_on_startup():
     online_version = None
     try:
         # Fetch online version from GitHub
-        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/refs/heads/main/__init__.py"
+        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/quick_hdri_controls.py"
         req = urllib.request.Request(version_url, headers={'User-Agent': 'Mozilla/5.0'})
         
         with urllib.request.urlopen(req) as response:
@@ -174,7 +178,52 @@ def check_for_update_on_startup():
             preferences.update_available = False
     except Exception as e:
         print(f"Startup update check error: {str(e)}")
- 
+        
+class HDRI_OT_popup_controls(Operator):
+    bl_idname = "world.hdri_popup_controls"
+    bl_label = "HDRI Quick Controls"
+    bl_description = "Show HDRI controls at cursor position"
+    bl_options = {'REGISTER'}
+
+    def draw(self, context):
+        layout = self.layout
+        # Use the panel's draw method for consistency
+        HDRI_PT_controls.draw(self, context)
+
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        prefs = context.preferences.addons[__name__].preferences
+        wm = context.window_manager
+        return wm.invoke_popup(self, width=prefs.ui_scale * 20)
+
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
+    bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
+
+    # Add keymap entry with platform-specific handling
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
+        
+        # Get preferences
+        prefs = bpy.context.preferences.addons[__name__].preferences
+        
+        # Create new keymap item
+        kmi = km.keymap_items.new(
+            HDRI_OT_popup_controls.bl_idname,
+            type=prefs.popup_key,
+            value='PRESS',
+            oskey=prefs.popup_ctrl if sys.platform == 'darwin' else False,  # Command key for MacOS
+            ctrl=prefs.popup_ctrl if sys.platform != 'darwin' else False,   # Ctrl key for Windows/Linux
+            shift=prefs.popup_shift,
+            alt=prefs.popup_alt
+        )
+        addon_keymaps.append((km, kmi))
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
     bl_label = "Check for Updates"
@@ -183,46 +232,37 @@ class HDRI_OT_check_updates(Operator):
     def get_online_version(self):
         """Fetch version info from GitHub"""
         try:
-            # Create a request with appropriate headers
-            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/refs/heads/main/__init__.py"
+            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/quick_hdri_controls.py"
             req = urllib.request.Request(
                 version_url,
-                headers={'User-Agent': 'Mozilla/5.0'}  # Add user agent to avoid rejection
+                headers={'User-Agent': 'Mozilla/5.0'}
             )
             
             with urllib.request.urlopen(req) as response:
                 content = response.read().decode('utf-8')
                 
-                # Find the version line in the content
                 for line in content.split('\n'):
                     if '"version":' in line:
-                        # Extract version numbers
-                        import re
                         version_numbers = re.findall(r'\d+', line)
                         if len(version_numbers) >= 2:
                             return (int(version_numbers[0]), int(version_numbers[1]))
         except Exception as e:
-            print(f"Update check error: {str(e)}")  # For debugging
+            print(f"Update check error: {str(e)}")
             return None
         return None
 
     def execute(self, context):
-        # Get current version from bl_info
         current_version = bl_info['version']
-        
-        # Get online version
         online_version = self.get_online_version()
         
         if online_version is None:
             self.report({'ERROR'}, "Could not connect to GitHub. Please check your internet connection.")
             return {'CANCELLED'}
         
-        # Compare versions
         if online_version <= current_version:
             self.report({'INFO'}, f"Quick HDRI Controls is up to date (v{current_version[0]}.{current_version[1]})")
             return {'FINISHED'}
         
-        # Ask user if they want to update
         def draw_popup(self, context):
             self.layout.label(text=f"New version available: v{online_version[0]}.{online_version[1]}")
             self.layout.label(text=f"Current version: v{current_version[0]}.{current_version[1]}")
@@ -238,38 +278,31 @@ class HDRI_OT_download_update(Operator):
     
     def execute(self, context):
         try:
-            # Create request with headers
             update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
             req = urllib.request.Request(
                 update_url,
-                headers={'User-Agent': 'Mozilla/5.0'}  # Add user agent
+                headers={'User-Agent': 'Mozilla/5.0'}
             )
             
-            # Download zip file to a temporary location
             self.report({'INFO'}, "Downloading update...")
             with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
                 with urllib.request.urlopen(req) as response:
                     temp_zip.write(response.read())
                 temp_zip_path = temp_zip.name
             
-            # Extract the zip file
             self.report({'INFO'}, "Extracting update...")
             with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
                 temp_dir = tempfile.mkdtemp()
                 zip_ref.extractall(temp_dir)
             
-            # Locate the extracted files
             extracted_folder = os.path.join(temp_dir, "Quick-HDRI-Controls-main")
             
-            # Verify the extracted folder exists
             if not os.path.exists(extracted_folder):
                 self.report({'ERROR'}, "Update package has unexpected structure")
                 return {'CANCELLED'}
             
-            # Get addon path
             addon_path = os.path.dirname(os.path.realpath(__file__))
             
-            # Copy and overwrite all files from extracted folder to the add-on path
             for root, dirs, files in os.walk(extracted_folder):
                 rel_path = os.path.relpath(root, extracted_folder)
                 dest_path = os.path.join(addon_path, rel_path)
@@ -280,7 +313,6 @@ class HDRI_OT_download_update(Operator):
                 for file in files:
                     shutil.copy2(os.path.join(root, file), os.path.join(dest_path, file))
             
-            # Clean up temporary files
             os.remove(temp_zip_path)
             shutil.rmtree(temp_dir)
             
@@ -293,7 +325,7 @@ class HDRI_OT_download_update(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
             return {'CANCELLED'}
-            
+
 class HDRI_OT_change_folder(Operator):
     bl_idname = "world.change_hdri_folder"
     bl_label = "Change Folder"
@@ -309,7 +341,6 @@ class HDRI_OT_change_folder(Operator):
             current = context.scene.hdri_settings.current_folder
             new_path = os.path.dirname(current)
             
-            # Verify we're not going above base directory
             try:
                 rel_path = os.path.relpath(new_path, base_dir)
                 if rel_path.startswith('..'):
@@ -321,7 +352,6 @@ class HDRI_OT_change_folder(Operator):
                 
             context.scene.hdri_settings.current_folder = new_path
         else:
-            # Verify the new path is within base directory
             try:
                 rel_path = os.path.relpath(self.folder_path, base_dir)
                 if rel_path.startswith('..'):
@@ -332,305 +362,14 @@ class HDRI_OT_change_folder(Operator):
                 self.report({'WARNING'}, "Invalid path")
                 return {'CANCELLED'}
         
-        # Clear previews to force regeneration
         pcoll = get_hdri_previews()
         pcoll.clear()
         
-        # Force UI update
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
         
         return {'FINISHED'}
-
-def refresh_previews(self, context):
-    """Refresh the preview collection when settings change"""
-    pcoll = get_hdri_previews()
-    pcoll.clear()
-    
-    # Reset current folder to base directory when HDRI directory changes
-    if hasattr(context.scene, "hdri_settings"):
-        context.scene.hdri_settings.current_folder = self.hdri_directory
-
-class QuickHDRIPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
-
-    # Properties for auto-update and update alert
-    enable_auto_update_check: bpy.props.BoolProperty(
-        name="Enable Auto-Update Check on Startup",
-        description="Automatically check for updates when Blender starts",
-        default=False
-    )
-    update_available: bpy.props.BoolProperty(name="Update Available", default=False)
-
-    # Directory and File Type Settings
-    hdri_directory: bpy.props.StringProperty(
-        name="HDRI Directory",
-        subtype='DIR_PATH',
-        description="Directory containing HDRI files",
-        default=""
-    )
-    
-    use_hdr: bpy.props.BoolProperty(
-        name="HDR",
-        description="Include .hdr files",
-        default=True
-    )
-    
-    use_exr: bpy.props.BoolProperty(
-        name="EXR",
-        description="Include .exr files",
-        default=True
-    )
-    
-    use_png: bpy.props.BoolProperty(
-        name="PNG",
-        description="Include .png files",
-        default=True
-    )
-    
-    use_jpg: bpy.props.BoolProperty(
-        name="JPG",
-        description="Include .jpg and .jpeg files",
-        default=True
-    )
-    
-    # UI Layout Settings
-    ui_scale: bpy.props.IntProperty(
-        name="Panel Width",
-        description="Width of the HDRI control panel",
-        default=10,
-        min=1,
-        max=30,
-        subtype='PIXEL'
-    )
-    
-    preview_scale: bpy.props.IntProperty(
-        name="Preview Size",
-        description="Size of HDRI preview thumbnails",
-        default=8,
-        min=1,
-        max=20
-    )
-    
-    button_scale: bpy.props.FloatProperty(
-        name="Button Scale",
-        description="Scale of UI buttons",
-        default=1.0,
-        min=0.5,
-        max=2.0,
-        step=0.05
-    )
-    
-    spacing_scale: bpy.props.FloatProperty(
-        name="Spacing Scale",
-        description="Scale of UI element spacing",
-        default=1.0,
-        min=0.5,
-        max=2.0,
-        step=0.1
-    )
-    
-    # Visual Settings
-    use_compact_ui: bpy.props.BoolProperty(
-        name="Compact UI",
-        description="Use compact UI layout",
-        default=True
-    )
-    
-    show_file_path: bpy.props.BoolProperty(
-        name="Show Full Path",
-        description="Show full file path instead of relative path",
-        default=False
-    )
-    
-    # Interface Settings
-    show_strength_slider: bpy.props.BoolProperty(
-        name="Show Strength Slider",
-        description="Show the strength slider in the main UI",
-        default=True
-    )
-    
-    show_rotation_values: bpy.props.BoolProperty(
-        name="Show Rotation Values",
-        description="Show numerical values for rotation",
-        default=True
-    )
-    
-    strength_max: bpy.props.FloatProperty(
-        name="Max Strength",
-        description="Maximum value for strength slider",
-        default=2.0,
-        min=1.0,
-        max=10.0,
-        step=0.1
-    )
-    
-    rotation_increment: bpy.props.FloatProperty(
-        name="Rotation Increment",
-        description="Increment for rotation controls",
-        default=5.0,
-        min=0.1,
-        max=45.0,
-        step=0.1
-    )
-
-    def draw(self, context):
-        layout = self.layout
-
-        # Header with introduction and quick access to the directory
-        box = layout.box()
-        box.label(text="Quick HDRI Controls", icon='WORLD')
-        box.label(text="Easily adjust world HDRI rotation and selection.")
-        box.prop(self, "hdri_directory", text="HDRI Directory")
-
-        # Automatic Updates & Information
-        box = layout.box()
-        box.label(text="Automatic Updates & Information", icon='SYSTEM')
-        
-        # Auto-update and documentation links
-        row = box.row(align=True)
-        row.prop(self, "enable_auto_update_check", text="Auto-Check for Updates")
-        row.operator(
-            "wm.url_open",
-            text="Documentation",
-            icon='URL'
-        ).url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
-        
-        # Check and download updates if available
-        row = box.row(align=True)
-        row.operator("world.check_hdri_updates", text="Check for Updates", icon='FILE_REFRESH')
-        if self.update_available:
-            row.operator("world.download_hdri_update", text="Download Update")
-
-        # Separator for visual spacing
-        layout.separator()
-
-        # User Interface Settings
-        box = layout.box()
-        box.label(text="User Interface Settings", icon='PREFERENCES')
-        col = box.column(align=True)
-        col.prop(self, "ui_scale", text="Panel Width")
-        col.prop(self, "preview_scale", text="Preview Size")
-        col.prop(self, "button_scale", text="Button Scale")
-        col.prop(self, "spacing_scale", text="Spacing Scale")
-        
-        # Separator for visual spacing
-        layout.separator()
-
-        # File Filters & Settings
-        box = layout.box()
-        box.label(text="File Filters & Settings", icon='FILE_FOLDER')
-        
-        # Show full path and file types as toggles
-        col = box.column(align=True)
-        col.prop(self, "show_file_path", text="Show Full Path in Browser")
-        
-        row = box.row(align=True)
-        row.prop(self, "use_hdr", toggle=True)
-        row.prop(self, "use_exr", toggle=True)
-        row.prop(self, "use_png", toggle=True)
-        row.prop(self, "use_jpg", toggle=True)
-
-        # Additional visual settings
-        box = layout.box()
-        box.label(text="Visual & Interaction Settings", icon='RESTRICT_VIEW_OFF')
-
-        col = box.column(align=True)
-        col.prop(self, "show_strength_slider", text="Display Strength Slider")
-        col.prop(self, "strength_max", text="Max Strength")
-        col.prop(self, "rotation_increment", text="Rotation Increment")
-
-
-
-class HDRISettings(PropertyGroup):
-    hdri_preview: EnumProperty(
-        items=generate_previews,
-        name="HDRI Preview"
-    )
-    
-    current_folder: StringProperty(
-        name="Current Folder",
-        description="Current HDRI folder being viewed",
-        default="",
-        subtype='DIR_PATH'
-    )
-    
-    show_preview: BoolProperty(
-        name="Show Preview",
-        description="Show/Hide HDRI Preview section",
-        default=True
-    )
-    
-    show_rotation: BoolProperty(
-        name="Show Rotation",
-        description="Show/Hide Rotation Controls section",
-        default=True
-    )
-    
-    background_strength: FloatProperty(
-        name="Strength",
-        description="Background strength multiplier",
-        default=1.0,
-        min=0.0,
-        soft_max=2.0,
-        step=0.1,
-        precision=3,
-        update=update_background_strength
-    )
-    
-    show_browser: BoolProperty(
-        name="Show Browser",
-        description="Show/Hide Folder Browser section",
-        default=True
-    )
-
-def refresh_previews(self, context):
-    """Refresh the preview collection"""
-    pcoll = get_hdri_previews()
-    pcoll.clear()
-
-def ensure_world_nodes():
-    """Ensure world nodes exist and are properly connected"""
-    scene = bpy.context.scene
-    
-    # Create world if it doesn't exist
-    if not scene.world:
-        scene.world = bpy.data.worlds.new("World")
-    
-    world = scene.world
-    world.use_nodes = True
-    nodes = world.node_tree.nodes
-    links = world.node_tree.links
-    
-    # Clear all nodes
-    nodes.clear()
-    
-    # Create nodes
-    node_output = nodes.new('ShaderNodeOutputWorld')
-    node_background = nodes.new('ShaderNodeBackground')
-    node_env = nodes.new('ShaderNodeTexEnvironment')
-    node_mapping = nodes.new('ShaderNodeMapping')
-    node_coord = nodes.new('ShaderNodeTexCoord')
-    
-    # Set initial strength
-    if hasattr(scene, "hdri_settings"):
-        node_background.inputs['Strength'].default_value = scene.hdri_settings.background_strength
-    
-    # Link nodes
-    links.new(node_coord.outputs['Generated'], node_mapping.inputs['Vector'])
-    links.new(node_mapping.outputs['Vector'], node_env.inputs['Vector'])
-    links.new(node_env.outputs['Color'], node_background.inputs['Color'])
-    links.new(node_background.outputs['Background'], node_output.inputs['Surface'])
-    
-    # Arrange nodes
-    node_output.location = (600, 300)
-    node_background.location = (300, 300)
-    node_env.location = (0, 300)
-    node_mapping.location = (-300, 300)
-    node_coord.location = (-600, 300)
-    
-    return node_mapping, node_env, node_background
 
 class HDRI_OT_reset_rotation(Operator):
     bl_idname = "world.reset_hdri_rotation"
@@ -685,15 +424,355 @@ class HDRI_OT_load_selected(Operator):
             self.report({'ERROR'}, "HDRI file not found")
             return {'CANCELLED'}
         
-# Ensure nodes exist
         mapping, env_tex, node_background = ensure_world_nodes()
-        
-        # Load the image
         img = bpy.data.images.load(filepath, check_existing=True)
         env_tex.image = img
         
         return {'FINISHED'}
 
+class HDRI_OT_update_shortcut(Operator):
+    bl_idname = "world.update_hdri_shortcut"
+    bl_label = "Update Shortcut"
+    bl_description = "Apply the new keyboard shortcut"
+    
+    def execute(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        preferences.update_shortcut(context)
+        self.report({'INFO'}, "Shortcut updated successfully")
+        return {'FINISHED'}
+        
+class QuickHDRIPreferences(AddonPreferences):
+    bl_idname = __name__
+
+    # Properties for auto-update and update alert
+    enable_auto_update_check: BoolProperty(
+        name="Enable Auto-Update Check on Startup",
+        description="Automatically check for updates when Blender starts",
+        default=False
+    )
+    update_available: BoolProperty(
+        name="Update Available",
+        default=False
+    )
+
+    # Keyboard shortcut properties
+    popup_key: EnumProperty(
+        name="Key",
+        description="Key for the popup menu shortcut",
+        items=[
+            ('A', 'A', ''), ('B', 'B', ''), ('C', 'C', ''),
+            ('D', 'D', ''), ('E', 'E', ''), ('F', 'F', ''),
+            ('G', 'G', ''), ('H', 'H', ''), ('I', 'I', ''),
+            ('J', 'J', ''), ('K', 'K', ''), ('L', 'L', ''),
+            ('M', 'M', ''), ('N', 'N', ''), ('O', 'O', ''),
+            ('P', 'P', ''), ('Q', 'Q', ''), ('R', 'R', ''),
+            ('S', 'S', ''), ('T', 'T', ''), ('U', 'U', ''),
+            ('V', 'V', ''), ('W', 'W', ''), ('X', 'X', ''),
+            ('Y', 'Y', ''), ('Z', 'Z', ''),
+            ('SPACE', 'Space', ''),
+            ('LEFT_SHIFT', 'Left Shift', ''),
+            ('RIGHT_SHIFT', 'Right Shift', ''),
+            ('LEFT_CTRL', 'Left Control', ''),
+            ('RIGHT_CTRL', 'Right Control', ''),
+            ('LEFT_ALT', 'Left Alt', ''),
+            ('RIGHT_ALT', 'Right Alt', ''),
+            ('LEFT_COMMAND', 'Left Command', ''),
+            ('RIGHT_COMMAND', 'Right Command', ''),
+            ('OSKEY', 'OS Key', ''),
+        ],
+        default='H'
+    )
+    
+    popup_ctrl: BoolProperty(
+        name="Control/Command",
+        description="Use Control (Windows/Linux) or Command (MacOS) modifier",
+        default=True
+    )
+    
+    popup_shift: BoolProperty(
+        name="Shift",
+        description="Use Shift modifier",
+        default=True
+    )
+    
+    popup_alt: BoolProperty(
+        name="Alt/Option",
+        description="Use Alt (Windows/Linux) or Option (MacOS) modifier",
+        default=False
+    )
+
+    # Directory and File Type Settings
+    hdri_directory: StringProperty(
+        name="HDRI Directory",
+        subtype='DIR_PATH',
+        description="Directory containing HDRI files",
+        default="",
+        update=lambda self, context: refresh_previews(self, context)
+    )
+    
+    use_hdr: BoolProperty(
+        name="HDR",
+        description="Include .hdr files",
+        default=True
+    )
+    
+    use_exr: BoolProperty(
+        name="EXR",
+        description="Include .exr files",
+        default=True
+    )
+    
+    use_png: BoolProperty(
+        name="PNG",
+        description="Include .png files",
+        default=True
+    )
+    
+    use_jpg: BoolProperty(
+        name="JPG",
+        description="Include .jpg and .jpeg files",
+        default=True
+    )
+    
+    # UI Layout Settings
+    ui_scale: IntProperty(
+        name="Panel Width",
+        description="Width of the HDRI control panel",
+        default=10,
+        min=1,
+        max=30,
+        subtype='PIXEL'
+    )
+    
+    preview_scale: IntProperty(
+        name="Preview Size",
+        description="Size of HDRI preview thumbnails",
+        default=8,
+        min=1,
+        max=20
+    )
+    
+    button_scale: FloatProperty(
+        name="Button Scale",
+        description="Scale of UI buttons",
+        default=1.0,
+        min=0.5,
+        max=2.0,
+        step=0.05
+    )
+    
+    spacing_scale: FloatProperty(
+        name="Spacing Scale",
+        description="Scale of UI element spacing",
+        default=1.0,
+        min=0.5,
+        max=2.0,
+        step=0.1
+    )
+    
+    # Visual Settings
+    use_compact_ui: BoolProperty(
+        name="Compact UI",
+        description="Use compact UI layout",
+        default=True
+    )
+    
+    show_file_path: BoolProperty(
+        name="Show Full Path",
+        description="Show full file path instead of relative path",
+        default=False
+    )
+    
+    # Interface Settings
+    show_strength_slider: BoolProperty(
+        name="Show Strength Slider",
+        description="Show the strength slider in the main UI",
+        default=True
+    )
+    
+    show_rotation_values: BoolProperty(
+        name="Show Rotation Values",
+        description="Show numerical values for rotation",
+        default=True
+    )
+    
+    strength_max: FloatProperty(
+        name="Max Strength",
+        description="Maximum value for strength slider",
+        default=2.0,
+        min=1.0,
+        max=10.0,
+        step=0.1
+    )
+    
+    rotation_increment: FloatProperty(
+        name="Rotation Increment",
+        description="Increment for rotation controls",
+        default=5.0,
+        min=0.1,
+        max=45.0,
+        step=0.1
+    )
+
+    def update_shortcut(self, context):
+        """Update the keyboard shortcut"""
+        # Remove existing shortcut
+        for km, kmi in addon_keymaps:
+            km.keymap_items.remove(kmi)
+        addon_keymaps.clear()
+        
+        # Add new shortcut
+        wm = context.window_manager
+        kc = wm.keyconfigs.addon
+        if kc:
+            km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
+            
+            # Handle platform-specific keys
+            is_mac = sys.platform == 'darwin'
+            
+            kmi = km.keymap_items.new(
+                HDRI_OT_popup_controls.bl_idname,
+                type=self.popup_key,
+                value='PRESS',
+                oskey=self.popup_ctrl if is_mac else False,  # Command key for MacOS
+                ctrl=self.popup_ctrl if not is_mac else False,  # Ctrl key for Windows/Linux
+                shift=self.popup_shift,
+                alt=self.popup_alt
+            )
+            addon_keymaps.append((km, kmi))
+
+    def draw(self, context):
+        layout = self.layout
+        is_mac = sys.platform == 'darwin'
+
+        # Header with introduction and quick access to the directory
+        box = layout.box()
+        box.label(text="Quick HDRI Controls", icon='WORLD')
+        box.label(text="Easily adjust world HDRI rotation and selection.")
+        box.prop(self, "hdri_directory", text="HDRI Directory")
+
+        # Automatic Updates & Information
+        box = layout.box()
+        box.label(text="Automatic Updates & Information", icon='SYSTEM')
+        
+        # Auto-update and documentation links
+        row = box.row(align=True)
+        row.prop(self, "enable_auto_update_check", text="Auto-Check for Updates")
+        row.operator(
+            "wm.url_open",
+            text="Documentation",
+            icon='URL'
+        ).url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
+        
+        # Check and download updates if available
+        row = box.row(align=True)
+        row.operator("world.check_hdri_updates", text="Check for Updates", icon='FILE_REFRESH')
+        if self.update_available:
+            row.operator("world.download_hdri_update", text="Download Update")
+
+        # Keyboard Shortcut Settings
+        box = layout.box()
+        box.label(text="Keyboard Shortcuts", icon='KEYINGSET')
+        
+        # Current shortcut display
+        current_shortcut = []
+        if self.popup_ctrl:
+            current_shortcut.append("Command" if is_mac else "Ctrl")
+        if self.popup_shift:
+            current_shortcut.append("Shift")
+        if self.popup_alt:
+            current_shortcut.append("Option" if is_mac else "Alt")
+        current_shortcut.append(self.popup_key)
+        
+        row = box.row()
+        row.label(text="Current Shortcut: " + " + ".join(current_shortcut))
+        
+        # Shortcut configuration
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row.prop(self, "popup_ctrl", text="Command" if is_mac else "Ctrl", toggle=True)
+        row.prop(self, "popup_shift", toggle=True)
+        row.prop(self, "popup_alt", text="Option" if is_mac else "Alt", toggle=True)
+        
+        row = col.row()
+        row.prop(self, "popup_key", text="Key")
+        
+        # Apply button
+        box.operator("world.update_hdri_shortcut", text="Apply Shortcut Change")
+
+        # User Interface Settings
+        box = layout.box()
+        box.label(text="User Interface Settings", icon='PREFERENCES')
+        col = box.column(align=True)
+        col.prop(self, "ui_scale", text="Panel Width")
+        col.prop(self, "preview_scale", text="Preview Size")
+        col.prop(self, "button_scale", text="Button Scale")
+        col.prop(self, "spacing_scale", text="Spacing Scale")
+
+        # File Filters & Settings
+        box = layout.box()
+        box.label(text="File Filters & Settings", icon='FILE_FOLDER')
+        
+        col = box.column(align=True)
+        col.prop(self, "show_file_path", text="Show Full Path in Browser")
+        
+        row = box.row(align=True)
+        row.prop(self, "use_hdr", toggle=True)
+        row.prop(self, "use_exr", toggle=True)
+        row.prop(self, "use_png", toggle=True)
+        row.prop(self, "use_jpg", toggle=True)
+
+        # Visual Settings
+        box = layout.box()
+        box.label(text="Visual & Interaction Settings", icon='RESTRICT_VIEW_OFF')
+        
+        col = box.column(align=True)
+        col.prop(self, "show_strength_slider", text="Display Strength Slider")
+        col.prop(self, "strength_max", text="Max Strength")
+        col.prop(self, "rotation_increment", text="Rotation Increment")
+
+class HDRISettings(PropertyGroup):
+    hdri_preview: EnumProperty(
+        items=generate_previews,
+        name="HDRI Preview"
+    )
+    
+    current_folder: StringProperty(
+        name="Current Folder",
+        description="Current HDRI folder being viewed",
+        default="",
+        subtype='DIR_PATH'
+    )
+    
+    show_preview: BoolProperty(
+        name="Show Preview",
+        description="Show/Hide HDRI Preview section",
+        default=True
+    )
+    
+    show_rotation: BoolProperty(
+        name="Show Rotation",
+        description="Show/Hide Rotation Controls section",
+        default=True
+    )
+    
+    background_strength: FloatProperty(
+        name="Strength",
+        description="Background strength multiplier",
+        default=1.0,
+        min=0.0,
+        soft_max=2.0,
+        step=0.1,
+        precision=3,
+        update=update_background_strength
+    )
+    
+    show_browser: BoolProperty(
+        name="Show Browser",
+        description="Show/Hide Folder Browser section",
+        default=True
+    )
+    
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
@@ -902,7 +981,7 @@ class HDRI_PT_controls(Panel):
                     col.use_property_split = True
                     col.label(text="Strength:")
                     col.prop(hdri_settings, "background_strength", text="Value")
-                    
+        
         # Add separator before footer
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
@@ -927,6 +1006,49 @@ def draw_hdri_menu(self, context):
     layout.separator()
     layout.popover(panel="HDRI_PT_controls", text="HDRI Controls")
 
+def ensure_world_nodes():
+    """Ensure world nodes exist and are properly connected"""
+    scene = bpy.context.scene
+    
+    # Create world if it doesn't exist
+    if not scene.world:
+        scene.world = bpy.data.worlds.new("World")
+    
+    world = scene.world
+    world.use_nodes = True
+    nodes = world.node_tree.nodes
+    links = world.node_tree.links
+    
+    # Clear all nodes
+    nodes.clear()
+    
+    # Create nodes
+    node_output = nodes.new('ShaderNodeOutputWorld')
+    node_background = nodes.new('ShaderNodeBackground')
+    node_env = nodes.new('ShaderNodeTexEnvironment')
+    node_mapping = nodes.new('ShaderNodeMapping')
+    node_coord = nodes.new('ShaderNodeTexCoord')
+    
+    # Set initial strength
+    if hasattr(scene, "hdri_settings"):
+        node_background.inputs['Strength'].default_value = scene.hdri_settings.background_strength
+    
+    # Link nodes
+    links.new(node_coord.outputs['Generated'], node_mapping.inputs['Vector'])
+    links.new(node_mapping.outputs['Vector'], node_env.inputs['Vector'])
+    links.new(node_env.outputs['Color'], node_background.inputs['Color'])
+    links.new(node_background.outputs['Background'], node_output.inputs['Surface'])
+    
+    # Arrange nodes
+    node_output.location = (600, 300)
+    node_background.location = (300, 300)
+    node_env.location = (0, 300)
+    node_mapping.location = (-300, 300)
+    node_coord.location = (-600, 300)
+    
+    return node_mapping, node_env, node_background
+
+# Registration
 classes = (
     QuickHDRIPreferences,
     HDRISettings,
@@ -938,25 +1060,46 @@ classes = (
     HDRI_PT_controls,
     HDRI_OT_check_updates,
     HDRI_OT_download_update,
+    HDRI_OT_popup_controls,
+    HDRI_OT_update_shortcut,
 )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.hdri_settings = bpy.props.PointerProperty(type=HDRISettings)
+    bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
+
+    # Add keymap entry
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
+        kmi = km.keymap_items.new(
+            HDRI_OT_popup_controls.bl_idname,
+            type='H',
+            value='PRESS',
+            ctrl=True,
+            shift=True
+        )
+        addon_keymaps.append((km, kmi))
 
     # Run update check at startup if enabled
     check_for_update_on_startup()
 
 def unregister():
-    bpy.types.VIEW3D_HT_header.remove(draw_hdri_menu)
+    # Remove keymap entries
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
 
+    bpy.types.VIEW3D_HT_header.remove(draw_hdri_menu)
+    
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
         
     del bpy.types.Scene.hdri_settings
-
+    
     if hasattr(get_hdri_previews, "preview_collection"):
         bpy.utils.previews.remove(get_hdri_previews.preview_collection)
 

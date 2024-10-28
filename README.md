@@ -186,7 +186,8 @@ Stay up to date:
 ![Update to date](https://github.com/user-attachments/assets/663565f0-a41a-436b-b05a-d9fb7e9a1ed3)
 
 3. Auto-Check Updates can be enabled
- (This feature checks for updates on restart)
+
+ (This feature checks for updates on startup of Blender)
 
 ![BL Preference Updates](https://github.com/user-attachments/assets/2fee90dd-5197-4ffd-8605-fc366f6d3831)
 

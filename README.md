@@ -137,7 +137,7 @@ Keyboard shortcut can be set for quickly pulling up the panel in the 3D viewport
 ![QHDRIC_Shortcut](https://github.com/user-attachments/assets/2386ee2a-7904-42e4-92fb-05bf0d9c8e85)
 
  - Set you current shortcut combination
- - Consists of Ctrl, Alt, Del
+ - Consists of Ctrl/Cmd, Alt, Del
  - A-Z key options
 When the key combination is pressed, the HDRI panel will appear where the cursor is
 

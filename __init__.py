@@ -3,19 +3,20 @@ import zipfile
 import shutil
 import tempfile
 from datetime import datetime
-import sys
 import bpy
 import re
 import os
+import sys
 from bpy.types import (Panel, Operator, AddonPreferences, PropertyGroup)
 from bpy.props import (FloatProperty, StringProperty, EnumProperty, 
                       CollectionProperty, PointerProperty, IntProperty, 
                       BoolProperty, FloatVectorProperty)
-                      
+from bpy.app.handlers import persistent
+
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 6),
+    "version": (1, 7),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -160,10 +161,7 @@ def check_for_update_on_startup():
     try:
         # Fetch online version from GitHub
         version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
-        req = urllib.request.Request(
-            version_url,
-            headers={'User-Agent': 'Mozilla/5.0'}
-        )
+        req = urllib.request.Request(version_url, headers={'User-Agent': 'Mozilla/5.0'})
         
         with urllib.request.urlopen(req) as response:
             content = response.read().decode('utf-8')
@@ -181,7 +179,53 @@ def check_for_update_on_startup():
             preferences.update_available = False
     except Exception as e:
         print(f"Startup update check error: {str(e)}")
+
+@persistent
+def load_handler(dummy):
+    """Ensure keyboard shortcuts are properly set after file load"""
+    # Clear existing keymaps
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
+    
+    # Re-add keymap with current preferences
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
+        preferences = bpy.context.preferences.addons[__name__].preferences
+        is_mac = sys.platform == 'darwin'
         
+        kmi = km.keymap_items.new(
+            HDRI_OT_popup_controls.bl_idname,
+            type=preferences.popup_key,
+            value='PRESS',
+            oskey=preferences.popup_ctrl if is_mac else False,
+            ctrl=preferences.popup_ctrl if not is_mac else False,
+            shift=preferences.popup_shift,
+            alt=preferences.popup_alt
+        )
+        addon_keymaps.append((km, kmi))
+        
+class HDRI_OT_popup_controls(Operator):
+    bl_idname = "world.hdri_popup_controls"
+    bl_label = "HDRI Quick Controls"
+    bl_description = "Show HDRI controls at cursor position"
+    bl_options = {'REGISTER'}
+
+    def draw(self, context):
+        layout = self.layout
+        # Use the panel's draw method for consistency
+        HDRI_PT_controls.draw(self, context)
+
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        prefs = context.preferences.addons[__name__].preferences
+        wm = context.window_manager
+        return wm.invoke_popup(self, width=prefs.ui_scale * 20)
+
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
     bl_label = "Check for Updates"
@@ -205,7 +249,7 @@ class HDRI_OT_check_updates(Operator):
                         if len(version_numbers) >= 2:
                             return (int(version_numbers[0]), int(version_numbers[1]))
         except Exception as e:
-            print(f"Update check error: {str(e)}")  # For debugging
+            print(f"Update check error: {str(e)}")
             return None
         return None
 
@@ -236,7 +280,12 @@ class HDRI_OT_download_update(Operator):
     
     def execute(self, context):
         try:
-            update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/refs/heads/main.zip"
+            # Get the addon directory name
+            addon_path = os.path.dirname(os.path.realpath(__file__))
+            addon_name = os.path.basename(addon_path)
+            
+            # Download from the main branch
+            update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/main.zip"
             req = urllib.request.Request(
                 update_url,
                 headers={'User-Agent': 'Mozilla/5.0'}
@@ -249,86 +298,62 @@ class HDRI_OT_download_update(Operator):
                 temp_zip_path = temp_zip.name
             
             self.report({'INFO'}, "Extracting update...")
+            temp_dir = tempfile.mkdtemp()
+            
             with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
-                temp_dir = tempfile.mkdtemp()
                 zip_ref.extractall(temp_dir)
             
+            # The extracted folder will have '-main' appended
             extracted_folder = os.path.join(temp_dir, "Quick-HDRI-Controls-main")
             
             if not os.path.exists(extracted_folder):
-                self.report({'ERROR'}, "Update package has unexpected structure")
+                self.report({'ERROR'}, f"Could not find extracted folder at {extracted_folder}")
                 return {'CANCELLED'}
             
-            addon_path = os.path.dirname(os.path.realpath(__file__))
-            
+            # Copy all files from the extracted folder to the addon folder
             for root, dirs, files in os.walk(extracted_folder):
+                # Get the relative path from the extracted folder
                 rel_path = os.path.relpath(root, extracted_folder)
+                # Create the destination path
                 dest_path = os.path.join(addon_path, rel_path)
                 
-                if not os.path.exists(dest_path):
-                    os.makedirs(dest_path)
+                # Create directories if they don't exist
+                os.makedirs(dest_path, exist_ok=True)
                 
+                # Copy all files
                 for file in files:
-                    shutil.copy2(os.path.join(root, file), os.path.join(dest_path, file))
+                    src_file = os.path.join(root, file)
+                    dst_file = os.path.join(dest_path, file)
+                    try:
+                        shutil.copy2(src_file, dst_file)
+                    except Exception as e:
+                        self.report({'ERROR'}, f"Failed to copy {file}: {str(e)}")
             
-            os.remove(temp_zip_path)
-            shutil.rmtree(temp_dir)
+            # Clean up temporary files
+            try:
+                os.remove(temp_zip_path)
+                shutil.rmtree(temp_dir)
+            except Exception as e:
+                self.report({'WARNING'}, f"Failed to clean up temporary files: {str(e)}")
             
             self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
+            
+            # If we got here, everything worked
             return {'FINISHED'}
                 
         except urllib.error.URLError as e:
-            self.report({'ERROR'}, f"Connection error: {str(e)}")
+            self.report({'ERROR'}, f"Failed to download update: {str(e)}")
+            return {'CANCELLED'}
+        except zipfile.BadZipFile:
+            self.report({'ERROR'}, "Downloaded file is not a valid zip file")
+            return {'CANCELLED'}
+        except PermissionError:
+            self.report({'ERROR'}, "Permission denied when trying to update files. Try running Blender as administrator.")
             return {'CANCELLED'}
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
+            print(f"Detailed error: {str(e)}")  # More detailed error in console
             return {'CANCELLED'}
-            
-class HDRI_OT_popup_controls(Operator):
-    bl_idname = "world.hdri_popup_controls"
-    bl_label = "HDRI Quick Controls"
-    bl_description = "Show HDRI controls at cursor position"
-    bl_options = {'REGISTER'}
-
-    def draw(self, context):
-        layout = self.layout
-        # Use the panel's draw method for consistency
-        HDRI_PT_controls.draw(self, context)
-
-    def execute(self, context):
-        return {'FINISHED'}
-    
-    def invoke(self, context, event):
-        prefs = context.preferences.addons[__name__].preferences
-        wm = context.window_manager
-        return wm.invoke_popup(self, width=prefs.ui_scale * 20)
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-    bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
-    bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
-
-    # Add keymap entry with platform-specific handling
-    wm = bpy.context.window_manager
-    kc = wm.keyconfigs.addon
-    if kc:
-        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
-        
-        # Get preferences
-        prefs = bpy.context.preferences.addons[__name__].preferences
-        
-        # Create new keymap item
-        kmi = km.keymap_items.new(
-            HDRI_OT_popup_controls.bl_idname,
-            type=prefs.popup_key,
-            value='PRESS',
-            oskey=prefs.popup_ctrl if sys.platform == 'darwin' else False,  # Command key for MacOS
-            ctrl=prefs.popup_ctrl if sys.platform != 'darwin' else False,   # Ctrl key for Windows/Linux
-            shift=prefs.popup_shift,
-            alt=prefs.popup_alt
-        )
-        addon_keymaps.append((km, kmi))
 
 class HDRI_OT_change_folder(Operator):
     bl_idname = "world.change_hdri_folder"
@@ -366,9 +391,11 @@ class HDRI_OT_change_folder(Operator):
                 self.report({'WARNING'}, "Invalid path")
                 return {'CANCELLED'}
         
+        # Clear previews to force regeneration
         pcoll = get_hdri_previews()
         pcoll.clear()
         
+        # Force UI update
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
@@ -489,7 +516,7 @@ class QuickHDRIPreferences(AddonPreferences):
     
     popup_ctrl: BoolProperty(
         name="Control/Command",
-        description="Use Control (Windows/Linux) or Command (MacOS) modifier",
+        description="Use Command (MacOS) or Control (Windows/Linux) modifier",
         default=True
     )
     
@@ -500,8 +527,8 @@ class QuickHDRIPreferences(AddonPreferences):
     )
     
     popup_alt: BoolProperty(
-        name="Alt/Option",
-        description="Use Alt (Windows/Linux) or Option (MacOS) modifier",
+        name="Option/Alt",
+        description="Use Option (MacOS) or Alt (Windows/Linux) modifier",
         default=False
     )
 
@@ -783,6 +810,48 @@ class HDRISettings(PropertyGroup):
         default=True
     )
     
+def ensure_world_nodes():
+    """Ensure world nodes exist and are properly connected"""
+    scene = bpy.context.scene
+    
+    # Create world if it doesn't exist
+    if not scene.world:
+        scene.world = bpy.data.worlds.new("World")
+    
+    world = scene.world
+    world.use_nodes = True
+    nodes = world.node_tree.nodes
+    links = world.node_tree.links
+    
+    # Clear all nodes
+    nodes.clear()
+    
+    # Create nodes
+    node_output = nodes.new('ShaderNodeOutputWorld')
+    node_background = nodes.new('ShaderNodeBackground')
+    node_env = nodes.new('ShaderNodeTexEnvironment')
+    node_mapping = nodes.new('ShaderNodeMapping')
+    node_coord = nodes.new('ShaderNodeTexCoord')
+    
+    # Set initial strength
+    if hasattr(scene, "hdri_settings"):
+        node_background.inputs['Strength'].default_value = scene.hdri_settings.background_strength
+    
+    # Link nodes
+    links.new(node_coord.outputs['Generated'], node_mapping.inputs['Vector'])
+    links.new(node_mapping.outputs['Vector'], node_env.inputs['Vector'])
+    links.new(node_env.outputs['Color'], node_background.inputs['Color'])
+    links.new(node_background.outputs['Background'], node_output.inputs['Surface'])
+    
+    # Arrange nodes
+    node_output.location = (600, 300)
+    node_background.location = (300, 300)
+    node_env.location = (0, 300)
+    node_mapping.location = (-300, 300)
+    node_coord.location = (-600, 300)
+    
+    return node_mapping, node_env, node_background
+
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
@@ -1016,48 +1085,6 @@ def draw_hdri_menu(self, context):
     layout.separator()
     layout.popover(panel="HDRI_PT_controls", text="HDRI Controls")
 
-def ensure_world_nodes():
-    """Ensure world nodes exist and are properly connected"""
-    scene = bpy.context.scene
-    
-    # Create world if it doesn't exist
-    if not scene.world:
-        scene.world = bpy.data.worlds.new("World")
-    
-    world = scene.world
-    world.use_nodes = True
-    nodes = world.node_tree.nodes
-    links = world.node_tree.links
-    
-    # Clear all nodes
-    nodes.clear()
-    
-    # Create nodes
-    node_output = nodes.new('ShaderNodeOutputWorld')
-    node_background = nodes.new('ShaderNodeBackground')
-    node_env = nodes.new('ShaderNodeTexEnvironment')
-    node_mapping = nodes.new('ShaderNodeMapping')
-    node_coord = nodes.new('ShaderNodeTexCoord')
-    
-    # Set initial strength
-    if hasattr(scene, "hdri_settings"):
-        node_background.inputs['Strength'].default_value = scene.hdri_settings.background_strength
-    
-    # Link nodes
-    links.new(node_coord.outputs['Generated'], node_mapping.inputs['Vector'])
-    links.new(node_mapping.outputs['Vector'], node_env.inputs['Vector'])
-    links.new(node_env.outputs['Color'], node_background.inputs['Color'])
-    links.new(node_background.outputs['Background'], node_output.inputs['Surface'])
-    
-    # Arrange nodes
-    node_output.location = (600, 300)
-    node_background.location = (300, 300)
-    node_env.location = (0, 300)
-    node_mapping.location = (-300, 300)
-    node_coord.location = (-600, 300)
-    
-    return node_mapping, node_env, node_background
-
 # Registration
 classes = (
     QuickHDRIPreferences,
@@ -1085,19 +1112,33 @@ def register():
     kc = wm.keyconfigs.addon
     if kc:
         km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
+        
+        # Get saved preferences
+        preferences = bpy.context.preferences.addons[__name__].preferences
+        is_mac = sys.platform == 'darwin'
+        
+        # Create new keymap item using saved preferences
         kmi = km.keymap_items.new(
             HDRI_OT_popup_controls.bl_idname,
-            type='H',
+            type=preferences.popup_key,
             value='PRESS',
-            ctrl=True,
-            shift=True
+            oskey=preferences.popup_ctrl if is_mac else False,  # Command key for MacOS
+            ctrl=preferences.popup_ctrl if not is_mac else False,  # Ctrl key for Windows/Linux
+            shift=preferences.popup_shift,
+            alt=preferences.popup_alt
         )
         addon_keymaps.append((km, kmi))
 
+    # Add load handler
+    bpy.app.handlers.load_post.append(load_handler)
+    
     # Run update check at startup if enabled
     check_for_update_on_startup()
 
 def unregister():
+    # Remove load handler
+    bpy.app.handlers.load_post.remove(load_handler)
+    
     # Remove keymap entries
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)

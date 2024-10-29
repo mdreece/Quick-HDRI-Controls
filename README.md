@@ -1,7 +1,7 @@
-# Quick HDRI Controls v1.8 for Blender
+# Quick HDRI Controls v1.9 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.2.0+-green.svg)
-![Version](https://img.shields.io/badge/Version-1.8-blue.svg)
+![Version](https://img.shields.io/badge/Version-1.9-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

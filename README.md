@@ -143,7 +143,10 @@ MacOS (Intel, Apple Silicon has not been tested)
 <img width="533" alt="Screenshot 2024-10-28 at 6 14 22 PM" src="https://github.com/user-attachments/assets/32e18476-9c7e-46b5-a583-8b34027db7ef">
 
  - Set you current shortcut combination
- - Consists of Ctrl, Commnad, Alt, Del
+ - Consists of:
+                - Windows\Linux: Shift, Alt, Ctrl
+                - MacOS: Shift, Command, Option
+   
  - A-Z key options
  - Confirm with OS or blender shortcuts to ensure no issues
    

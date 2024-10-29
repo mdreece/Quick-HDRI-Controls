@@ -16,7 +16,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 7),
+    "version": (1, 8),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -852,6 +852,40 @@ def ensure_world_nodes():
     
     return node_mapping, node_env, node_background
 
+def has_hdri_files(context):
+    """Check if current folder has any supported HDRI files"""
+    preferences = context.preferences.addons[__name__].preferences
+    current_dir = context.scene.hdri_settings.current_folder or preferences.hdri_directory
+    
+    if not current_dir or not os.path.exists(current_dir):
+        return False
+    
+    # Get enabled file types
+    extensions = set()
+    if preferences.use_hdr:
+        extensions.add('.hdr')
+    if preferences.use_exr:
+        extensions.add('.exr')
+    if preferences.use_png:
+        extensions.add('.png')
+    if preferences.use_jpg:
+        extensions.update(('.jpg', '.jpeg'))
+    
+    # Check if any files with supported extensions exist
+    for fn in os.listdir(current_dir):
+        if fn.lower().endswith(tuple(extensions)):
+            return True
+    
+    return False
+
+def has_active_hdri(context):
+    """Check if there is an active HDRI loaded"""
+    if context.scene.world and context.scene.world.use_nodes:
+        for node in context.scene.world.node_tree.nodes:
+            if node.type == 'TEX_ENVIRONMENT' and node.image:
+                return True
+    return False
+
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
@@ -968,98 +1002,102 @@ class HDRI_PT_controls(Panel):
 
         main_column.separator(factor=0.5 * preferences.spacing_scale)
         
-        # HDRI Preview Section
-        preview_box = main_column.box()
-        row = preview_box.row(align=True)
-        row.scale_y = preferences.button_scale
-        row.prop(hdri_settings, "show_preview", 
-                icon='TRIA_DOWN' if hdri_settings.show_preview else 'TRIA_RIGHT',
-                icon_only=True)
-        sub = row.row(align=True)
-        sub.alert = False
-        sub.active = hdri_settings.show_preview
-        sub.label(text="HDRI Selection", icon='IMAGE_DATA')
-        
-        if hdri_settings.show_preview:
-            preview_box.scale_y = preferences.button_scale
-            
-            # Show current HDRI name
-            if env_tex and env_tex.image:
-                row = preview_box.row()
-                row.alert = False
-                row.alignment = 'CENTER'
-                row.scale_y = preferences.button_scale
-                row.label(text=env_tex.image.name, icon='CHECKMARK')
-                preview_box.separator(factor=0.5 * preferences.spacing_scale)
-            
-            preview_box.template_icon_view(
-                hdri_settings, "hdri_preview",
-                show_labels=True,
-                scale=preferences.preview_scale
-            )
-            
+        # Only show HDRI Preview Section if there are HDRIs in the current folder
+        if has_hdri_files(context):
+            # HDRI Preview Section
+            preview_box = main_column.box()
             row = preview_box.row(align=True)
-            row.scale_y = 1.2 * preferences.button_scale
-            row.operator("world.load_selected_hdri",
-                text="Load Selected HDRI",
-                icon='IMPORT')
-        
-        main_column.separator(factor=0.5 * preferences.spacing_scale)
-        
-        # Rotation Controls Section
-        rotation_box = main_column.box()
-        row = rotation_box.row(align=True)
-        row.scale_y = preferences.button_scale
-        row.prop(hdri_settings, "show_rotation", 
-                icon='TRIA_DOWN' if hdri_settings.show_rotation else 'TRIA_RIGHT',
-                icon_only=True)
-        sub = row.row(align=True)
-        sub.alert = False
-        sub.active = hdri_settings.show_rotation
-        sub.label(text="HDRI Settings", icon='DRIVER_ROTATIONAL_DIFFERENCE')
-        
-        if hdri_settings.show_rotation:
-            sub.operator("world.reset_hdri_rotation", text="", icon='LOOP_BACK')
-            if preferences.show_strength_slider:
-                sub.operator("world.reset_hdri_strength", text="", icon='FILE_REFRESH')
-        
-            # Layout adjustments based on compact mode
-            if preferences.use_compact_ui:
-                # Compact layout
-                col = rotation_box.column(align=True)
-                col.scale_y = preferences.button_scale
-                col.use_property_split = True
+            row.scale_y = preferences.button_scale
+            row.prop(hdri_settings, "show_preview", 
+                    icon='TRIA_DOWN' if hdri_settings.show_preview else 'TRIA_RIGHT',
+                    icon_only=True)
+            sub = row.row(align=True)
+            sub.alert = False
+            sub.active = hdri_settings.show_preview
+            sub.label(text="HDRI Selection", icon='IMAGE_DATA')
+            
+            if hdri_settings.show_preview:
+                preview_box.scale_y = preferences.button_scale
                 
-                if mapping:
-                    col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
-                    col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
-                    col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                # Show current HDRI name
+                if env_tex and env_tex.image:
+                    row = preview_box.row()
+                    row.alert = False
+                    row.alignment = 'CENTER'
+                    row.scale_y = preferences.button_scale
+                    row.label(text=env_tex.image.name, icon='CHECKMARK')
+                    preview_box.separator(factor=0.5 * preferences.spacing_scale)
                 
+                preview_box.template_icon_view(
+                    hdri_settings, "hdri_preview",
+                    show_labels=True,
+                    scale=preferences.preview_scale
+                )
+                
+                row = preview_box.row(align=True)
+                row.scale_y = 1.2 * preferences.button_scale
+                row.operator("world.load_selected_hdri",
+                    text="Load Selected HDRI",
+                    icon='IMPORT')
+            
+            main_column.separator(factor=0.5 * preferences.spacing_scale)
+        
+        # Only show HDRI Settings if an HDRI is loaded
+        if has_active_hdri(context):
+            # Rotation Controls Section
+            rotation_box = main_column.box()
+            row = rotation_box.row(align=True)
+            row.scale_y = preferences.button_scale
+            row.prop(hdri_settings, "show_rotation", 
+                    icon='TRIA_DOWN' if hdri_settings.show_rotation else 'TRIA_RIGHT',
+                    icon_only=True)
+            sub = row.row(align=True)
+            sub.alert = False
+            sub.active = hdri_settings.show_rotation
+            sub.label(text="HDRI Settings", icon='DRIVER_ROTATIONAL_DIFFERENCE')
+            
+            if hdri_settings.show_rotation:
+                sub.operator("world.reset_hdri_rotation", text="", icon='LOOP_BACK')
                 if preferences.show_strength_slider:
-                    col.separator()
-                    col.prop(hdri_settings, "background_strength", text="Strength")
-            else:
-                # Split layout for non-compact mode
-                split = rotation_box.split(factor=0.5)
-                
-                # Rotation column
-                col = split.column(align=True)
-                col.scale_y = preferences.button_scale
-                col.use_property_split = True
-                col.label(text="Rotation:")
-                
-                if mapping:
-                    col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
-                    col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
-                    col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
-                
-                # Strength column
-                if preferences.show_strength_slider:
+                    sub.operator("world.reset_hdri_strength", text="", icon='FILE_REFRESH')
+            
+                # Layout adjustments based on compact mode
+                if preferences.use_compact_ui:
+                    # Compact layout
+                    col = rotation_box.column(align=True)
+                    col.scale_y = preferences.button_scale
+                    col.use_property_split = True
+                    
+                    if mapping:
+                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
+                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
+                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                    
+                    if preferences.show_strength_slider:
+                        col.separator()
+                        col.prop(hdri_settings, "background_strength", text="Strength")
+                else:
+                    # Split layout for non-compact mode
+                    split = rotation_box.split(factor=0.5)
+                    
+                    # Rotation column
                     col = split.column(align=True)
                     col.scale_y = preferences.button_scale
                     col.use_property_split = True
-                    col.label(text="Strength:")
-                    col.prop(hdri_settings, "background_strength", text="Value")
+                    col.label(text="Rotation:")
+                    
+                    if mapping:
+                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
+                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
+                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                    
+                    # Strength column
+                    if preferences.show_strength_slider:
+                        col = split.column(align=True)
+                        col.scale_y = preferences.button_scale
+                        col.use_property_split = True
+                        col.label(text="Strength:")
+                        col.prop(hdri_settings, "background_strength", text="Value")
         
         # Add separator before footer
         main_column.separator(factor=1.0 * preferences.spacing_scale)

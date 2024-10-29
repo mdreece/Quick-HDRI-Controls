@@ -144,8 +144,8 @@ MacOS (Intel, Apple Silicon has not been tested)
 
  - Set you current shortcut combination
  - Consists of:
-                - Windows\Linux: Shift, Alt, Ctrl
-                - MacOS: Shift, Command, Option
+- Windows\Linux: Shift, Alt, Ctrl
+- MacOS: Shift, Command, Option
    
  - A-Z key options
  - Confirm with OS or blender shortcuts to ensure no issues

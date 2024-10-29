@@ -455,9 +455,26 @@ class HDRI_OT_load_selected(Operator):
             self.report({'ERROR'}, "HDRI file not found")
             return {'CANCELLED'}
         
+        # Store current rotation if needed
+        preferences = context.preferences.addons[__name__].preferences
+        stored_rotation = None
+        
+        if preferences.keep_rotation:
+            for node in context.scene.world.node_tree.nodes:
+                if node.type == 'MAPPING':
+                    stored_rotation = node.inputs['Rotation'].default_value.copy()
+                    break
+        
+        # Set up nodes
         mapping, env_tex, node_background = ensure_world_nodes()
+        
+        # Load the new image
         img = bpy.data.images.load(filepath, check_existing=True)
         env_tex.image = img
+        
+        # Restore rotation if needed
+        if preferences.keep_rotation and stored_rotation is not None:
+            mapping.inputs['Rotation'].default_value = stored_rotation
         
         return {'FINISHED'}
 
@@ -627,13 +644,19 @@ class QuickHDRIPreferences(AddonPreferences):
         default=True
     )
     
+    keep_rotation: BoolProperty(
+        name="Keep Rotation When Switching HDRIs",
+        description="Maintain rotation settings when switching between HDRIs",
+        default=False
+    )
+    
     strength_max: FloatProperty(
         name="Max Strength",
         description="Maximum value for strength slider",
-        default=2.0,
+        default=100.0,
         min=1.0,
-        max=10.0,
-        step=0.1
+        max=100.0,
+        step=0.001
     )
     
     rotation_increment: FloatProperty(
@@ -759,11 +782,15 @@ class QuickHDRIPreferences(AddonPreferences):
         row.prop(self, "use_png", toggle=True)
         row.prop(self, "use_jpg", toggle=True)
 
-        # Visual Settings
+        # Visual & Interaction Settings
         box = layout.box()
         box.label(text="Visual & Interaction Settings", icon='RESTRICT_VIEW_OFF')
         
         col = box.column(align=True)
+        row = col.row(align=True)
+        row.prop(self, "keep_rotation", icon='LINKED' if self.keep_rotation else 'UNLINKED')
+        
+        col.separator()
         col.prop(self, "show_strength_slider", text="Display Strength Slider")
         col.prop(self, "strength_max", text="Max Strength")
         col.prop(self, "rotation_increment", text="Rotation Increment")
@@ -798,7 +825,7 @@ class HDRISettings(PropertyGroup):
         description="Background strength multiplier",
         default=1.0,
         min=0.0,
-        soft_max=2.0,
+        soft_max=100.0,
         step=0.1,
         precision=3,
         update=update_background_strength
@@ -1060,6 +1087,13 @@ class HDRI_PT_controls(Panel):
                 sub.operator("world.reset_hdri_rotation", text="", icon='LOOP_BACK')
                 if preferences.show_strength_slider:
                     sub.operator("world.reset_hdri_strength", text="", icon='FILE_REFRESH')
+
+                # Add Keep Rotation toggle at the top of the settings
+                row = rotation_box.row(align=True)
+                row.prop(preferences, "keep_rotation", 
+                    text="",
+                    icon='LINKED' if preferences.keep_rotation else 'UNLINKED'
+                )
             
                 # Layout adjustments based on compact mode
                 if preferences.use_compact_ui:
@@ -1099,12 +1133,12 @@ class HDRI_PT_controls(Panel):
                         col.label(text="Strength:")
                         col.prop(hdri_settings, "background_strength", text="Value")
         
-        # Add separator before footer
+      
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
         # Footer row with version and settings
         footer = main_column.row(align=True)
-        footer.scale_y = 0.8  # Make the footer slightly smaller
+        footer.scale_y = 0.8 
         
         # Version number on the left
         footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
@@ -1155,19 +1189,19 @@ def register():
         preferences = bpy.context.preferences.addons[__name__].preferences
         is_mac = sys.platform == 'darwin'
         
-        # Create new keymap item using saved preferences
+  
         kmi = km.keymap_items.new(
             HDRI_OT_popup_controls.bl_idname,
             type=preferences.popup_key,
             value='PRESS',
-            oskey=preferences.popup_ctrl if is_mac else False,  # Command key for MacOS
-            ctrl=preferences.popup_ctrl if not is_mac else False,  # Ctrl key for Windows/Linux
+            oskey=preferences.popup_ctrl if is_mac else False,  
+            ctrl=preferences.popup_ctrl if not is_mac else False, 
             shift=preferences.popup_shift,
             alt=preferences.popup_alt
         )
         addon_keymaps.append((km, kmi))
 
-    # Add load handler
+
     bpy.app.handlers.load_post.append(load_handler)
     
     # Run update check at startup if enabled

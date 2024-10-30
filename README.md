@@ -97,12 +97,9 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 #### HDRI Selection
 
-![QHDRI Select](https://github.com/user-attachments/assets/592c02f9-4029-4697-88b5-2705aa1b6737)
-
-- See click the box to see thumbnails of your HDRIs
-
 ![Screenshot 2024-10-29 203038](https://github.com/user-attachments/assets/a14d3fb4-2a57-4dc2-96f4-4dbb07d5ed21)
 
+- Click the box to see thumbnails of your HDRIs
 - Click one to select it
 - Hit "Load Selected HDRI" to use it
    - Click the 'EYE' button to preview an HDRI if you have a chosen one already

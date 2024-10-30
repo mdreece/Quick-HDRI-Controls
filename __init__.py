@@ -16,7 +16,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (1, 9),
+    "version": (2, 0),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -837,6 +837,32 @@ class HDRISettings(PropertyGroup):
         default=True
     )
     
+    is_previewing: BoolProperty(
+        name="Preview Mode",
+        description="Currently previewing an HDRI",
+        default=False
+    )
+    
+    # Store original HDRI state
+    original_hdri_path: StringProperty(
+        name="Original HDRI Path",
+        description="Path to the HDRI that was loaded before preview",
+        default=""
+    )
+    
+    original_rotation: FloatVectorProperty(
+        name="Original Rotation",
+        description="Original rotation values before preview",
+        size=3,
+        default=(0.0, 0.0, 0.0)
+    )
+    
+    original_strength: FloatProperty(
+        name="Original Strength",
+        description="Original strength value before preview",
+        default=1.0
+    )
+    
 def ensure_world_nodes():
     """Ensure world nodes exist and are properly connected"""
     scene = bpy.context.scene
@@ -912,6 +938,72 @@ def has_active_hdri(context):
             if node.type == 'TEX_ENVIRONMENT' and node.image:
                 return True
     return False
+    
+class HDRI_OT_preview_hdri(Operator):
+    bl_idname = "world.preview_hdri"
+    bl_label = "Preview HDRI"
+    bl_description = "Preview this HDRI without applying it"
+    
+    filepath: StringProperty()
+    
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+        
+        # If already previewing, just update the preview
+        if not hdri_settings.is_previewing:
+            # Store current state
+            world = context.scene.world
+            if world and world.use_nodes:
+                for node in world.node_tree.nodes:
+                    if node.type == 'TEX_ENVIRONMENT' and node.image:
+                        hdri_settings.original_hdri_path = node.image.filepath
+                    elif node.type == 'MAPPING':
+                        hdri_settings.original_rotation = node.inputs['Rotation'].default_value.copy()
+                    elif node.type == 'BACKGROUND':
+                        hdri_settings.original_strength = node.inputs['Strength'].default_value
+
+        # Load preview HDRI
+        mapping, env_tex, node_background = ensure_world_nodes()
+        
+        # Load the new image
+        img = bpy.data.images.load(self.filepath, check_existing=True)
+        env_tex.image = img
+        
+        # Set preview mode
+        hdri_settings.is_previewing = True
+        
+        return {'FINISHED'}
+
+class HDRI_OT_apply_preview(Operator):
+    bl_idname = "world.apply_preview"
+    bl_label = "Apply HDRI"
+    bl_description = "Keep the previewed HDRI"
+    
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+        hdri_settings.is_previewing = False
+        return {'FINISHED'}
+
+class HDRI_OT_cancel_preview(Operator):
+    bl_idname = "world.cancel_preview"
+    bl_label = "Cancel Preview"
+    bl_description = "Return to the previous HDRI"
+    
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+        
+        # Restore original state
+        mapping, env_tex, node_background = ensure_world_nodes()
+        
+        if hdri_settings.original_hdri_path:
+            img = bpy.data.images.load(hdri_settings.original_hdri_path, check_existing=True)
+            env_tex.image = img
+            
+        mapping.inputs['Rotation'].default_value = hdri_settings.original_rotation
+        node_background.inputs['Strength'].default_value = hdri_settings.original_strength
+        
+        hdri_settings.is_previewing = False
+        return {'FINISHED'}
 
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
@@ -1043,29 +1135,52 @@ class HDRI_PT_controls(Panel):
             sub.active = hdri_settings.show_preview
             sub.label(text="HDRI Selection", icon='IMAGE_DATA')
             
-            if hdri_settings.show_preview:
-                preview_box.scale_y = preferences.button_scale
+        if hdri_settings.show_preview:
+            preview_box.scale_y = preferences.button_scale
+            
+            # Show current HDRI name
+            if env_tex and env_tex.image:
+                row = preview_box.row()
+                row.alert = False
+                row.alignment = 'CENTER'
+                row.scale_y = preferences.button_scale
+                row.label(text=env_tex.image.name, icon='CHECKMARK')
+                preview_box.separator(factor=0.5 * preferences.spacing_scale)
+            
+            preview_box.template_icon_view(
+                hdri_settings, "hdri_preview",
+                show_labels=True,
+                scale=preferences.preview_scale
+            )
+            
+            # Preview mode indicator and controls
+            if hdri_settings.is_previewing:
+                box = preview_box.box()
+                row = box.row(align=True)
+                row.alert = True  # Makes the text red to indicate preview mode
+                row.label(text="Preview Mode", icon='HIDE_OFF')
                 
-                # Show current HDRI name
-                if env_tex and env_tex.image:
-                    row = preview_box.row()
-                    row.alert = False
-                    row.alignment = 'CENTER'
-                    row.scale_y = preferences.button_scale
-                    row.label(text=env_tex.image.name, icon='CHECKMARK')
-                    preview_box.separator(factor=0.5 * preferences.spacing_scale)
-                
-                preview_box.template_icon_view(
-                    hdri_settings, "hdri_preview",
-                    show_labels=True,
-                    scale=preferences.preview_scale
-                )
-                
+                row = box.row(align=True)
+                row.scale_y = 1.2 * preferences.button_scale
+                row.operator("world.apply_preview", text="Keep HDRI", icon='CHECKMARK')
+                row.operator("world.cancel_preview", text="Cancel", icon='X')
+            else:
+                # Preview and Load buttons row
                 row = preview_box.row(align=True)
                 row.scale_y = 1.2 * preferences.button_scale
+                
+                # Main load button
                 row.operator("world.load_selected_hdri",
-                    text="Load Selected HDRI",
+                    text="Load HDRI",
                     icon='IMPORT')
+                    
+                # Small preview button
+                sub_row = row.row(align=True)
+                sub_row.scale_x = 1.2  #preview button size
+                preview_op = sub_row.operator("world.preview_hdri",
+                    text="",  # Remove text, just show icon
+                    icon='HIDE_OFF')
+                preview_op.filepath = hdri_settings.hdri_preview
             
             main_column.separator(factor=0.5 * preferences.spacing_scale)
         
@@ -1171,6 +1286,9 @@ classes = (
     HDRI_OT_download_update,
     HDRI_OT_popup_controls,
     HDRI_OT_update_shortcut,
+    HDRI_OT_preview_hdri,
+    HDRI_OT_apply_preview,
+    HDRI_OT_cancel_preview,
 )
 
 def register():

@@ -3,6 +3,7 @@ import zipfile
 import shutil
 import tempfile
 from datetime import datetime
+from math import radians
 import bpy
 import re
 import os
@@ -16,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 0),
+    "version": (2, 1),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -83,7 +84,11 @@ def generate_previews(self, context):
         if fn.lower().endswith(tuple(extensions)):
             image_paths.append(fn)
     
-    for i, fn in enumerate(sorted(image_paths)):
+    # Add an empty option as the first item
+    enum_items.append(('', 'None', '', 0, 0))
+    
+    # Add HDRIs
+    for i, fn in enumerate(sorted(image_paths), 1):  # Start from 1 since 0 is used for empty
         filepath = os.path.join(current_dir, fn)
         
         if filepath not in pcoll:
@@ -100,6 +105,16 @@ def generate_previews(self, context):
         ))
             
     return enum_items
+    
+def refresh_previews(self, context):
+    """Refresh the preview collection when settings change"""
+    pcoll = get_hdri_previews()
+    pcoll.clear()
+    
+    # Reset current folder and preview when HDRI directory changes
+    if hasattr(context.scene, "hdri_settings"):
+        context.scene.hdri_settings.current_folder = self.hdri_directory
+        context.scene.hdri_settings.hdri_preview = ''
 
 def get_folders(context):
     """Get list of subfolders in HDRI directory"""
@@ -365,9 +380,10 @@ class HDRI_OT_change_folder(Operator):
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
         base_dir = preferences.hdri_directory
+        hdri_settings = context.scene.hdri_settings
         
         if self.folder_path == "parent":
-            current = context.scene.hdri_settings.current_folder
+            current = hdri_settings.current_folder
             new_path = os.path.dirname(current)
             
             try:
@@ -379,21 +395,41 @@ class HDRI_OT_change_folder(Operator):
                 self.report({'WARNING'}, "Invalid path")
                 return {'CANCELLED'}
                 
-            context.scene.hdri_settings.current_folder = new_path
+            hdri_settings.current_folder = new_path
         else:
             try:
                 rel_path = os.path.relpath(self.folder_path, base_dir)
                 if rel_path.startswith('..'):
                     self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
                     return {'CANCELLED'}
-                context.scene.hdri_settings.current_folder = self.folder_path
+                hdri_settings.current_folder = self.folder_path
             except ValueError:
                 self.report({'WARNING'}, "Invalid path")
                 return {'CANCELLED'}
         
-        # Clear previews to force regeneration
+        # Clear previews
         pcoll = get_hdri_previews()
         pcoll.clear()
+        
+        # Get the first available HDRI in the new folder
+        current_dir = hdri_settings.current_folder
+        if current_dir and os.path.exists(current_dir):
+            # Get enabled file types
+            extensions = set()
+            if preferences.use_hdr:
+                extensions.add('.hdr')
+            if preferences.use_exr:
+                extensions.add('.exr')
+            if preferences.use_png:
+                extensions.add('.png')
+            if preferences.use_jpg:
+                extensions.update(('.jpg', '.jpeg'))
+            
+            # Find first valid HDRI
+            for fn in sorted(os.listdir(current_dir)):
+                if fn.lower().endswith(tuple(extensions)):
+                    hdri_settings.hdri_preview = os.path.join(current_dir, fn)
+                    break
         
         # Force UI update
         for area in context.screen.areas:
@@ -419,6 +455,39 @@ class HDRI_OT_reset_rotation(Operator):
             if mapping:
                 mapping.inputs['Rotation'].default_value = (0, 0, 0)
         
+        return {'FINISHED'}
+        
+class HDRI_OT_quick_rotate(Operator):
+    bl_idname = "world.quick_rotate_hdri"
+    bl_label = "Quick Rotate HDRI"
+    bl_description = "Rotate HDRI by the increment set in preferences"
+    
+    axis: IntProperty(
+        name="Axis",
+        description="Rotation axis (0=X, 1=Y, 2=Z)",
+        default=0
+    )
+    
+    direction: IntProperty(
+        name="Direction",
+        description="Rotation direction (1 or -1)",
+        default=1
+    )
+    
+    def execute(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        world = context.scene.world
+        
+        if world and world.use_nodes:
+            for node in world.node_tree.nodes:
+                if node.type == 'MAPPING':
+                    current_rotation = list(node.inputs['Rotation'].default_value)
+                    # Convert rotation increment from degrees to radians
+                    increment_in_radians = radians(preferences.rotation_increment)
+                    current_rotation[self.axis] += (self.direction * increment_in_radians)
+                    node.inputs['Rotation'].default_value = current_rotation
+                    break
+                    
         return {'FINISHED'}
 
 class HDRI_OT_reset_strength(Operator):
@@ -662,9 +731,9 @@ class QuickHDRIPreferences(AddonPreferences):
     rotation_increment: FloatProperty(
         name="Rotation Increment",
         description="Increment for rotation controls",
-        default=5.0,
+        default=45.0,
         min=0.1,
-        max=45.0,
+        max=360.0,
         step=0.1
     )
 
@@ -785,20 +854,25 @@ class QuickHDRIPreferences(AddonPreferences):
         # Visual & Interaction Settings
         box = layout.box()
         box.label(text="Visual & Interaction Settings", icon='RESTRICT_VIEW_OFF')
-        
+
         col = box.column(align=True)
+        # Move rotation settings to the top
+        col.prop(self, "rotation_increment", text="Rotation Step Amount")  # Changed text to be clearer
+        col.separator()
+
         row = col.row(align=True)
         row.prop(self, "keep_rotation", icon='LINKED' if self.keep_rotation else 'UNLINKED')
-        
+
         col.separator()
         col.prop(self, "show_strength_slider", text="Display Strength Slider")
         col.prop(self, "strength_max", text="Max Strength")
-        col.prop(self, "rotation_increment", text="Rotation Increment")
 
 class HDRISettings(PropertyGroup):
     hdri_preview: EnumProperty(
         items=generate_previews,
-        name="HDRI Preview"
+        name="HDRI Preview",
+        description="Preview of available HDRIs",
+        update=None 
     )
     
     current_folder: StringProperty(
@@ -1019,16 +1093,26 @@ class HDRI_PT_controls(Panel):
         layout.use_property_decorate = False
         hdri_settings = context.scene.hdri_settings
         
+        main_column = layout.column(align=True)
+        
+        # Footer should be at the very start, before any conditions
+        # Footer row with version and settings
+        footer = main_column.row(align=True)
+        footer.scale_y = 0.8  # Make the footer slightly smaller
+        
+        # Add separator after footer
+        main_column.separator(factor=0.5 * preferences.spacing_scale)
+        
         # If update available, highlight in red
         if preferences.update_available:
-            row = layout.row()
+            row = main_column.row()
             row.alert = True
             row.label(text="HDRI Controls - Update Available!", icon='ERROR')
             row.operator("world.download_hdri_update", text="Download Update")
         
         # Early returns with styled messages
         if not preferences.hdri_directory:
-            box = layout.box()
+            box = main_column.box()
             box.alert = True
             col = box.column(align=True)
             col.scale_y = 1.2 * preferences.button_scale
@@ -1038,7 +1122,7 @@ class HDRI_PT_controls(Panel):
             
         world = context.scene.world
         if not world or not world.use_nodes:
-            box = layout.box()
+            box = main_column.box()
             col = box.column(align=True)
             col.scale_y = 1.2 * preferences.button_scale
             col.operator("world.setup_hdri_nodes", 
@@ -1060,7 +1144,7 @@ class HDRI_PT_controls(Panel):
                 background = node
 
         if not mapping or not env_tex:
-            box = layout.box()
+            box = main_column.box()
             box.alert = True
             col = box.column(align=True)
             col.scale_y = 1.2 * preferences.button_scale
@@ -1070,8 +1154,6 @@ class HDRI_PT_controls(Panel):
             return
 
         # Main UI
-        main_column = layout.column(align=True)
-
         # Folder Browser Section
         browser_box = main_column.box()
         row = browser_box.row(align=True)
@@ -1123,7 +1205,6 @@ class HDRI_PT_controls(Panel):
         
         # Only show HDRI Preview Section if there are HDRIs in the current folder
         if has_hdri_files(context):
-            # HDRI Preview Section
             preview_box = main_column.box()
             row = preview_box.row(align=True)
             row.scale_y = preferences.button_scale
@@ -1135,52 +1216,52 @@ class HDRI_PT_controls(Panel):
             sub.active = hdri_settings.show_preview
             sub.label(text="HDRI Selection", icon='IMAGE_DATA')
             
-        if hdri_settings.show_preview:
-            preview_box.scale_y = preferences.button_scale
-            
-            # Show current HDRI name
-            if env_tex and env_tex.image:
-                row = preview_box.row()
-                row.alert = False
-                row.alignment = 'CENTER'
-                row.scale_y = preferences.button_scale
-                row.label(text=env_tex.image.name, icon='CHECKMARK')
-                preview_box.separator(factor=0.5 * preferences.spacing_scale)
-            
-            preview_box.template_icon_view(
-                hdri_settings, "hdri_preview",
-                show_labels=True,
-                scale=preferences.preview_scale
-            )
-            
-            # Preview mode indicator and controls
-            if hdri_settings.is_previewing:
-                box = preview_box.box()
-                row = box.row(align=True)
-                row.alert = True  # Makes the text red to indicate preview mode
-                row.label(text="Preview Mode", icon='HIDE_OFF')
+            if hdri_settings.show_preview:
+                preview_box.scale_y = preferences.button_scale
                 
-                row = box.row(align=True)
-                row.scale_y = 1.2 * preferences.button_scale
-                row.operator("world.apply_preview", text="Keep HDRI", icon='CHECKMARK')
-                row.operator("world.cancel_preview", text="Cancel", icon='X')
-            else:
-                # Preview and Load buttons row
-                row = preview_box.row(align=True)
-                row.scale_y = 1.2 * preferences.button_scale
+                # Show current HDRI name
+                if env_tex and env_tex.image:
+                    row = preview_box.row()
+                    row.alert = False
+                    row.alignment = 'CENTER'
+                    row.scale_y = preferences.button_scale
+                    row.label(text=env_tex.image.name, icon='CHECKMARK')
+                    preview_box.separator(factor=0.5 * preferences.spacing_scale)
                 
-                # Main load button
-                row.operator("world.load_selected_hdri",
-                    text="Load HDRI",
-                    icon='IMPORT')
+                preview_box.template_icon_view(
+                    hdri_settings, "hdri_preview",
+                    show_labels=True,
+                    scale=preferences.preview_scale
+                )
+                
+                # Preview mode indicator and controls
+                if hdri_settings.is_previewing:
+                    box = preview_box.box()
+                    row = box.row(align=True)
+                    row.alert = True
+                    row.label(text="Preview Mode", icon='HIDE_OFF')
                     
-                # Small preview button
-                sub_row = row.row(align=True)
-                sub_row.scale_x = 1.2  #preview button size
-                preview_op = sub_row.operator("world.preview_hdri",
-                    text="",  # Remove text, just show icon
-                    icon='HIDE_OFF')
-                preview_op.filepath = hdri_settings.hdri_preview
+                    row = box.row(align=True)
+                    row.scale_y = 1.2 * preferences.button_scale
+                    row.operator("world.apply_preview", text="Keep HDRI", icon='CHECKMARK')
+                    row.operator("world.cancel_preview", text="Cancel", icon='X')
+                else:
+                    # Preview and Load buttons row
+                    row = preview_box.row(align=True)
+                    row.scale_y = 1.2 * preferences.button_scale
+                    
+                    # Small preview button
+                    sub_row = row.row(align=True)
+                    sub_row.scale_x = 1.0
+                    preview_op = sub_row.operator("world.preview_hdri",
+                        text="Preview",
+                        icon='HIDE_OFF')
+                    preview_op.filepath = hdri_settings.hdri_preview
+                    
+                    # Main load button
+                    row.operator("world.load_selected_hdri",
+                        text="Load HDRI",
+                        icon='IMPORT')
             
             main_column.separator(factor=0.5 * preferences.spacing_scale)
         
@@ -1218,9 +1299,41 @@ class HDRI_PT_controls(Panel):
                     col.use_property_split = True
                     
                     if mapping:
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                        # X Rotation
+                        row = col.row(align=True)
+                        row.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
+                        sub = row.row(align=True)
+                        sub.scale_x = 1.0
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
+                        op.axis = 0
+                        op.direction = -1
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
+                        op.axis = 0
+                        op.direction = 1
+                        
+                        # Y Rotation
+                        row = col.row(align=True)
+                        row.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
+                        sub = row.row(align=True)
+                        sub.scale_x = 1.0
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
+                        op.axis = 1
+                        op.direction = -1
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
+                        op.axis = 1
+                        op.direction = 1
+                        
+                        # Z Rotation
+                        row = col.row(align=True)
+                        row.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                        sub = row.row(align=True)
+                        sub.scale_x = 1.0
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
+                        op.axis = 2
+                        op.direction = -1
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
+                        op.axis = 2
+                        op.direction = 1
                     
                     if preferences.show_strength_slider:
                         col.separator()
@@ -1236,9 +1349,41 @@ class HDRI_PT_controls(Panel):
                     col.label(text="Rotation:")
                     
                     if mapping:
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
-                        col.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                        # X Rotation
+                        row = col.row(align=True)
+                        row.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
+                        sub = row.row(align=True)
+                        sub.scale_x = 0.5
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
+                        op.axis = 0
+                        op.direction = -1
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
+                        op.axis = 0
+                        op.direction = 1
+                        
+                        # Y Rotation
+                        row = col.row(align=True)
+                        row.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
+                        sub = row.row(align=True)
+                        sub.scale_x = 0.5
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
+                        op.axis = 1
+                        op.direction = -1
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
+                        op.axis = 1
+                        op.direction = 1
+                        
+                        # Z Rotation
+                        row = col.row(align=True)
+                        row.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                        sub = row.row(align=True)
+                        sub.scale_x = 0.5
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
+                        op.axis = 2
+                        op.direction = -1
+                        op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
+                        op.axis = 2
+                        op.direction = 1
                     
                     # Strength column
                     if preferences.show_strength_slider:
@@ -1248,17 +1393,12 @@ class HDRI_PT_controls(Panel):
                         col.label(text="Strength:")
                         col.prop(hdri_settings, "background_strength", text="Value")
         
-      
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
-        # Footer row with version and settings
         footer = main_column.row(align=True)
-        footer.scale_y = 0.8 
-        
-        # Version number on the left
+        footer.scale_y = 0.8  # Make the footer slightly smaller
         footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
         
-        # Settings button on the right
         settings_btn = footer.operator(
             "preferences.addon_show",
             text="",
@@ -1289,6 +1429,7 @@ classes = (
     HDRI_OT_preview_hdri,
     HDRI_OT_apply_preview,
     HDRI_OT_cancel_preview,
+    HDRI_OT_quick_rotate,
 )
 
 def register():

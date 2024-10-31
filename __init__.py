@@ -857,7 +857,7 @@ class QuickHDRIPreferences(AddonPreferences):
 
         col = box.column(align=True)
         # Move rotation settings to the top
-        col.prop(self, "rotation_increment", text="Rotation Step Amount")  # Changed text to be clearer
+        col.prop(self, "rotation_increment", text="Rotation Step Amount")
         col.separator()
 
         row = col.row(align=True)
@@ -1100,6 +1100,18 @@ class HDRI_PT_controls(Panel):
         footer = main_column.row(align=True)
         footer.scale_y = 0.8  # Make the footer slightly smaller
         
+        # Version number on the left
+        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
+        
+        # Settings button on the right
+        settings_btn = footer.operator(
+            "preferences.addon_show",
+            text="",
+            icon='PREFERENCES',
+            emboss=False,
+        )
+        settings_btn.module = __name__
+        
         # Add separator after footer
         main_column.separator(factor=0.5 * preferences.spacing_scale)
         
@@ -1252,9 +1264,9 @@ class HDRI_PT_controls(Panel):
                     
                     # Small preview button
                     sub_row = row.row(align=True)
-                    sub_row.scale_x = 1.0
+                    sub_row.scale_x = 1.5
                     preview_op = sub_row.operator("world.preview_hdri",
-                        text="Preview",
+                        text="",
                         icon='HIDE_OFF')
                     preview_op.filepath = hdri_settings.hdri_preview
                     
@@ -1395,16 +1407,7 @@ class HDRI_PT_controls(Panel):
         
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
-        footer = main_column.row(align=True)
-        footer.scale_y = 0.8  # Make the footer slightly smaller
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
-        
-        settings_btn = footer.operator(
-            "preferences.addon_show",
-            text="",
-            icon='PREFERENCES',
-            emboss=False,
-        )
+       
         settings_btn.module = __name__
                     
 def draw_hdri_menu(self, context):

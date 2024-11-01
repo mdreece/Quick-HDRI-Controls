@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4),
+    "version": (2, 4, 1),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -609,6 +609,15 @@ class HDRI_OT_load_selected(Operator):
             return {'CANCELLED'}
         
         hdri_settings = context.scene.hdri_settings
+        preferences = context.preferences.addons[__name__].preferences
+        
+        # Store current rotation if keep_rotation is enabled
+        current_rotation = None
+        if preferences.keep_rotation:
+            for node in context.scene.world.node_tree.nodes:
+                if node.type == 'MAPPING':
+                    current_rotation = node.inputs['Rotation'].default_value.copy()
+                    break
         
         # Store current state as previous
         world = context.scene.world
@@ -628,9 +637,10 @@ class HDRI_OT_load_selected(Operator):
         img = bpy.data.images.load(filepath, check_existing=True)
         env_tex.image = img
         
-        # Keep rotation if enabled
-        preferences = context.preferences.addons[__name__].preferences
-        if not preferences.keep_rotation:
+        # Apply rotation based on keep_rotation setting
+        if preferences.keep_rotation and current_rotation is not None:
+            mapping.inputs['Rotation'].default_value = current_rotation
+        else:
             mapping.inputs['Rotation'].default_value = (0, 0, 0)
         
         return {'FINISHED'}

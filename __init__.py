@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 2),
+    "version": (2, 3),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -232,6 +232,11 @@ def ensure_world_nodes():
     
     world = scene.world
     world.use_nodes = True
+    
+    # Set up world cycles settings
+    if hasattr(world, "cycles"):
+        world.cycles.sampling_method = 'MANUAL'
+    
     nodes = world.node_tree.nodes
     links = world.node_tree.links
     
@@ -1013,6 +1018,58 @@ class QuickHDRIPreferences(AddonPreferences):
         col.prop(self, "keep_rotation", text="Keep Rotation When Switching HDRIs")
         col.prop(self, "strength_max", text="Maximum Strength Value")
         col.prop(self, "rotation_increment", text="Rotation Step Size")
+        
+class HDRI_OT_toggle_visibility(Operator):
+    bl_idname = "world.toggle_hdri_visibility"
+    bl_label = "Toggle HDRI Visibility"
+    bl_description = "Toggle HDRI background visibility in render"
+    
+    def execute(self, context):
+        world = context.scene.world
+        if world and world.use_nodes:
+            # Toggle visibility in world settings
+            world.cycles.sampling_method = 'MANUAL'  # Ensure we can modify visibility
+            
+            # Get current state from background node
+            background_node = None
+            for node in world.node_tree.nodes:
+                if node.type == 'BACKGROUND':
+                    background_node = node
+                    break
+            
+            if background_node:
+                # Toggle visibility by connecting/disconnecting from output
+                world_output = None
+                for node in world.node_tree.nodes:
+                    if node.type == 'OUTPUT_WORLD':
+                        world_output = node
+                        break
+                
+                if world_output:
+                    # Check if currently connected
+                    is_connected = False
+                    for link in world.node_tree.links:
+                        if (link.from_node == background_node and 
+                            link.to_node == world_output and 
+                            link.to_socket.name == 'Surface'):
+                            is_connected = True
+                            world.node_tree.links.remove(link)
+                            break
+                    
+                    if not is_connected:
+                        # Reconnect if it was disconnected
+                        world.node_tree.links.new(
+                            background_node.outputs['Background'],
+                            world_output.inputs['Surface']
+                        )
+                    
+                    # Force viewport update
+                    for area in context.screen.areas:
+                        area.tag_redraw()
+                    
+                    return {'FINISHED'}
+        
+        return {'CANCELLED'}
             
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
@@ -1204,6 +1261,31 @@ class HDRI_PT_controls(Panel):
                 sub.operator("world.reset_hdri_rotation", text="", icon='LOOP_BACK')
                 if preferences.show_strength_slider:
                     sub.operator("world.reset_hdri_strength", text="", icon='FILE_REFRESH')
+                
+                # Add visibility toggle
+                # Check if background is connected to determine visibility
+                is_visible = False
+                if context.scene.world and context.scene.world.use_nodes:
+                    background_node = None
+                    world_output = None
+                    for node in context.scene.world.node_tree.nodes:
+                        if node.type == 'BACKGROUND':
+                            background_node = node
+                        elif node.type == 'OUTPUT_WORLD':
+                            world_output = node
+                    
+                    if background_node and world_output:
+                        for link in context.scene.world.node_tree.links:
+                            if (link.from_node == background_node and 
+                                link.to_node == world_output and 
+                                link.to_socket.name == 'Surface'):
+                                is_visible = True
+                                break
+                
+                sub.operator("world.toggle_hdri_visibility",
+                    text="",
+                    icon='HIDE_OFF' if is_visible else 'HIDE_ON',
+                    depress=is_visible)
 
                 # Keep Rotation toggle
                 row = rotation_box.row(align=True)
@@ -1326,6 +1408,7 @@ classes = (
     HDRI_OT_update_shortcut,
     HDRI_OT_quick_rotate,
     HDRI_OT_reset_to_previous,
+    HDRI_OT_toggle_visibility,
 )
 
 def register():

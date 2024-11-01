@@ -10,8 +10,7 @@ v2.0 Video Demonstration: https://youtu.be/YFAPNMnai0U
 
 Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
 
-![Screenshot 2024-10-29 202935](https://github.com/user-attachments/assets/794dd6cd-11a5-4464-830e-e7363e5ed51f)
-
+![Screenshot 2024-11-01 123720](https://github.com/user-attachments/assets/f6ed3722-768b-46ab-a7fa-352e6c2e7d24)
 
 
 
@@ -53,8 +52,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 
-![preferences](https://github.com/user-attachments/assets/88547e1e-2597-4693-a2d2-96de8c26ac63)
-
+![Screenshot 2024-11-01 123923](https://github.com/user-attachments/assets/a6f1c596-a258-4d8a-8977-250ec4442418)
 
 2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
@@ -79,7 +77,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 
 2. Click it and then 'Initialize HDRI System'
-3. You'll see three main sections:
+3. You'll see the first of three sections
 
 ![Screenshot 2024-10-29 202935](https://github.com/user-attachments/assets/a99256e9-4bd1-48dc-9662-0166112b8906)
 
@@ -89,7 +87,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 #### Folder Browser
 
-![QHDRI folder browse](https://github.com/user-attachments/assets/3b40729b-7f12-4647-b6a2-5e52056eac90)
+![Screenshot 2024-11-01 123835](https://github.com/user-attachments/assets/8baa6e2d-5598-4900-a4ba-c5534e2bd121)
 
 - Navigate through your HDRI folders
 - Click folder names to enter them
@@ -97,24 +95,20 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 #### HDRI Selection
 
-![Screenshot 2024-10-29 203038](https://github.com/user-attachments/assets/a14d3fb4-2a57-4dc2-96f4-4dbb07d5ed21)
+![Screenshot 2024-11-01 123853](https://github.com/user-attachments/assets/7767ad18-7961-489a-8827-dbe09eae1612)
+
 
 - Click the box to see thumbnails of your HDRIs
 - Click one to select it
 - Hit "Load Selected HDRI" to use it
-   - Click the 'EYE' button to preview an HDRI if you have a chosen one already
-
- ![Screenshot 2024-10-29 202818](https://github.com/user-attachments/assets/b7974561-620e-4202-afd4-c1d7c208b02f)
-
-  - Keep HDRI: This will overwrite any currently set HDRI
-  - Cancel: This will revert to the previously setup HDRI
+   - Click Reset to revert to prviously selected HDRI
 
 
 #### HDRI Settings
 
-![QHDRI Settings](https://github.com/user-attachments/assets/281bd94b-ea2e-420a-b146-d9f2e7212f04)
+![Screenshot 2024-11-01 123904](https://github.com/user-attachments/assets/8670ff3c-f6b1-419d-8727-7be0aec181ea)
 
-- Adjust X, Y, Z rotation
+- Adjust X, Y, Z rotation ( + and - relates to rotation increment in Preferences)
 - Control the lighting strength
 - Quick reset buttons for both
   - Addon version

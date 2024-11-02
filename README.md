@@ -104,10 +104,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 ![Screenshot 2024-11-01 194419](https://github.com/user-attachments/assets/6d0a3055-91dc-4df3-a9e8-2263fb943495)
 
+- Keep Rotation lock (keeps rotation changes between HDRI switching)
 - Adjust X, Y, Z rotation ( + and - relates to rotation increment in Preferences)
 - World visibility option
 - Control the lighting strength
-- Quick reset buttons for both
+- Quick reset buttons for both rotation and strength changes
   - Addon version
   - Quick access to preferences
 

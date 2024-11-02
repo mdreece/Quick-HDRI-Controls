@@ -52,7 +52,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 
-![Screenshot 2024-11-01 123923](https://github.com/user-attachments/assets/a6f1c596-a258-4d8a-8977-250ec4442418)
+![Screenshot 2024-11-01 194312](https://github.com/user-attachments/assets/42f189d2-db37-48c1-9660-b6c7dc5ad58d)
 
 2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
@@ -79,15 +79,12 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 2. Click it and then 'Initialize HDRI System'
 3. You'll see the first of three sections
 
-![Screenshot 2024-10-29 202935](https://github.com/user-attachments/assets/a99256e9-4bd1-48dc-9662-0166112b8906)
-
-
-
+![Screenshot 2024-11-01 194344](https://github.com/user-attachments/assets/69751f44-878f-4bac-a156-3f238d14e94d)
 
 
 #### Folder Browser
 
-![Screenshot 2024-11-01 123835](https://github.com/user-attachments/assets/8baa6e2d-5598-4900-a4ba-c5534e2bd121)
+![Screenshot 2024-11-01 194401](https://github.com/user-attachments/assets/f8c689a8-60a1-4206-893c-497cc7815813)
 
 - Navigate through your HDRI folders
 - Click folder names to enter them
@@ -95,8 +92,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 #### HDRI Selection
 
-![Screenshot 2024-11-01 123853](https://github.com/user-attachments/assets/7767ad18-7961-489a-8827-dbe09eae1612)
-
+![Screenshot 2024-11-01 194554](https://github.com/user-attachments/assets/a72b7594-7cc0-4843-96a8-1caf3d5f86d6)
 
 - Click the box to see thumbnails of your HDRIs
 - Click one to select it
@@ -106,7 +102,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 #### HDRI Settings
 
-![Screenshot 2024-11-01 123904](https://github.com/user-attachments/assets/8670ff3c-f6b1-419d-8727-7be0aec181ea)
+![Screenshot 2024-11-01 194419](https://github.com/user-attachments/assets/6d0a3055-91dc-4df3-a9e8-2263fb943495)
 
 - Adjust X, Y, Z rotation ( + and - relates to rotation increment in Preferences)
 - World visibility option

@@ -13,12 +13,11 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
                       CollectionProperty, PointerProperty, IntProperty, 
                       BoolProperty, FloatVectorProperty)
 from bpy.app.handlers import persistent
-from bpy.app.handlers import depsgraph_update_post
 
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 0),
+    "version": (2, 4, 1),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -160,30 +159,11 @@ def get_folders(context):
     
     return items
     
-def update_with_keyframe(self, context):
-    """Update handler for rotation and strength that adds keyframes when animation is enabled"""
-    update_background_strength(self, context)
-    if context.scene.hdri_settings.use_animation:
-        bpy.ops.world.insert_hdri_keyframe()
-
 def update_background_strength(self, context):
     if context.scene.world and context.scene.world.use_nodes:
         for node in context.scene.world.node_tree.nodes:
             if node.type == 'BACKGROUND':
                 node.inputs['Strength'].default_value = self.background_strength
-                if self.use_animation:
-                    node.inputs['Strength'].keyframe_insert(
-                        data_path="default_value",
-                        frame=context.scene.frame_current
-                    )
-
-def update_rotation_with_keyframe(node_input, context):
-    """Helper function to update rotation with keyframes"""
-    if context.scene.hdri_settings.use_animation:
-        node_input.keyframe_insert(
-            data_path="default_value",
-            frame=context.scene.frame_current
-        )
 
 def check_for_update_on_startup():
     """Check for updates on Blender startup if enabled in preferences."""
@@ -291,7 +271,7 @@ def ensure_world_nodes():
     node_coord.location = (-600, 300)
     
     return node_mapping, node_env, node_background
-    
+
 def has_hdri_files(context):
     """Check if current folder has any supported HDRI files"""
     preferences = context.preferences.addons[__name__].preferences
@@ -326,62 +306,6 @@ def has_active_hdri(context):
                 return True
     return False
     
-def check_animation_data(node_tree):
-    """Check if there are any keyframes in the node tree"""
-    if not node_tree.animation_data or not node_tree.animation_data.action:
-        return False
-    return len(node_tree.animation_data.action.fcurves) > 0
-    
-def ensure_animation_data(world_node_tree):
-    """Ensure animation data and action exist"""
-    if not world_node_tree.animation_data:
-        world_node_tree.animation_data_create()
-    if not world_node_tree.animation_data.action:
-        action = bpy.data.actions.new("HDRIAnimation")
-        world_node_tree.animation_data.action = action
-    return world_node_tree.animation_data.action
-    
-def keyframe_rotation_value(mapping_node, world_node_tree, frame):
-    """Helper function to keyframe rotation values"""
-    try:
-        action = ensure_animation_data(world_node_tree)
-        data_path = f'nodes["{mapping_node.name}"].inputs[2].default_value'
-        
-        # Insert keyframe for each rotation axis
-        for i in range(3):
-            fcurve = action.fcurves.find(data_path, index=i)
-            if not fcurve:
-                fcurve = action.fcurves.new(data_path, index=i)
-            fcurve.keyframe_points.insert(
-                frame=frame,
-                value=mapping_node.inputs['Rotation'].default_value[i]
-            )
-        return True
-    except Exception as e:
-        print(f"Error inserting rotation keyframe: {str(e)}")
-        return False
-
-def insert_rotation_keyframe(context, mapping_node, rotation_value):
-    """Helper function to insert rotation keyframes"""
-    if not context.scene.world or not context.scene.world.node_tree:
-        return False
-        
-    try:
-        action = ensure_animation_data(context.scene.world.node_tree)
-        frame = context.scene.frame_current
-        data_path = f'nodes["{mapping_node.name}"].inputs[2].default_value'
-        
-        # Insert keyframe for each axis
-        for i in range(3):
-            fcurve = action.fcurves.find(data_path, index=i)
-            if not fcurve:
-                fcurve = action.fcurves.new(data_path, index=i)
-            fcurve.keyframe_points.insert(frame=frame, value=rotation_value[i])
-        return True
-    except Exception as e:
-        print(f"Error inserting keyframe: {str(e)}")
-        return False
-
 class HDRI_OT_popup_controls(Operator):
     bl_idname = "world.hdri_popup_controls"
     bl_label = "HDRI Quick Controls"
@@ -390,6 +314,7 @@ class HDRI_OT_popup_controls(Operator):
 
     def draw(self, context):
         layout = self.layout
+        # Use the panel's draw method for consistency
         HDRI_PT_controls.draw(self, context)
 
     def execute(self, context):
@@ -399,50 +324,6 @@ class HDRI_OT_popup_controls(Operator):
         prefs = context.preferences.addons[__name__].preferences
         wm = context.window_manager
         return wm.invoke_popup(self, width=prefs.ui_scale * 20)
-
-class HDRI_OT_insert_keyframe(Operator):
-    bl_idname = "world.insert_hdri_keyframe"
-    bl_label = "Insert Keyframe"
-    bl_description = "Insert keyframe for HDRI rotation and strength"
-    
-    def execute(self, context):
-        world = context.scene.world
-        if world and world.use_nodes:
-            frame = context.scene.frame_current
-            for node in world.node_tree.nodes:
-                if node.type == 'MAPPING':
-                    # Correct way to keyframe rotation values
-                    node.inputs['Rotation'].keyframe_insert(
-                        data_path="default_value",
-                        frame=frame
-                    )
-                elif node.type == 'BACKGROUND':
-                    node.inputs['Strength'].keyframe_insert(
-                        data_path="default_value",
-                        frame=frame
-                    )
-            self.report({'INFO'}, f"Keyframe inserted at frame {frame}")
-        return {'FINISHED'}
-
-class HDRI_OT_clear_animation(Operator):
-    bl_idname = "world.clear_hdri_animation"
-    bl_label = "Clear Animation"
-    bl_description = "Clear all keyframes for HDRI rotation and strength"
-    
-    def execute(self, context):
-        world = context.scene.world
-        if world and world.use_nodes:
-            # Check if there are any keyframes to clear
-            if not check_animation_data(world.node_tree):
-                self.report({'INFO'}, "No animation keyframes to clear")
-                return {'FINISHED'}
-
-            # Clear animation data
-            if world.node_tree.animation_data:
-                world.node_tree.animation_data.action = None
-                self.report({'INFO'}, "Animation keyframes cleared")
-            
-        return {'FINISHED'}
 
 class HDRI_OT_check_updates(Operator):
     bl_idname = "world.check_hdri_updates"
@@ -552,7 +433,7 @@ class HDRI_OT_download_update(Operator):
             self.report({'ERROR'}, f"Update failed: {str(e)}")
             print(f"Detailed error: {str(e)}")
             return {'CANCELLED'}
-            
+
 class HDRI_OT_change_folder(Operator):
     bl_idname = "world.change_hdri_folder"
     bl_label = "Change Folder"
@@ -634,11 +515,6 @@ class HDRI_OT_reset_rotation(Operator):
             
             if mapping:
                 mapping.inputs['Rotation'].default_value = (0, 0, 0)
-                if context.scene.hdri_settings.use_animation:
-                    mapping.inputs['Rotation'].keyframe_insert(
-                        data_path="default_value",
-                        frame=context.scene.frame_current
-                    )
         
         return {'FINISHED'}
 
@@ -664,18 +540,6 @@ class HDRI_OT_reset_to_previous(Operator):
         mapping.inputs['Rotation'].default_value = hdri_settings.previous_rotation
         node_background.inputs['Strength'].default_value = hdri_settings.previous_strength
         
-        # Add keyframes if animation is enabled
-        if hdri_settings.use_animation:
-            frame = context.scene.frame_current
-            mapping.inputs['Rotation'].default_value.keyframe_insert(
-                data_path="default_value",
-                frame=frame
-            )
-            node_background.inputs['Strength'].keyframe_insert(
-                data_path="default_value",
-                frame=frame
-            )
-        
         return {'FINISHED'}
 
 class HDRI_OT_quick_rotate(Operator):
@@ -700,28 +564,14 @@ class HDRI_OT_quick_rotate(Operator):
         world = context.scene.world
         
         if world and world.use_nodes:
-            mapping_node = None
             for node in world.node_tree.nodes:
                 if node.type == 'MAPPING':
-                    mapping_node = node
+                    current_rotation = list(node.inputs['Rotation'].default_value)
+                    increment_in_radians = radians(preferences.rotation_increment)
+                    current_rotation[self.axis] += (self.direction * increment_in_radians)
+                    node.inputs['Rotation'].default_value = current_rotation
                     break
                     
-            if mapping_node:
-                # Get the current rotation
-                current_rotation = list(mapping_node.inputs['Rotation'].default_value)
-                increment_in_radians = radians(preferences.rotation_increment)
-                current_rotation[self.axis] += (self.direction * increment_in_radians)
-                
-                # Update the rotation value
-                mapping_node.inputs['Rotation'].default_value = current_rotation
-                
-                # Add keyframe if animation is enabled
-                if context.scene.hdri_settings.use_animation:
-                    if insert_rotation_keyframe(context, mapping_node, current_rotation):
-                        self.report({'INFO'}, "Keyframe added")
-                    else:
-                        self.report({'WARNING'}, "Failed to insert keyframe")
-                        
         return {'FINISHED'}
 
 class HDRI_OT_reset_strength(Operator):
@@ -731,15 +581,6 @@ class HDRI_OT_reset_strength(Operator):
     
     def execute(self, context):
         context.scene.hdri_settings.background_strength = 1.0
-        if context.scene.hdri_settings.use_animation:
-            world = context.scene.world
-            if world and world.use_nodes:
-                for node in world.node_tree.nodes:
-                    if node.type == 'BACKGROUND':
-                        node.inputs['Strength'].keyframe_insert(
-                            data_path="default_value",
-                            frame=context.scene.frame_current
-                        )
         return {'FINISHED'}
 
 class HDRI_OT_setup_nodes(Operator):
@@ -750,364 +591,7 @@ class HDRI_OT_setup_nodes(Operator):
     def execute(self, context):
         ensure_world_nodes()
         return {'FINISHED'}
-        
-class HDRI_OT_change_folder(Operator):
-    bl_idname = "world.change_hdri_folder"
-    bl_label = "Change Folder"
-    bl_description = "Change current HDRI folder"
-    
-    folder_path: StringProperty()
-    
-    def execute(self, context):
-        preferences = context.preferences.addons[__name__].preferences
-        base_dir = preferences.hdri_directory
-        hdri_settings = context.scene.hdri_settings
-        
-        if self.folder_path == "parent":
-            current = hdri_settings.current_folder
-            new_path = os.path.dirname(current)
-            
-            try:
-                rel_path = os.path.relpath(new_path, base_dir)
-                if rel_path.startswith('..'):
-                    self.report({'WARNING'}, "Cannot navigate above HDRI directory")
-                    return {'CANCELLED'}
-            except ValueError:
-                self.report({'WARNING'}, "Invalid path")
-                return {'CANCELLED'}
-                
-            hdri_settings.current_folder = new_path
-        else:
-            try:
-                rel_path = os.path.relpath(self.folder_path, base_dir)
-                if rel_path.startswith('..'):
-                    self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
-                    return {'CANCELLED'}
-                hdri_settings.current_folder = self.folder_path
-            except ValueError:
-                self.report({'WARNING'}, "Invalid path")
-                return {'CANCELLED'}
-        
-        # Clear previews
-        pcoll = get_hdri_previews()
-        pcoll.clear()
-        
-        # Get the first available HDRI in the new folder
-        current_dir = hdri_settings.current_folder
-        if current_dir and os.path.exists(current_dir):
-            extensions = set()
-            if preferences.use_hdr:
-                extensions.add('.hdr')
-            if preferences.use_exr:
-                extensions.add('.exr')
-            if preferences.use_png:
-                extensions.add('.png')
-            if preferences.use_jpg:
-                extensions.update(('.jpg', '.jpeg'))
-            
-            for fn in sorted(os.listdir(current_dir)):
-                if fn.lower().endswith(tuple(extensions)):
-                    hdri_settings.hdri_preview = os.path.join(current_dir, fn)
-                    break
-        
-        for area in context.screen.areas:
-            if area.type == 'VIEW_3D':
-                area.tag_redraw()
-        
-        return {'FINISHED'}
 
-class HDRI_OT_reset_rotation(Operator):
-    bl_idname = "world.reset_hdri_rotation"
-    bl_label = "Reset HDRI Rotation"
-    bl_description = "Reset all rotation values to 0"
-    
-    def execute(self, context):
-        world = context.scene.world
-        if world and world.use_nodes:
-            mapping_node = None
-            for node in world.node_tree.nodes:
-                if node.type == 'MAPPING':
-                    mapping_node = node
-                    break
-            
-            if mapping_node:
-                # Set rotation to zero
-                zero_rotation = (0, 0, 0)
-                mapping_node.inputs['Rotation'].default_value = zero_rotation
-                
-                # Add keyframe if animation is enabled
-                if context.scene.hdri_settings.use_animation:
-                    if insert_rotation_keyframe(context, mapping_node, zero_rotation):
-                        self.report({'INFO'}, "Reset keyframe added")
-                    else:
-                        self.report({'WARNING'}, "Failed to insert reset keyframe")
-        
-        return {'FINISHED'}
-
-class HDRI_OT_quick_rotate(Operator):
-    bl_idname = "world.quick_rotate_hdri"
-    bl_label = "Quick Rotate HDRI"
-    bl_description = "Rotate HDRI by the increment set in preferences"
-    
-    axis: IntProperty(
-        name="Axis",
-        description="Rotation axis (0=X, 1=Y, 2=Z)",
-        default=0
-    )
-    
-    direction: IntProperty(
-        name="Direction",
-        description="Rotation direction (1 or -1)",
-        default=1
-    )
-    
-    def execute(self, context):
-        preferences = context.preferences.addons[__name__].preferences
-        world = context.scene.world
-        
-        if world and world.use_nodes:
-            mapping_node = None
-            for node in world.node_tree.nodes:
-                if node.type == 'MAPPING':
-                    mapping_node = node
-                    break
-                    
-            if mapping_node:
-                # Get the current rotation
-                current_rotation = list(mapping_node.inputs['Rotation'].default_value)
-                increment_in_radians = radians(preferences.rotation_increment)
-                current_rotation[self.axis] += (self.direction * increment_in_radians)
-                
-                # Update the rotation value
-                mapping_node.inputs['Rotation'].default_value = current_rotation
-                
-                # Add keyframe if animation is enabled
-                if context.scene.hdri_settings.use_animation:
-                    try:
-                        # Get the fcurves for the mapping node's rotation
-                        action = world.node_tree.animation_data.action
-                        if not action:
-                            action = bpy.data.actions.new(name="HDRIMappingAction")
-                            world.node_tree.animation_data.action = action
-                        
-                        # Find the path to the rotation input
-                        data_path = f'nodes["{mapping_node.name}"].inputs[2].default_value'
-                        
-                        # Insert keyframe for each axis
-                        for i in range(3):
-                            fcurve = action.fcurves.find(data_path, index=i)
-                            if not fcurve:
-                                fcurve = action.fcurves.new(data_path, index=i)
-                            fcurve.keyframe_points.insert(
-                                frame=context.scene.frame_current,
-                                value=current_rotation[i]
-                            )
-                        
-                        self.report({'INFO'}, "Keyframe added")
-                    except Exception as e:
-                        self.report({'WARNING'}, f"Could not insert keyframe: {str(e)}")
-                        
-        return {'FINISHED'}
-
-class HDRI_OT_reset_strength(Operator):
-    bl_idname = "world.reset_hdri_strength"
-    bl_label = "Reset HDRI Strength"
-    bl_description = "Reset strength value to 1.0"
-    
-    def execute(self, context):
-        context.scene.hdri_settings.background_strength = 1.0
-        if context.scene.hdri_settings.use_animation:
-            world = context.scene.world
-            if world and world.use_nodes:
-                for node in world.node_tree.nodes:
-                    if node.type == 'BACKGROUND':
-                        node.inputs['Strength'].keyframe_insert(
-                            data_path="default_value",
-                            frame=context.scene.frame_current
-                        )
-        return {'FINISHED'}
-
-class HDRI_OT_setup_nodes(Operator):
-    bl_idname = "world.setup_hdri_nodes"
-    bl_label = "Setup HDRI Nodes"
-    bl_description = "Create and setup the required nodes for HDRI control"
-    
-    def execute(self, context):
-        ensure_world_nodes()
-        return {'FINISHED'}
-        
-class HDRI_OT_load_selected(Operator):
-    bl_idname = "world.load_selected_hdri"
-    bl_label = "Load Selected HDRI"
-    bl_description = "Load the selected HDRI"
-    
-    def execute(self, context):
-        filepath = context.scene.hdri_settings.hdri_preview
-        
-        if not filepath:
-            self.report({'INFO'}, "No HDRI selected")
-            return {'CANCELLED'}
-            
-        if not os.path.exists(filepath):
-            self.report({'ERROR'}, "HDRI file not found")
-            return {'CANCELLED'}
-        
-        hdri_settings = context.scene.hdri_settings
-        preferences = context.preferences.addons[__name__].preferences
-        world = context.scene.world
-        
-        # Store current rotation if keep_rotation is enabled
-        current_rotation = None
-        if preferences.keep_rotation and world and world.use_nodes:
-            for node in world.node_tree.nodes:
-                if node.type == 'MAPPING':
-                    current_rotation = tuple(node.inputs['Rotation'].default_value)
-                    break
-        
-        # Store current state as previous
-        if world and world.use_nodes:
-            for node in world.node_tree.nodes:
-                if node.type == 'TEX_ENVIRONMENT' and node.image:
-                    hdri_settings.previous_hdri_path = node.image.filepath
-                elif node.type == 'MAPPING':
-                    # Convert to tuple for storing
-                    hdri_settings.previous_rotation = tuple(node.inputs['Rotation'].default_value)
-                elif node.type == 'BACKGROUND':
-                    hdri_settings.previous_strength = node.inputs['Strength'].default_value
-        
-        # Set up nodes
-        mapping, env_tex, node_background = ensure_world_nodes()
-        
-        # Load the new image
-        img = bpy.data.images.load(filepath, check_existing=True)
-        env_tex.image = img
-        
-        # Apply rotation based on keep_rotation setting
-        if preferences.keep_rotation and current_rotation is not None:
-            mapping.inputs['Rotation'].default_value = current_rotation
-        else:
-            mapping.inputs['Rotation'].default_value = (0, 0, 0)
-            
-        # Add keyframes if animation is enabled
-        if hdri_settings.use_animation:
-            try:
-                # Create animation data if needed
-                if not world.node_tree.animation_data:
-                    world.node_tree.animation_data_create()
-                if not world.node_tree.animation_data.action:
-                    action = bpy.data.actions.new(name="HDRIAnimation")
-                    world.node_tree.animation_data.action = action
-                
-                frame = context.scene.frame_current
-                
-                # Insert rotation keyframes
-                keyframe_rotation_value(mapping, world.node_tree, frame)
-                
-                # Insert strength keyframe
-                strength_path = f'nodes["{node_background.name}"].inputs[1].default_value'
-                strength_curve = world.node_tree.animation_data.action.fcurves.find(strength_path)
-                if not strength_curve:
-                    strength_curve = world.node_tree.animation_data.action.fcurves.new(strength_path)
-                strength_curve.keyframe_points.insert(
-                    frame=frame,
-                    value=node_background.inputs['Strength'].default_value
-                )
-                
-                self.report({'INFO'}, "Keyframes added successfully")
-            except Exception as e:
-                self.report({'WARNING'}, f"Could not insert keyframes: {str(e)}")
-        
-        return {'FINISHED'}
-        
-class HDRI_OT_reset_to_previous(Operator):
-    bl_idname = "world.reset_to_previous_hdri"
-    bl_label = "Reset to Previous HDRI"
-    bl_description = "Reset to the previously loaded HDRI"
-    
-    def execute(self, context):
-        hdri_settings = context.scene.hdri_settings
-        world = context.scene.world
-        
-        if not hdri_settings.previous_hdri_path:
-            self.report({'WARNING'}, "No previous HDRI available")
-            return {'CANCELLED'}
-        
-        # Restore previous state
-        mapping, env_tex, node_background = ensure_world_nodes()
-        
-        if hdri_settings.previous_hdri_path:
-            img = bpy.data.images.load(hdri_settings.previous_hdri_path, check_existing=True)
-            env_tex.image = img
-            
-        mapping.inputs['Rotation'].default_value = hdri_settings.previous_rotation
-        node_background.inputs['Strength'].default_value = hdri_settings.previous_strength
-        
-        # Add keyframes if animation is enabled
-        if hdri_settings.use_animation:
-            try:
-                # Create animation data if needed
-                if not world.node_tree.animation_data:
-                    world.node_tree.animation_data_create()
-                if not world.node_tree.animation_data.action:
-                    action = bpy.data.actions.new(name="HDRIAnimation")
-                    world.node_tree.animation_data.action = action
-
-                frame = context.scene.frame_current
-                
-                # Insert rotation keyframes
-                rotation_path = f'nodes["{mapping.name}"].inputs[2].default_value'
-                for i in range(3):
-                    fcurve = world.node_tree.animation_data.action.fcurves.find(rotation_path, index=i)
-                    if not fcurve:
-                        fcurve = world.node_tree.animation_data.action.fcurves.new(rotation_path, index=i)
-                    fcurve.keyframe_points.insert(
-                        frame=frame,
-                        value=mapping.inputs['Rotation'].default_value[i]
-                    )
-
-                # Insert strength keyframe
-                strength_path = f'nodes["{node_background.name}"].inputs[1].default_value'
-                strength_curve = world.node_tree.animation_data.action.fcurves.find(strength_path)
-                if not strength_curve:
-                    strength_curve = world.node_tree.animation_data.action.fcurves.new(strength_path)
-                strength_curve.keyframe_points.insert(
-                    frame=frame,
-                    value=node_background.inputs['Strength'].default_value
-                )
-                
-                self.report({'INFO'}, "Previous state restored with keyframes")
-            except Exception as e:
-                self.report({'WARNING'}, f"Could not insert keyframes: {str(e)}")
-        
-        return {'FINISHED'}
-
-class HDRI_OT_update_shortcut(Operator):
-    bl_idname = "world.update_hdri_shortcut"
-    bl_label = "Update Shortcut"
-    bl_description = "Apply the new keyboard shortcut"
-    
-    def execute(self, context):
-        preferences = context.preferences.addons[__name__].preferences
-        preferences.update_shortcut(context)
-        self.report({'INFO'}, "Shortcut updated successfully")
-        return {'FINISHED'}
-
-class HDRI_OT_toggle_visibility(Operator):
-    bl_idname = "world.toggle_hdri_visibility"
-    bl_label = "Toggle HDRI Visibility"
-    bl_description = "Toggle HDRI background visibility in camera (Ray Visibility)"
-    
-    def execute(self, context):
-        world = context.scene.world
-        if world:
-            world.cycles_visibility.camera = not world.cycles_visibility.camera
-            context.scene.world.update_tag()
-            for area in context.screen.areas:
-                area.tag_redraw()
-            self.report({'INFO'}, f"Camera visibility set to: {world.cycles_visibility.camera}")
-            return {'FINISHED'}
-        return {'CANCELLED'}
-        
 class HDRI_OT_load_selected(Operator):
     bl_idname = "world.load_selected_hdri"
     bl_label = "Load Selected HDRI"
@@ -1158,18 +642,6 @@ class HDRI_OT_load_selected(Operator):
             mapping.inputs['Rotation'].default_value = current_rotation
         else:
             mapping.inputs['Rotation'].default_value = (0, 0, 0)
-            
-        # Add keyframes if animation is enabled
-        if hdri_settings.use_animation:
-            frame = context.scene.frame_current
-            mapping.inputs['Rotation'].default_value.keyframe_insert(
-                data_path="default_value",
-                frame=frame
-            )
-            node_background.inputs['Strength'].keyframe_insert(
-                data_path="default_value",
-                frame=frame
-            )
         
         return {'FINISHED'}
 
@@ -1183,22 +655,6 @@ class HDRI_OT_update_shortcut(Operator):
         preferences.update_shortcut(context)
         self.report({'INFO'}, "Shortcut updated successfully")
         return {'FINISHED'}
-
-class HDRI_OT_toggle_visibility(Operator):
-    bl_idname = "world.toggle_hdri_visibility"
-    bl_label = "Toggle HDRI Visibility"
-    bl_description = "Toggle HDRI background visibility in camera (Ray Visibility)"
-    
-    def execute(self, context):
-        world = context.scene.world
-        if world:
-            world.cycles_visibility.camera = not world.cycles_visibility.camera
-            context.scene.world.update_tag()
-            for area in context.screen.areas:
-                area.tag_redraw()
-            self.report({'INFO'}, f"Camera visibility set to: {world.cycles_visibility.camera}")
-            return {'FINISHED'}
-        return {'CANCELLED'}
         
 class HDRISettings(PropertyGroup):
     hdri_preview: EnumProperty(
@@ -1235,7 +691,7 @@ class HDRISettings(PropertyGroup):
         soft_max=100.0,
         step=0.1,
         precision=3,
-        update=update_with_keyframe
+        update=update_background_strength
     )
     
     show_browser: BoolProperty(
@@ -1264,13 +720,6 @@ class HDRISettings(PropertyGroup):
         default=1.0
     )
 
-    # Animation settings
-    use_animation: BoolProperty(
-        name="Animate Changes",
-        description="Automatically keyframe rotation and strength changes",
-        default=False
-    )
-        
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
 
@@ -1280,7 +729,6 @@ class QuickHDRIPreferences(AddonPreferences):
         description="Automatically check for updates when Blender starts",
         default=False
     )
-    
     update_available: BoolProperty(
         name="Update Available",
         default=False
@@ -1451,6 +899,33 @@ class QuickHDRIPreferences(AddonPreferences):
         step=0.1
     )
 
+    def update_shortcut(self, context):
+        """Update the keyboard shortcut"""
+        # Remove existing shortcut
+        for km, kmi in addon_keymaps:
+            km.keymap_items.remove(kmi)
+        addon_keymaps.clear()
+        
+        # Add new shortcut
+        wm = context.window_manager
+        kc = wm.keyconfigs.addon
+        if kc:
+            km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
+            
+            # Handle platform-specific keys
+            is_mac = sys.platform == 'darwin'
+            
+            kmi = km.keymap_items.new(
+                HDRI_OT_popup_controls.bl_idname,
+                type=self.popup_key,
+                value='PRESS',
+                oskey=self.popup_ctrl if is_mac else False,  # Command key for MacOS
+                ctrl=self.popup_ctrl if not is_mac else False,  # Ctrl key for Windows/Linux
+                shift=self.popup_shift,
+                alt=self.popup_alt
+            )
+            addon_keymaps.append((km, kmi))
+
     def draw(self, context):
         layout = self.layout
         is_mac = sys.platform == 'darwin'
@@ -1556,34 +1031,36 @@ class QuickHDRIPreferences(AddonPreferences):
         col.prop(self, "keep_rotation", text="Keep Rotation When Switching HDRIs")
         col.prop(self, "strength_max", text="Maximum Strength Value")
         col.prop(self, "rotation_increment", text="Rotation Step Size")
-
-    def update_shortcut(self, context):
-        """Update the keyboard shortcut"""
-        # Remove existing shortcut
-        for km, kmi in addon_keymaps:
-            km.keymap_items.remove(kmi)
-        addon_keymaps.clear()
         
-        # Add new shortcut
-        wm = context.window_manager
-        kc = wm.keyconfigs.addon
-        if kc:
-            km = kc.keymaps.new(name="3D View", space_type='VIEW_3D')
-            
-            # Handle platform-specific keys
-            is_mac = sys.platform == 'darwin'
-            
-            kmi = km.keymap_items.new(
-                HDRI_OT_popup_controls.bl_idname,
-                type=self.popup_key,
-                value='PRESS',
-                oskey=self.popup_ctrl if is_mac else False,  # Command key for MacOS
-                ctrl=self.popup_ctrl if not is_mac else False,  # Ctrl key for Windows/Linux
-                shift=self.popup_shift,
-                alt=self.popup_alt
-            )
-            addon_keymaps.append((km, kmi))
+class HDRI_OT_toggle_visibility(Operator):
+    bl_idname = "world.toggle_hdri_visibility"
+    bl_label = "Toggle HDRI Visibility"
+    bl_description = "Toggle HDRI background visibility in camera (Ray Visibility)"
     
+    def execute(self, context):
+        world = context.scene.world
+        if world:
+            # Print current state
+            print(f"Current visibility state: {world.cycles_visibility.camera}")
+            
+            # Toggle visibility
+            world.cycles_visibility.camera = not world.cycles_visibility.camera
+            
+            # Print new state
+            print(f"New visibility state: {world.cycles_visibility.camera}")
+            
+            # Force update
+            context.scene.world.update_tag()
+            for area in context.screen.areas:
+                area.tag_redraw()
+            
+            # Report the change to the UI
+            self.report({'INFO'}, f"Camera visibility set to: {world.cycles_visibility.camera}")
+            
+            return {'FINISHED'}
+        return {'CANCELLED'}
+
+            
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
@@ -1783,15 +1260,10 @@ class HDRI_PT_controls(Panel):
                     text="",
                     icon='HIDE_OFF' if is_visible else 'HIDE_ON',
                     depress=is_visible)
-
-                # Animation toggle and keyframe controls
-                row = rotation_box.row(align=True)
-                row.prop(hdri_settings, "use_animation", text="", icon='KEYINGSET')
-                if hdri_settings.use_animation:
-                    row.operator("world.insert_hdri_keyframe", text="", icon='KEY_HLT')
-                    row.operator("world.clear_hdri_animation", text="", icon='KEY_DEHLT')
+               
 
                 # Keep Rotation toggle
+                row = rotation_box.row(align=True)
                 row.prop(preferences, "keep_rotation", 
                     text="",
                     icon='LINKED' if preferences.keep_rotation else 'UNLINKED'
@@ -1889,7 +1361,7 @@ class HDRI_PT_controls(Panel):
             emboss=False,
         )
         settings_btn.module = __name__
-
+                    
 def draw_hdri_menu(self, context):
     layout = self.layout
     layout.separator()
@@ -1912,8 +1384,6 @@ classes = (
     HDRI_OT_quick_rotate,
     HDRI_OT_reset_to_previous,
     HDRI_OT_toggle_visibility,
-    HDRI_OT_insert_keyframe,
-    HDRI_OT_clear_animation,
 )
 
 def register():

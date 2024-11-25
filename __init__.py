@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 1),
+    "version": (2, 4, 2),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -78,6 +78,7 @@ def generate_previews(self, context):
         return enum_items
     
     image_paths = []
+    failed_previews = []
     
     # Only look for images in the current directory (not in subfolders)
     for fn in os.listdir(current_dir):
@@ -88,22 +89,58 @@ def generate_previews(self, context):
     enum_items.append(('', 'None', '', 0, 0))
     
     # Add HDRIs
-    for i, fn in enumerate(sorted(image_paths), 1):  # Start from 1 since 0 is used for empty
+    for i, fn in enumerate(sorted(image_paths), 1):
         filepath = os.path.join(current_dir, fn)
         
-        if filepath not in pcoll:
-            thumb = pcoll.load(filepath, filepath, 'IMAGE')
-        else:
-            thumb = pcoll[filepath]
-            
-        enum_items.append((
-            filepath,
-            os.path.splitext(fn)[0],
-            "",
-            thumb.icon_id,
-            i
-        ))
-            
+        try:
+            if filepath not in pcoll:
+                # Try to load the preview
+                thumb = pcoll.load(filepath, filepath, 'IMAGE')
+                
+                # Verify the preview was loaded successfully
+                if not thumb or not thumb.icon_id:
+                    # If thumbnail generation failed, try loading as image first
+                    img = bpy.data.images.load(filepath, check_existing=True)
+                    img.gl_load()  # Force OpenGL preview generation
+                    
+                    # Try loading preview again
+                    thumb = pcoll.load(filepath, filepath, 'IMAGE')
+                    
+                    # Cleanup temporary image
+                    img.gl_free()
+                    bpy.data.images.remove(img)
+                    
+            else:
+                thumb = pcoll[filepath]
+                
+            # Only add to enum_items if we have a valid thumbnail
+            if thumb and thumb.icon_id:
+                enum_items.append((
+                    filepath,
+                    os.path.splitext(fn)[0],
+                    "",
+                    thumb.icon_id,
+                    i
+                ))
+            else:
+                failed_previews.append(fn)
+                
+        except Exception as e:
+            print(f"Failed to generate preview for {fn}: {str(e)}")
+            failed_previews.append(fn)
+            continue
+    
+    # If any previews failed, print debug info
+    if failed_previews:
+        print(f"\nFailed to generate previews for {len(failed_previews)} files:")
+        for fn in failed_previews:
+            filepath = os.path.join(current_dir, fn)
+            try:
+                file_size = os.path.getsize(filepath) / (1024 * 1024)  # Size in MB
+                print(f"- {fn} (Size: {file_size:.1f}MB)")
+            except:
+                print(f"- {fn} (Unable to get file size)")
+    
     return enum_items
 
 def refresh_previews(self, context):
@@ -122,7 +159,7 @@ def get_folders(context):
     base_dir = preferences.hdri_directory
     current_dir = context.scene.hdri_settings.current_folder
 
-    if not current_dir:
+    if not current_dir or os.path.normpath(current_dir) == os.path.normpath(base_dir):
         current_dir = base_dir
     
     items = []
@@ -141,12 +178,20 @@ def get_folders(context):
         context.scene.hdri_settings.current_folder = base_dir
         current_dir = base_dir
 
-    # Add parent directory option only if we're in a subfolder of base_dir
-    if current_dir != base_dir:
-        items.append(("parent", "..", "Go to parent folder", 'FILE_PARENT', 0))
+    # Check if we're in a subfolder of the HDRI directory
+    if os.path.normpath(current_dir) != os.path.normpath(base_dir):
+        # Check if we're exactly one level deep from base_dir
+        is_direct_child = os.path.dirname(os.path.normpath(current_dir)) == os.path.normpath(base_dir)
+
+        # Always add home button in subfolders
+        items.append((base_dir, "", "Return to HDRI folder", 'HOME', 0))
+        
+        # Only add back button if we're deeper than one level
+        if not is_direct_child:
+            items.append(("parent", "", "Go to parent folder", 'FILE_PARENT', 1))
 
     # Add subfolders
-    for i, dirname in enumerate(sorted(os.listdir(current_dir)), 1):
+    for i, dirname in enumerate(sorted(os.listdir(current_dir)), len(items)):
         full_path = os.path.join(current_dir, dirname)
         if os.path.isdir(full_path):
             # Verify this subdirectory is still within base_dir
@@ -158,7 +203,6 @@ def get_folders(context):
                 continue
     
     return items
-    
 def update_background_strength(self, context):
     if context.scene.world and context.scene.world.use_nodes:
         for node in context.scene.world.node_tree.nodes:
@@ -306,6 +350,49 @@ def has_active_hdri(context):
                 return True
     return False
     
+def cleanup_unused_images():
+    """Remove unused HDRI images from memory"""
+    # Get all environment texture nodes in use
+    active_images = set()
+    for world in bpy.data.worlds:
+        if world.use_nodes:
+            for node in world.node_tree.nodes:
+                if node.type == 'TEX_ENVIRONMENT' and node.image:
+                    active_images.add(node.image)
+
+    # Remove unused images
+    for img in bpy.data.images:
+        if img.users == 0 and img not in active_images:
+            bpy.data.images.remove(img)
+
+def cleanup_preview_cache():
+    """Clear the preview cache when switching folders"""
+    for attr in dir(generate_previews):
+        if attr.startswith('preview_cache_'):
+            delattr(generate_previews, attr)
+            
+class HDRI_OT_cleanup_unused(Operator):
+    bl_idname = "world.cleanup_unused_hdri"
+    bl_label = "Cleanup Unused HDRIs"
+    bl_description = "Remove unused HDRI images from memory"
+    
+    def execute(self, context):
+        try:
+            initial_count = len(bpy.data.images)
+            cleanup_unused_images()
+            final_count = len(bpy.data.images)
+            removed = initial_count - final_count
+            
+            if removed > 0:
+                self.report({'INFO'}, f"Removed {removed} unused HDRI image{'s' if removed > 1 else ''}")
+            else:
+                self.report({'INFO'}, "No unused HDRI images found")
+                
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Cleanup failed: {str(e)}")
+            return {'CANCELLED'}
+    
 class HDRI_OT_popup_controls(Operator):
     bl_idname = "world.hdri_popup_controls"
     bl_label = "HDRI Quick Controls"
@@ -447,6 +534,7 @@ class HDRI_OT_change_folder(Operator):
         hdri_settings = context.scene.hdri_settings
         
         if self.folder_path == "parent":
+            # Handle back button - go up one level
             current = hdri_settings.current_folder
             new_path = os.path.dirname(current)
             
@@ -461,12 +549,16 @@ class HDRI_OT_change_folder(Operator):
                 
             hdri_settings.current_folder = new_path
         else:
+            # Handle both home button (base_dir) and folder navigation
             try:
-                rel_path = os.path.relpath(self.folder_path, base_dir)
-                if rel_path.startswith('..'):
-                    self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
-                    return {'CANCELLED'}
-                hdri_settings.current_folder = self.folder_path
+                if os.path.normpath(self.folder_path) == os.path.normpath(base_dir):
+                    hdri_settings.current_folder = base_dir
+                else:
+                    rel_path = os.path.relpath(self.folder_path, base_dir)
+                    if rel_path.startswith('..'):
+                        self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
+                        return {'CANCELLED'}
+                    hdri_settings.current_folder = self.folder_path
             except ValueError:
                 self.report({'WARNING'}, "Invalid path")
                 return {'CANCELLED'}
@@ -598,53 +690,67 @@ class HDRI_OT_load_selected(Operator):
     bl_description = "Load the selected HDRI"
     
     def execute(self, context):
-        filepath = context.scene.hdri_settings.hdri_preview
-        
-        if not filepath:
-            self.report({'INFO'}, "No HDRI selected")
-            return {'CANCELLED'}
+        try:
+            filepath = context.scene.hdri_settings.hdri_preview
             
-        if not os.path.exists(filepath):
-            self.report({'ERROR'}, "HDRI file not found")
+            if not filepath:
+                self.report({'WARNING'}, "No HDRI selected")
+                return {'CANCELLED'}
+                
+            if not os.path.exists(filepath):
+                self.report({'ERROR'}, f"HDRI file not found: {filepath}")
+                return {'CANCELLED'}
+            
+            # Check file size before loading
+            file_size = os.path.getsize(filepath) / (1024 * 1024)  # Size in MB
+            if file_size > 500:  # Warning for files over 500MB
+                self.report({'WARNING'}, f"Large HDRI file ({file_size:.1f}MB). Loading may take a while.")
+            
+            hdri_settings = context.scene.hdri_settings
+            preferences = context.preferences.addons[__name__].preferences
+            
+            # Store current rotation if keep_rotation is enabled
+            current_rotation = None
+            if preferences.keep_rotation:
+                for node in context.scene.world.node_tree.nodes:
+                    if node.type == 'MAPPING':
+                        current_rotation = node.inputs['Rotation'].default_value.copy()
+                        break
+            
+            # Store current state as previous
+            world = context.scene.world
+            if world and world.use_nodes:
+                for node in world.node_tree.nodes:
+                    if node.type == 'TEX_ENVIRONMENT' and node.image:
+                        hdri_settings.previous_hdri_path = node.image.filepath
+                    elif node.type == 'MAPPING':
+                        hdri_settings.previous_rotation = node.inputs['Rotation'].default_value.copy()
+                    elif node.type == 'BACKGROUND':
+                        hdri_settings.previous_strength = node.inputs['Strength'].default_value
+            
+            # Set up nodes
+            mapping, env_tex, node_background = ensure_world_nodes()
+            
+            # Load the new image
+            try:
+                img = bpy.data.images.load(filepath, check_existing=True)
+                env_tex.image = img
+                self.report({'INFO'}, f"Successfully loaded: {os.path.basename(filepath)}")
+            except Exception as e:
+                self.report({'ERROR'}, f"Failed to load HDRI: {str(e)}")
+                return {'CANCELLED'}
+            
+            # Apply rotation based on keep_rotation setting
+            if preferences.keep_rotation and current_rotation is not None:
+                mapping.inputs['Rotation'].default_value = current_rotation
+            else:
+                mapping.inputs['Rotation'].default_value = (0, 0, 0)
+            
+            return {'FINISHED'}
+            
+        except Exception as e:
+            self.report({'ERROR'}, f"Unexpected error: {str(e)}")
             return {'CANCELLED'}
-        
-        hdri_settings = context.scene.hdri_settings
-        preferences = context.preferences.addons[__name__].preferences
-        
-        # Store current rotation if keep_rotation is enabled
-        current_rotation = None
-        if preferences.keep_rotation:
-            for node in context.scene.world.node_tree.nodes:
-                if node.type == 'MAPPING':
-                    current_rotation = node.inputs['Rotation'].default_value.copy()
-                    break
-        
-        # Store current state as previous
-        world = context.scene.world
-        if world and world.use_nodes:
-            for node in world.node_tree.nodes:
-                if node.type == 'TEX_ENVIRONMENT' and node.image:
-                    hdri_settings.previous_hdri_path = node.image.filepath
-                elif node.type == 'MAPPING':
-                    hdri_settings.previous_rotation = node.inputs['Rotation'].default_value.copy()
-                elif node.type == 'BACKGROUND':
-                    hdri_settings.previous_strength = node.inputs['Strength'].default_value
-        
-        # Set up nodes
-        mapping, env_tex, node_background = ensure_world_nodes()
-        
-        # Load the new image
-        img = bpy.data.images.load(filepath, check_existing=True)
-        env_tex.image = img
-        
-        # Apply rotation based on keep_rotation setting
-        if preferences.keep_rotation and current_rotation is not None:
-            mapping.inputs['Rotation'].default_value = current_rotation
-        else:
-            mapping.inputs['Rotation'].default_value = (0, 0, 0)
-        
-        return {'FINISHED'}
-
 class HDRI_OT_update_shortcut(Operator):
     bl_idname = "world.update_hdri_shortcut"
     bl_label = "Update Shortcut"
@@ -1173,16 +1279,31 @@ class HDRI_PT_controls(Panel):
             # Folder navigation grid
             folders = get_folders(context)
             if folders:
-                grid = browser_box.grid_flow(row_major=True, columns=3, align=True)
-                grid.scale_y = preferences.button_scale
-                for folder_path, name, _, icon, _ in folders:
-                    op = grid.operator("world.change_hdri_folder",
-                        text=name,
-                        icon=icon,
-                        depress=(folder_path == current_folder))
-                    op.folder_path = folder_path
+                # Split navigation buttons and folder items
+                nav_buttons = [f for f in folders if f[3] in {'HOME', 'FILE_PARENT'}]
+                folder_items = [f for f in folders if f[3] == 'FILE_FOLDER']
+                
+                # Navigation buttons
+                if nav_buttons:
+                    row = browser_box.row(align=True)
+                    for folder_path, name, tooltip, icon, _ in nav_buttons:
+                        op = row.operator("world.change_hdri_folder",
+                            text=name,
+                            icon=icon,
+                            depress=(folder_path == current_folder))
+                        op.folder_path = folder_path
+                
+                # Folder grid
+                if folder_items:
+                    grid = browser_box.grid_flow(row_major=True, columns=3, align=True)
+                    for folder_path, name, tooltip, icon, _ in folder_items:
+                        op = grid.operator("world.change_hdri_folder",
+                            text=name,
+                            icon=icon,
+                            depress=(folder_path == current_folder))
+                        op.folder_path = folder_path
 
-        main_column.separator(factor=0.5 * preferences.spacing_scale)
+        main_column.separator(factor=1.0 * preferences.spacing_scale)
         
         # HDRI Preview Section
         if has_hdri_files(context):
@@ -1260,8 +1381,7 @@ class HDRI_PT_controls(Panel):
                     text="",
                     icon='HIDE_OFF' if is_visible else 'HIDE_ON',
                     depress=is_visible)
-               
-
+                
                 # Keep Rotation toggle
                 row = rotation_box.row(align=True)
                 row.prop(preferences, "keep_rotation", 
@@ -1370,6 +1490,7 @@ def draw_hdri_menu(self, context):
 # Registration
 classes = (
     QuickHDRIPreferences,
+    HDRI_OT_cleanup_unused,
     HDRISettings,
     HDRI_OT_reset_rotation,
     HDRI_OT_reset_strength,

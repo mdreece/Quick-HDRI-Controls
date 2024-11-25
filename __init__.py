@@ -1402,7 +1402,8 @@ class HDRI_PT_controls(Panel):
                     text="",
                     icon='HIDE_OFF' if is_visible else 'HIDE_ON',
                     depress=is_visible)
-                
+               
+
                 # Keep Rotation toggle
                 row = rotation_box.row(align=True)
                 row.prop(preferences, "keep_rotation", 
@@ -1493,7 +1494,7 @@ class HDRI_PT_controls(Panel):
         # Footer
         footer = main_column.row(align=True)
         footer.scale_y = 0.8
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
         
         settings_btn = footer.operator(
             "preferences.addon_show",

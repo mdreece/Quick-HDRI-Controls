@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 2),
+    "version": (2, 4, 3),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -227,8 +227,10 @@ def check_for_update_on_startup():
             for line in content.split('\n'):
                 if '"version":' in line:
                     version_numbers = re.findall(r'\d+', line)
-                    if len(version_numbers) >= 2:
-                        online_version = (int(version_numbers[0]), int(version_numbers[1]))
+                    if len(version_numbers) >= 3:
+                        online_version = (int(version_numbers[0]), #Main Build
+                                        int(version_numbers[1]), #Sub Build
+                                        int(version_numbers[2])) #Patch Build 
                     break
 
         # If the online version is higher, set the alert in user preferences
@@ -432,8 +434,10 @@ class HDRI_OT_check_updates(Operator):
                 for line in content.split('\n'):
                     if '"version":' in line:
                         version_numbers = re.findall(r'\d+', line)
-                        if len(version_numbers) >= 2:
-                            return (int(version_numbers[0]), int(version_numbers[1]))
+                        if len(version_numbers) >= 3:  # Changed to expect 3 numbers
+                            return (int(version_numbers[0]), 
+                                   int(version_numbers[1]), 
+                                   int(version_numbers[2]))  # Include patch version
         except Exception as e:
             print(f"Update check error: {str(e)}")
             return None
@@ -447,13 +451,14 @@ class HDRI_OT_check_updates(Operator):
             self.report({'ERROR'}, "Could not connect to GitHub. Please check your internet connection.")
             return {'CANCELLED'}
         
-        if online_version <= current_version:
-            self.report({'INFO'}, f"Quick HDRI Controls is up to date (v{current_version[0]}.{current_version[1]})")
+        # Compare all three version numbers
+        if online_version <= current_version:  # This will compare tuples element by element
+            self.report({'INFO'}, f"Quick HDRI Controls is up to date (v{current_version[0]}.{current_version[1]}.{current_version[2]})")
             return {'FINISHED'}
         
         def draw_popup(self, context):
-            self.layout.label(text=f"New version available: v{online_version[0]}.{online_version[1]}")
-            self.layout.label(text=f"Current version: v{current_version[0]}.{current_version[1]}")
+            self.layout.label(text=f"New version available: v{online_version[0]}.{online_version[1]}.{online_version[2]}")
+            self.layout.label(text=f"Current version: v{current_version[0]}.{current_version[1]}.{current_version[2]}")
             self.layout.operator("world.download_hdri_update", text="Download Update")
             
         context.window_manager.popup_menu(draw_popup, title="Update Available", icon='INFO')
@@ -1034,109 +1039,120 @@ class QuickHDRIPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        is_mac = sys.platform == 'darwin'
-
-        # Header with introduction and quick access to the directory
+        
+        # HDRI Directory (Always visible as it's critical)
+        main_box = layout.box()
+        row = main_box.row()
+        row.scale_y = 1.2
+        row.prop(self, "hdri_directory", text="HDRI Directory")
+        
+        # Updates Section
         box = layout.box()
-        box.label(text="Quick HDRI Controls", icon='WORLD')
-        box.label(text="Easily adjust world HDRI rotation and selection.")
-        box.prop(self, "hdri_directory", text="HDRI Directory")
-
-        # Automatic Updates & Information
+        header = box.row()
+        header.prop(self, "show_updates", icon='TRIA_DOWN' if getattr(self, 'show_updates', True) else 'TRIA_RIGHT', 
+                   icon_only=True, emboss=False)
+        header.label(text="Updates & Information", icon='FILE_REFRESH')
+        
+        if getattr(self, 'show_updates', True):
+            col = box.column()
+            row = col.row(align=True)
+            row.prop(self, "enable_auto_update_check", text="Auto-Check for Updates")
+            row.operator("world.check_hdri_updates", text="Check Now", icon='FILE_REFRESH')
+            
+            if self.update_available:
+                row = col.row()
+                row.alert = True
+                row.operator("world.download_hdri_update", text="Download Available Update", icon='IMPORT')
+            
+            col.operator("wm.url_open", text="Documentation", icon='HELP').url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
+        
+        # Keyboard Shortcuts Section
         box = layout.box()
-        box.label(text="Automatic Updates & Information", icon='SYSTEM')
-    
-        # Auto-update and documentation links
-        row = box.row(align=True)
-        row.prop(self, "enable_auto_update_check", text="Auto-Check for Updates")
-        row.operator(
-            "wm.url_open",
-            text="Documentation",
-            icon='URL'
-        ).url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
-    
-        # Check and download updates if available
-        row = box.row(align=True)
-        row.operator("world.check_hdri_updates", text="Check for Updates", icon='FILE_REFRESH')
-        if self.update_available:
-            row.operator("world.download_hdri_update", text="Download Update")
-
-        # Keyboard Shortcuts
+        header = box.row()
+        header.prop(self, "show_shortcuts", icon='TRIA_DOWN' if getattr(self, 'show_shortcuts', True) else 'TRIA_RIGHT',
+                   icon_only=True, emboss=False)
+        header.label(text="Keyboard Shortcuts", icon='KEYINGSET')
+        
+        if getattr(self, 'show_shortcuts', True):
+            col = box.column(align=True)
+            
+            # Current shortcut display
+            current_shortcut = []
+            if self.popup_ctrl:
+                current_shortcut.append("⌘ Command" if sys.platform == 'darwin' else "Ctrl")
+            if self.popup_shift:
+                current_shortcut.append("⇧ Shift")
+            if self.popup_alt:
+                current_shortcut.append("⌥ Option" if sys.platform == 'darwin' else "Alt")
+            current_shortcut.append(self.popup_key)
+            
+            col.label(text="Current Shortcut: " + " + ".join(current_shortcut))
+            
+            row = col.row(align=True)
+            if sys.platform == 'darwin':
+                row.prop(self, "popup_ctrl", text="⌘ Command", toggle=True)
+                row.prop(self, "popup_shift", text="⇧ Shift", toggle=True)
+                row.prop(self, "popup_alt", text="⌥ Option", toggle=True)
+            else:
+                row.prop(self, "popup_ctrl", text="Ctrl", toggle=True)
+                row.prop(self, "popup_shift", text="Shift", toggle=True)
+                row.prop(self, "popup_alt", text="Alt", toggle=True)
+                
+            col.prop(self, "popup_key", text="Key")
+            col.operator("world.update_hdri_shortcut", text="Apply Shortcut Change")
+        
+        # Interface Settings Section
         box = layout.box()
-        box.label(text="Keyboard Shortcuts", icon='KEYINGSET')
-    
-        # Current shortcut display
-        current_shortcut = []
-        if self.popup_ctrl:
-            current_shortcut.append("⌘ Command" if is_mac else "Ctrl")
-        if self.popup_shift:
-            current_shortcut.append("⇧ Shift")
-        if self.popup_alt:
-            current_shortcut.append("⌥ Option" if is_mac else "Alt")
-        current_shortcut.append(self.popup_key)
-    
-        row = box.row()
-        row.label(text="Current Shortcut: " + " + ".join(current_shortcut))
-    
-        # Shortcut configuration
-        col = box.column(align=True)
-        row = col.row(align=True)
-    
-        if is_mac:
-            row.prop(self, "popup_ctrl", text="⌘ Command", toggle=True)
-            row.prop(self, "popup_shift", text="⇧ Shift", toggle=True)
-            row.prop(self, "popup_alt", text="⌥ Option", toggle=True)
-        else:
-            row.prop(self, "popup_ctrl", text="Ctrl", toggle=True)
-            row.prop(self, "popup_shift", text="Shift", toggle=True)
-            row.prop(self, "popup_alt", text="Alt", toggle=True)
-    
-        row = col.row()
-        row.prop(self, "popup_key", text="Key")
-    
-        # Apply button
-        box.operator("world.update_hdri_shortcut", text="Apply Shortcut Change")
-
-        # User Interface Settings
+        header = box.row()
+        header.prop(self, "show_interface", icon='TRIA_DOWN' if getattr(self, 'show_interface', True) else 'TRIA_RIGHT',
+                   icon_only=True, emboss=False)
+        header.label(text="Interface Settings", icon='PREFERENCES')
+        
+        if getattr(self, 'show_interface', True):
+            col = box.column(align=True)
+            col.prop(self, "ui_scale", text="Panel Width")
+            col.prop(self, "preview_scale", text="Preview Size")
+            col.prop(self, "button_scale", text="Button Scale")
+            col.prop(self, "spacing_scale", text="Spacing Scale")
+            col.separator()
+            col.prop(self, "show_file_path", text="Show Full Path in Browser")
+            col.prop(self, "show_strength_slider", text="Show Strength Slider")
+            col.prop(self, "show_rotation_values", text="Show Rotation Values")
+            col.prop(self, "use_compact_ui", text="Use Compact UI")
+        
+        # File Types Section
         box = layout.box()
-        box.label(text="User Interface Settings", icon='PREFERENCES')
-    
-        # UI Layout Settings
-        col = box.column(align=True)
-        col.label(text="Layout Settings:")
-        col.prop(self, "ui_scale", text="Panel Width")
-        col.prop(self, "preview_scale", text="Preview Size")
-        col.prop(self, "button_scale", text="Button Scale")
-        col.prop(self, "spacing_scale", text="Spacing Scale")
-    
-        # Visual Settings
-        col = box.column(align=True)
-        col.label(text="Visual Settings:")
-        col.prop(self, "show_file_path", text="Show Full Path in Browser")
-        col.prop(self, "show_strength_slider", text="Show Strength Slider")
-        col.prop(self, "show_rotation_values", text="Show Rotation Values")
-
-        # File Filters & Settings
+        header = box.row()
+        header.prop(self, "show_filetypes", icon='TRIA_DOWN' if getattr(self, 'show_filetypes', True) else 'TRIA_RIGHT',
+                   icon_only=True, emboss=False)
+        header.label(text="Supported File Types", icon='FILE_FOLDER')
+        
+        if getattr(self, 'show_filetypes', True):
+            row = box.row(align=True)
+            row.prop(self, "use_hdr", toggle=True)
+            row.prop(self, "use_exr", toggle=True)
+            row.prop(self, "use_png", toggle=True)
+            row.prop(self, "use_jpg", toggle=True)
+        
+        # HDRI Settings Section
         box = layout.box()
-        box.label(text="File Filters & Settings", icon='FILE_FOLDER')
-    
-        # File type toggles
-        row = box.row(align=True)
-        row.label(text="Supported File Types:")
-        row = box.row(align=True)
-        row.prop(self, "use_hdr", toggle=True)
-        row.prop(self, "use_exr", toggle=True)
-        row.prop(self, "use_png", toggle=True)
-        row.prop(self, "use_jpg", toggle=True)
+        header = box.row()
+        header.prop(self, "show_hdri_settings", icon='TRIA_DOWN' if getattr(self, 'show_hdri_settings', True) else 'TRIA_RIGHT',
+                   icon_only=True, emboss=False)
+        header.label(text="HDRI Settings", icon='WORLD_DATA')
+        
+        if getattr(self, 'show_hdri_settings', True):
+            col = box.column(align=True)
+            col.prop(self, "keep_rotation", text="Keep Rotation When Switching HDRIs")
+            col.prop(self, "strength_max", text="Maximum Strength Value")
+            col.prop(self, "rotation_increment", text="Rotation Step Size")
 
-        # HDRI Settings
-        box = layout.box()
-        box.label(text="HDRI Settings", icon='WORLD_DATA')
-    
-        col = box.column(align=True)
-        col.prop(self, "keep_rotation", text="Keep Rotation When Switching HDRIs")
-        col.prop(self, "strength_max", text="Maximum Strength Value")
-        col.prop(self, "rotation_increment", text="Rotation Step Size")
+    # Add the properties to control section visibility
+    show_updates: BoolProperty(default=True)
+    show_shortcuts: BoolProperty(default=True)
+    show_interface: BoolProperty(default=True)
+    show_filetypes: BoolProperty(default=True)
+    show_hdri_settings: BoolProperty(default=True)
         
 class HDRI_OT_toggle_visibility(Operator):
     bl_idname = "world.toggle_hdri_visibility"
@@ -1477,7 +1493,7 @@ class HDRI_PT_controls(Panel):
         # Footer
         footer = main_column.row(align=True)
         footer.scale_y = 0.8
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
+        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
         
         settings_btn = footer.operator(
             "preferences.addon_show",

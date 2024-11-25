@@ -1280,22 +1280,27 @@ class HDRI_PT_controls(Panel):
             folders = get_folders(context)
             if folders:
                 # Split navigation buttons and folder items
-                nav_buttons = [f for f in folders if f[3] in {'HOME', 'FILE_PARENT'}]
-                folder_items = [f for f in folders if f[3] == 'FILE_FOLDER']
+                nav_items = [(p, n, t, i, idx) for p, n, t, i, idx in folders if i in {'HOME', 'FILE_PARENT'}]
+                folder_items = [(p, n, t, i, idx) for p, n, t, i, idx in folders if i == 'FILE_FOLDER']
                 
-                # Navigation buttons
-                if nav_buttons:
-                    row = browser_box.row(align=True)
-                    for folder_path, name, tooltip, icon, _ in nav_buttons:
-                        op = row.operator("world.change_hdri_folder",
+                # Create navigation row with larger scale if we have nav buttons
+                if nav_items:
+                    nav_row = browser_box.row(align=True)
+                    nav_row.scale_y = 1.0
+                    nav_row.scale_x = 2.0
+                    
+                    for folder_path, name, tooltip, icon, _ in nav_items:
+                        op = nav_row.operator("world.change_hdri_folder",
                             text=name,
                             icon=icon,
                             depress=(folder_path == current_folder))
                         op.folder_path = folder_path
                 
-                # Folder grid
+                # Create folder grid
                 if folder_items:
                     grid = browser_box.grid_flow(row_major=True, columns=3, align=True)
+                    grid.scale_y = preferences.button_scale
+                    
                     for folder_path, name, tooltip, icon, _ in folder_items:
                         op = grid.operator("world.change_hdri_folder",
                             text=name,

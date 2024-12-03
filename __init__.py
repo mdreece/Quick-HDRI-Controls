@@ -1494,7 +1494,7 @@ class HDRI_PT_controls(Panel):
         # Footer
         footer = main_column.row(align=True)
         footer.scale_y = 0.8
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}")
+        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
         
         settings_btn = footer.operator(
             "preferences.addon_show",

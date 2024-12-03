@@ -434,10 +434,10 @@ class HDRI_OT_check_updates(Operator):
                 for line in content.split('\n'):
                     if '"version":' in line:
                         version_numbers = re.findall(r'\d+', line)
-                        if len(version_numbers) >= 3:  # Changed to expect 3 numbers
+                        if len(version_numbers) >= 3:
                             return (int(version_numbers[0]), 
                                    int(version_numbers[1]), 
-                                   int(version_numbers[2]))  # Include patch version
+                                   int(version_numbers[2]))
         except Exception as e:
             print(f"Update check error: {str(e)}")
             return None

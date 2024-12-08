@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 3),
+    "version": (2, 4, 4),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -25,7 +25,7 @@ bl_info = {
     "category": "3D View",
 }
 
-# Store keymap entries to remove them when unregistering
+# Stored keymap entries to remove them when unregistering
 addon_keymaps = []
 
 def get_hdri_previews():
@@ -178,9 +178,9 @@ def get_folders(context):
         context.scene.hdri_settings.current_folder = base_dir
         current_dir = base_dir
 
-    # Check if we're in a subfolder of the HDRI directory
+    # Check if in a subfolder of the HDRI directory
     if os.path.normpath(current_dir) != os.path.normpath(base_dir):
-        # Check if we're exactly one level deep from base_dir
+        # Check if one level deep from base_dir
         is_direct_child = os.path.dirname(os.path.normpath(current_dir)) == os.path.normpath(base_dir)
 
         # Always add home button in subfolders
@@ -756,6 +756,39 @@ class HDRI_OT_load_selected(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Unexpected error: {str(e)}")
             return {'CANCELLED'}
+            
+class HDRI_OT_browse_directory(Operator):
+    bl_idname = "wm.directory_browse"
+    bl_label = "Browse Directory"
+    
+    directory: StringProperty(
+        name="Search Directory",
+        description="Directory to search for HDRIs",
+        subtype='DIR_PATH'
+    )
+    
+    property_name: StringProperty(
+        name="Property Name",
+        description="Name of the property to update"
+    )
+    
+    property_owner: StringProperty(
+        name="Property Owner",
+        description="Owner of the property to update"
+    )
+    
+    def execute(self, context):
+        # Update the appropriate property
+        if self.property_owner == "preferences":
+            preferences = context.preferences.addons[__name__].preferences
+            setattr(preferences, self.property_name, self.directory)
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+        
 class HDRI_OT_update_shortcut(Operator):
     bl_idname = "world.update_hdri_shortcut"
     bl_label = "Update Shortcut"
@@ -1044,27 +1077,76 @@ class QuickHDRIPreferences(AddonPreferences):
         main_box = layout.box()
         row = main_box.row()
         row.scale_y = 1.2
+        # Make the directory field red if not set
+        if not self.hdri_directory:
+            row.alert = True
         row.prop(self, "hdri_directory", text="HDRI Directory")
         
         # Updates Section
         box = layout.box()
         header = box.row()
-        header.prop(self, "show_updates", icon='TRIA_DOWN' if getattr(self, 'show_updates', True) else 'TRIA_RIGHT', 
+        header.prop(self, "show_updates", 
+                   icon='TRIA_DOWN' if getattr(self, 'show_updates', True) else 'TRIA_RIGHT',
                    icon_only=True, emboss=False)
-        header.label(text="Updates & Information", icon='FILE_REFRESH')
+                   
+        # Add version info to header
+        header_text = header.split(factor=0.7)
+        header_text.label(text="Updates & Information", icon='FILE_REFRESH')
+        version_text = header_text.row()
+        version_text.alignment = 'RIGHT'
+        version_text.label(text=f"Current Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
         
         if getattr(self, 'show_updates', True):
-            col = box.column()
-            row = col.row(align=True)
-            row.prop(self, "enable_auto_update_check", text="Auto-Check for Updates")
-            row.operator("world.check_hdri_updates", text="Check Now", icon='FILE_REFRESH')
+            update_box = box.box()
             
+            # Status and auto-check row
+            status_row = update_box.row()
+            status_sub = status_row.row(align=True)
+            status_sub.prop(self, "enable_auto_update_check", 
+                          text="Check for Updates on Startup",
+                          icon='TIME')
+            
+            # Check now button
+            check_row = status_sub.row(align=True)
+            check_row.operator("world.check_hdri_updates", 
+                             text="Check Now",
+                             icon='FILE_REFRESH')
+            
+            # Show update status if available
             if self.update_available:
-                row = col.row()
-                row.alert = True
-                row.operator("world.download_hdri_update", text="Download Available Update", icon='IMPORT')
+                alert_box = update_box.box()
+                alert_box.alert = True
+                alert_row = alert_box.row()
+                alert_row.label(text="New Update Available!", icon='ERROR')
+                alert_row.operator("world.download_hdri_update", 
+                                 text="Download Update",
+                                 icon='IMPORT')
             
-            col.operator("wm.url_open", text="Documentation", icon='HELP').url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
+            # Documentation section
+            docs_box = box.box()
+            docs_col = docs_box.column(align=True)
+            
+            # Documentation header
+            doc_header = docs_col.row()
+            doc_header.label(text="Documentation & Resources", icon='HELP')
+            
+            # Documentation links
+            links_row = docs_col.row(align=True)
+            links_row.scale_y = 1.2
+            links_row.operator("wm.url_open", 
+                             text="Documentation",
+                             icon='URL').url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
+            links_row.operator("wm.url_open",
+                             text="Report Issue",
+                             icon='ERROR').url = "https://github.com/mdreece/Quick-HDRI-Controls/issues"
+            
+            # Tips section
+            tips_box = box.box()
+            tips_col = tips_box.column(align=True)
+            tips_col.label(text="Quick Tips:", icon='INFO')
+            tips_col.label(text="• Use keyboard shortcut for quick access")
+            tips_col.label(text="• Organize HDRI folers")
+            tips_col.label(text="• Check for updates regularly")
         
         # Keyboard Shortcuts Section
         box = layout.box()
@@ -1110,15 +1192,12 @@ class QuickHDRIPreferences(AddonPreferences):
         
         if getattr(self, 'show_interface', True):
             col = box.column(align=True)
-            col.prop(self, "ui_scale", text="Panel Width")
             col.prop(self, "preview_scale", text="Preview Size")
             col.prop(self, "button_scale", text="Button Scale")
             col.prop(self, "spacing_scale", text="Spacing Scale")
             col.separator()
-            col.prop(self, "show_file_path", text="Show Full Path in Browser")
             col.prop(self, "show_strength_slider", text="Show Strength Slider")
             col.prop(self, "show_rotation_values", text="Show Rotation Values")
-            col.prop(self, "use_compact_ui", text="Use Compact UI")
         
         # File Types Section
         box = layout.box()
@@ -1220,7 +1299,24 @@ class HDRI_PT_controls(Panel):
             col = box.column(align=True)
             col.scale_y = 1.2 * preferences.button_scale
             col.label(text="HDRI Directory Not Set", icon='ERROR')
-            col.operator("preferences.addon_show", text="Open Preferences", icon='PREFERENCES').module = __name__
+            
+            # Add row for buttons
+            row = col.row(align=True)
+            row.scale_y = 1.2
+            
+            # Preferences button
+            row.operator("preferences.addon_show", 
+                text="Open Preferences", 
+                icon='PREFERENCES').module = __name__
+                
+            # Browse button
+            op = row.operator("wm.directory_browse",
+                text="Browse",
+                icon='FILE_FOLDER')
+            op.directory = preferences.hdri_directory
+            # Set the property to update when directory is selected
+            op.property_name = "hdri_directory"
+            op.property_owner = "preferences"
             return
             
         world = context.scene.world
@@ -1228,9 +1324,11 @@ class HDRI_PT_controls(Panel):
             box = main_column.box()
             col = box.column(align=True)
             col.scale_y = 1.2 * preferences.button_scale
-            col.operator("world.setup_hdri_nodes", 
-                text="Initialize HDRI System",
-                icon='WORLD_DATA')
+            # Only show Initialize button if HDRI directory is set
+            if preferences.hdri_directory:
+                col.operator("world.setup_hdri_nodes", 
+                    text="Initialize HDRI System",
+                    icon='WORLD_DATA')
             return
 
         # Get node references
@@ -1259,72 +1357,108 @@ class HDRI_PT_controls(Panel):
         # Main UI
         # Folder Browser Section
         browser_box = main_column.box()
-        row = browser_box.row(align=True)
-        row.scale_y = preferences.button_scale
-        row.prop(hdri_settings, "show_browser", 
-                icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
-                icon_only=True)
-        sub = row.row(align=True)
-        sub.alert = False
-        sub.active = hdri_settings.show_browser
-        sub.label(text="Folder Browser", icon='FILE_FOLDER')
+        browser_box.use_property_split = False  # Better layout for new design
+        
+        # Header row with breadcrumb navigation
+        header_row = browser_box.row(align=True)
+        header_row.scale_y = 1.2 * preferences.button_scale
+        
+        # Collapsible arrow and label
+        header_sub = header_row.row()
+        header_sub.prop(hdri_settings, "show_browser", 
+                       icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
+                       icon_only=True)
+        header_sub.label(text="HDRI Browser", icon='FILE_FOLDER')
+        
+        # Right-aligned home button
+        home_sub = header_row.row()
+        home_sub.alignment = 'RIGHT'
+        if context.scene.hdri_settings.current_folder != preferences.hdri_directory:
+            op = home_sub.operator("world.change_hdri_folder", text="", icon='HOME')
+            op.folder_path = preferences.hdri_directory
 
         if hdri_settings.show_browser:
-            browser_box.scale_y = preferences.button_scale
-        
-            # Current path display
+            # Get current path information
             current_folder = context.scene.hdri_settings.current_folder
             base_dir = preferences.hdri_directory
-        
-            if current_folder:
-                try:
-                    if os.path.normpath(current_folder) == os.path.normpath(base_dir):
-                        display_path = "/ HDRI" if not preferences.show_file_path else base_dir
-                        browser_box.label(text=display_path, icon='WORLD_DATA')
-                    else:
-                        if preferences.show_file_path:
-                            display_path = current_folder
-                        else:
-                            rel_path = os.path.relpath(current_folder, base_dir)
-                            display_path = f"/ {rel_path}"
-                        browser_box.label(text=display_path, icon='FILE_FOLDER')
-                except ValueError:
-                    context.scene.hdri_settings.current_folder = base_dir
-                    browser_box.label(text="/ Home", icon='HOME')
-        
-            # Folder navigation grid
+            
+            try:
+                # Only show breadcrumb navigation when not in root directory
+                if current_folder and os.path.exists(current_folder) and \
+                   os.path.normpath(current_folder) != os.path.normpath(base_dir):
+                    
+                    # Calculate relative path for breadcrumbs
+                    rel_path = os.path.relpath(current_folder, base_dir)
+                    path_parts = ['HDRI'] + rel_path.split(os.sep)
+                    
+                    # Create breadcrumb row with background
+                    bread_box = browser_box.box()
+                    bread_row = bread_box.row(align=True)
+                    bread_row.scale_y = 0.9 * preferences.button_scale
+                    
+                    # Build breadcrumb path
+                    current_path = base_dir
+                    for i, part in enumerate(path_parts):
+                        # Add separator for all but first item
+                        if i > 0:
+                            bread_row.label(text="›", icon='NONE')
+                        
+                        # Create breadcrumb button
+                        if i < len(path_parts) - 1:  # Not the last item
+                            op = bread_row.operator("world.change_hdri_folder", 
+                                                  text=part,
+                                                  depress=False,
+                                                  emboss=True)
+                            op.folder_path = current_path
+                        else:  # Last item (current folder)
+                            bread_row.label(text=part, icon='FILE_FOLDER')
+                        
+                        # Update path for next iteration
+                        if i < len(path_parts) - 1:
+                            current_path = os.path.join(current_path, part)
+                    
+                    browser_box.separator(factor=0.5 * preferences.spacing_scale)
+                            
+            except (ValueError, OSError) as e:
+                context.scene.hdri_settings.current_folder = base_dir
+                print(f"Path error: {str(e)}")
+            
+            # Folder Grid - only show if there are folders
             folders = get_folders(context)
-            if folders:
-                # Split navigation buttons and folder items
-                nav_items = [(p, n, t, i, idx) for p, n, t, i, idx in folders if i in {'HOME', 'FILE_PARENT'}]
-                folder_items = [(p, n, t, i, idx) for p, n, t, i, idx in folders if i == 'FILE_FOLDER']
+            folder_items = [(p, n, t, i, idx) for p, n, t, i, idx in folders if i == 'FILE_FOLDER']
+            
+            if folder_items:
+                # Create column for folders
+                col = browser_box.column(align=True)
+                col.scale_y = 0.95  # Slightly reduce vertical spacing
                 
-                # Create navigation row with larger scale if we have nav buttons
-                if nav_items:
-                    nav_row = browser_box.row(align=True)
-                    nav_row.scale_y = 1.0
-                    nav_row.scale_x = 2.0
-                    
-                    for folder_path, name, tooltip, icon, _ in nav_items:
-                        op = nav_row.operator("world.change_hdri_folder",
-                            text=name,
-                            icon=icon,
-                            depress=(folder_path == current_folder))
-                        op.folder_path = folder_path
+                # Calculate number of items for layout
+                num_items = len(folder_items)
+                columns = 2 if num_items > 3 else 1  # Use 2 columns only if more than 3 items
                 
-                # Create folder grid
-                if folder_items:
-                    grid = browser_box.grid_flow(row_major=True, columns=3, align=True)
-                    grid.scale_y = preferences.button_scale
+                # Create grid
+                grid = col.grid_flow(row_major=True,
+                                   columns=columns,
+                                   even_columns=True,
+                                   even_rows=True,
+                                   align=True)
+                
+                for folder_path, name, tooltip, icon, _ in folder_items:
+                    # Create button for folder
+                    row = grid.row(align=True)
+                    row.scale_y = 1.0  # Standard button height
+                    row.alert = False  # Ensure normal coloring
                     
-                    for folder_path, name, tooltip, icon, _ in folder_items:
-                        op = grid.operator("world.change_hdri_folder",
-                            text=name,
-                            icon=icon,
-                            depress=(folder_path == current_folder))
-                        op.folder_path = folder_path
-
-        main_column.separator(factor=1.0 * preferences.spacing_scale)
+                    # Add folder button with icon
+                    op = row.operator("world.change_hdri_folder",
+                                    text=name,
+                                    icon='FILE_FOLDER',  # Use standard folder icon
+                                    depress=(folder_path == current_folder),
+                                    emboss=True)
+                    op.folder_path = folder_path
+                    
+                    # Ensure button fills available space
+                    row.scale_x = 1.0
         
         # HDRI Preview Section
         if has_hdri_files(context):
@@ -1337,7 +1471,7 @@ class HDRI_PT_controls(Panel):
             sub = row.row(align=True)
             sub.alert = False
             sub.active = hdri_settings.show_preview
-            sub.label(text="HDRI Selection", icon='IMAGE_DATA')
+            sub.label(text="HDRI Select", icon='IMAGE_DATA')
             
             if hdri_settings.show_preview:
                 preview_box.scale_y = preferences.button_scale
@@ -1386,9 +1520,14 @@ class HDRI_PT_controls(Panel):
             sub = row.row(align=True)
             sub.alert = False
             sub.active = hdri_settings.show_rotation
-            sub.label(text="HDRI Settings", icon='DRIVER_ROTATIONAL_DIFFERENCE')
+            sub.label(text="Settings", icon='DRIVER_ROTATIONAL_DIFFERENCE')
             
             if hdri_settings.show_rotation:
+                # Move keep rotation toggle to the header row with other controls
+                sub.prop(preferences, "keep_rotation",
+                    text="",
+                    icon='LINKED' if preferences.keep_rotation else 'UNLINKED'
+                )
                 sub.operator("world.reset_hdri_rotation", text="", icon='LOOP_BACK')
                 if preferences.show_strength_slider:
                     sub.operator("world.reset_hdri_strength", text="", icon='FILE_REFRESH')
@@ -1403,14 +1542,6 @@ class HDRI_PT_controls(Panel):
                     icon='HIDE_OFF' if is_visible else 'HIDE_ON',
                     depress=is_visible)
                
-
-                # Keep Rotation toggle
-                row = rotation_box.row(align=True)
-                row.prop(preferences, "keep_rotation", 
-                    text="",
-                    icon='LINKED' if preferences.keep_rotation else 'UNLINKED'
-                )
-            
                 # Layout based on compact mode
                 if preferences.use_compact_ui:
                     # Compact layout
@@ -1527,6 +1658,7 @@ classes = (
     HDRI_OT_quick_rotate,
     HDRI_OT_reset_to_previous,
     HDRI_OT_toggle_visibility,
+    HDRI_OT_browse_directory,
 )
 
 def register():

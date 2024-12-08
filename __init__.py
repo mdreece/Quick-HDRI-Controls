@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 4),
+    "version": (2, 4, 5),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -519,12 +519,29 @@ class HDRI_OT_download_update(Operator):
                 self.report({'WARNING'}, f"Failed to clean up temporary files: {str(e)}")
             
             self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
+            bpy.ops.world.restart_prompt('INVOKE_DEFAULT')
             return {'FINISHED'}
-                
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
-            print(f"Detailed error: {str(e)}")
             return {'CANCELLED'}
+            
+            
+class HDRI_OT_restart_prompt(Operator):
+    bl_idname = "world.restart_prompt"
+    bl_label = "Restart Required"
+    bl_description = "Prompt user to save and restart Blender"
+
+    def execute(self, context):
+        self.report({'INFO'}, "Please save your work and restart Blender.")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Update installed! Please save your work.")
+        layout.label(text="Blender needs to restart to apply changes.")
 
 class HDRI_OT_change_folder(Operator):
     bl_idname = "world.change_hdri_folder"
@@ -1666,6 +1683,8 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
+    
+    bpy.utils.register_class(HDRI_OT_restart_prompt)
 
     # Add keymap entry
     wm = bpy.context.window_manager

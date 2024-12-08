@@ -1094,7 +1094,7 @@ class QuickHDRIPreferences(AddonPreferences):
         main_box = layout.box()
         row = main_box.row()
         row.scale_y = 1.2
-        # Make the directory field red if not set
+        # Make the directory field red
         if not self.hdri_directory:
             row.alert = True
         row.prop(self, "hdri_directory", text="HDRI Directory")
@@ -1162,8 +1162,8 @@ class QuickHDRIPreferences(AddonPreferences):
             tips_col = tips_box.column(align=True)
             tips_col.label(text="Quick Tips:", icon='INFO')
             tips_col.label(text="• Use keyboard shortcut for quick access")
-            tips_col.label(text="• Organize HDRI folers")
-            tips_col.label(text="• Check for updates regularly")
+            tips_col.label(text="• Organize HDRI folders")
+            tips_col.label(text="• Check for updates regularly (make features suggestions")
         
         # Keyboard Shortcuts Section
         box = layout.box()

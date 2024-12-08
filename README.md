@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.4.3 for Blender
+# Quick HDRI Controls v2.4.4 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.2.0+-green.svg)
-![Version](https://img.shields.io/badge/Version-2.4.3-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.4.4-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -52,20 +52,22 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 
-![Screenshot 2024-11-01 194312](https://github.com/user-attachments/assets/42f189d2-db37-48c1-9660-b6c7dc5ad58d)
+![image](https://github.com/user-attachments/assets/5d0a283c-9381-4d63-960d-b79636a60c37)
 
 2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
-![BL Preference HDRI directory](https://github.com/user-attachments/assets/42ecdba8-43d0-4267-a542-096ab243024f)
+![image](https://github.com/user-attachments/assets/38793fa1-bfd0-4a9a-9d04-3a943ee34582)
 
  - If this is not done, when attempting to use you will be prompted to set it anyway
    
-![HDRI not set](https://github.com/user-attachments/assets/9d81e5da-5e77-4dba-86b4-d18fd86ebae5)
+![image](https://github.com/user-attachments/assets/2af89aa1-9333-4e4b-8abd-79dccd056116)
+ - Open Preferences to HDRI Directory
+ - Open/Choose HDRI Directory directly
 
+3. In 'Supported File Tyypes' select which file types you want to use (HDR, EXR, PNG, JPG)
+(All are enabled by default)
 
-3. Select which file types you want to use (HDR, EXR, PNG, JPG)
-
-![BL Preference File Settings](https://github.com/user-attachments/assets/463e9a20-765b-4d38-86b6-3dab8f0cecd2)
+![image](https://github.com/user-attachments/assets/f468276b-5d99-45ed-af7c-47679367d3ef)
 
 4. Close the preferences
 
@@ -73,42 +75,36 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
 
-![HDRI start](https://github.com/user-attachments/assets/3b7320bd-0bb2-487b-98c8-2e59ec2e7486)
-
+![image](https://github.com/user-attachments/assets/8054b0e6-3a2c-4f36-9833-974d80fe42a6)
 
 2. Click it and then 'Initialize HDRI System'
-3. You'll see the first of three sections
+3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
+ - Click a folder to browse the HDRIs
 
-![Screenshot 2024-11-01 194344](https://github.com/user-attachments/assets/69751f44-878f-4bac-a156-3f238d14e94d)
+![image](https://github.com/user-attachments/assets/9e08da51-b2d9-4bb8-a538-124ad9da2d1d)
 
+4. Once a folder has been selected, 'HDRI Select' appears.
 
-#### Folder Browser
-
-![Screenshot 2024-11-01 194401](https://github.com/user-attachments/assets/f8c689a8-60a1-4206-893c-497cc7815813)
-
-- Navigate through your HDRI folders
-- Click folder names to enter them
-- Use ".." to go back up
-
-#### HDRI Selection
-
-![Screenshot 2024-11-01 194554](https://github.com/user-attachments/assets/a72b7594-7cc0-4843-96a8-1caf3d5f86d6)
+![image](https://github.com/user-attachments/assets/0dad27cc-da0b-41c1-8cce-78ef564dddd2)
 
 - Click the box to see thumbnails of your HDRIs
 - Click one to select it
 - Hit "Load Selected HDRI" to use it
    - Click Reset to revert to prviously selected HDRI
 
+5. 'Settings' will appear once an HDRI has been loaded.
 
-#### HDRI Settings
+![image](https://github.com/user-attachments/assets/5eb1fdca-2103-4198-bd32-c5a0a72f10d5)
 
-![Screenshot 2024-11-01 194419](https://github.com/user-attachments/assets/6d0a3055-91dc-4df3-a9e8-2263fb943495)
-
+Buttons:
 - Keep Rotation lock (keeps rotation changes between HDRI switching)
-- Adjust X, Y, Z rotation ( + and - relates to rotation increment in Preferences)
-- World visibility option
+- Reset HDRI Rotation (resets all rotation options to 0.0)
+- Reset HDRI Strength (resets HDRI strength to 1.0 or default option set in preferneces)
+- HDRI Visibiliy (adjusts ray visibility of the selected HDRI)
+
+Options:
+-  X, Y, Z rotation ( + and - relates to rotation increment in Preferences)
 - Control the lighting strength
-- Quick reset buttons for both rotation and strength changes
   - Addon version
   - Quick access to preferences
 
@@ -156,29 +152,33 @@ MacOS (Intel, Apple Silicon has not been tested)
  - BE SURE TO APPLY CHANGES IN PREFERENCES UI
  - When the key combination is pressed, the HDRI panel will appear where the cursor is
 
-![QHDRI_SC_viewport](https://github.com/user-attachments/assets/f85ce798-47bc-4f36-a854-c3490ea432fb)
+![image](https://github.com/user-attachments/assets/8181d86e-d6f3-4a16-ba1d-d7aa893c1bfa)
 
 
 
-## Customization
-
-### Panel Settings
+### Interface Settings
 You can customize:
-- Panel width
 - Preview size
 - Button scale
 - Spacing scale
+- Show Strength Slider
+- Show Rotation Values
 
 To access these options:
 1. Go to Edit > Preferences > Add-ons
 2. Find Quick HDRI Controls
 3. Expand the preferences section
 
-![BL Preference UI](https://github.com/user-attachments/assets/a55864cf-0508-4976-9270-5f7be4758012)
+![image](https://github.com/user-attachments/assets/d0e42dc4-97bc-4b84-97ec-f8f39b3c4687)
 
-### Visual Settings
+### HDRI Settings
 
-![BL Preference Visual](https://github.com/user-attachments/assets/1bc2bafd-61f3-4c5c-b476-2dafbc6e52ed)
+![image](https://github.com/user-attachments/assets/7a907fc4-d83e-4468-9924-5bf1aff142ef)
+
+ - Keep Rotation options between HDRI changes
+ - Maximum Strength value for lighting in scenes
+ - Rotations step degree for when rotating HDRIs in increments
+
 
 
 
@@ -204,7 +204,7 @@ To access these options:
 Stay up to date:
 1. Open addon preferences
    
-![update check](https://github.com/user-attachments/assets/aa19b8e9-6195-4358-9efa-d539272afe93)
+![image](https://github.com/user-attachments/assets/582a0099-5be8-4f99-bc92-d6df699a9751)
 
 2. Click on 'Check for Updates'
  - If there are updates a message will prompt to update
@@ -218,8 +218,6 @@ Stay up to date:
 3. Auto-Check Updates can be enabled
 
  (This feature checks for updates on startup of Blender)
-
-![BL Preference Updates](https://github.com/user-attachments/assets/2fee90dd-5197-4ffd-8605-fc366f6d3831)
 
  - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls if there is a pending update
    

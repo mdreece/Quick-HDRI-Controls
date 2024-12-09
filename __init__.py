@@ -519,7 +519,12 @@ class HDRI_OT_download_update(Operator):
                 self.report({'WARNING'}, f"Failed to clean up temporary files: {str(e)}")
             
             self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
-            bpy.ops.world.restart_prompt('INVOKE_DEFAULT')
+            
+            # Delay the operator invocation until all classes are registered
+            def invoke_restart_prompt():
+                bpy.ops.world.restart_prompt('INVOKE_DEFAULT')
+
+            bpy.app.timers.register(invoke_restart_prompt)
             return {'FINISHED'}
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
@@ -1676,6 +1681,7 @@ classes = (
     HDRI_OT_reset_to_previous,
     HDRI_OT_toggle_visibility,
     HDRI_OT_browse_directory,
+    HDRI_OT_restart_prompt,
 )
 
 def register():

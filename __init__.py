@@ -1706,8 +1706,6 @@ def register():
         addon_keymaps.append((km, kmi))
 
     bpy.app.handlers.load_post.append(load_handler)
-  
-    bpy.utils.register_class(HDRI_OT_restart_prompt)
     
     # Run update check at startup if enabled
     check_for_update_on_startup()

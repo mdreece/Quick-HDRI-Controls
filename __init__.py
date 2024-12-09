@@ -1684,8 +1684,6 @@ def register():
     bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
     
-    bpy.utils.register_class(HDRI_OT_restart_prompt)
-
     # Add keymap entry
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon

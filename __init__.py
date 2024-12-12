@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 5),
+    "version": (2, 4, 6),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -29,178 +29,182 @@ bl_info = {
 addon_keymaps = []
 
 def get_hdri_previews():
+    """Get or create the preview collection"""
     if not hasattr(get_hdri_previews, "preview_collection"):
         pcoll = bpy.utils.previews.new()
         get_hdri_previews.preview_collection = pcoll
+        # Add cache for current directory
+        get_hdri_previews.cached_dir = None
+        get_hdri_previews.cached_items = []
     return get_hdri_previews.preview_collection
 
 def generate_previews(self, context):
-    """Generate preview items for HDRIs in current folder"""
-    enum_items = []
-    
+    """Generate preview items for HDRIs in current folder, using cache when possible"""
+    # Early exit if no settings
     if not hasattr(context.scene, "hdri_settings"):
-        return enum_items
+        return []
         
     preferences = context.preferences.addons[__name__].preferences
-    base_dir = preferences.hdri_directory
-    
-    # Use current_folder if set, otherwise use base directory
+    base_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
     current_dir = context.scene.hdri_settings.current_folder or base_dir
+    current_dir = os.path.normpath(os.path.abspath(current_dir))
     
-    if not current_dir or not os.path.exists(current_dir):
-        return enum_items
-        
-    # Verify current directory is within base directory
-    try:
-        rel_path = os.path.relpath(current_dir, base_dir)
-        if rel_path.startswith('..'):
-            context.scene.hdri_settings.current_folder = base_dir
-            current_dir = base_dir
-    except ValueError:
-        context.scene.hdri_settings.current_folder = base_dir
-        current_dir = base_dir
+    # Check if using the cached directory
+    if (hasattr(get_hdri_previews, "cached_dir") and 
+        get_hdri_previews.cached_dir == current_dir and 
+        get_hdri_previews.cached_items):
+        return get_hdri_previews.cached_items
     
+    # If here, generate new previews
+    enum_items = []
     pcoll = get_hdri_previews()
     
-    # Get enabled file types from preferences
-    extensions = set()
-    if preferences.use_hdr:
-        extensions.add('.hdr')
-    if preferences.use_exr:
-        extensions.add('.exr')
-    if preferences.use_png:
-        extensions.add('.png')
-    if preferences.use_jpg:
-        extensions.update(('.jpg', '.jpeg'))
+    # Get enabled extensions
+    extensions = []
+    if preferences.use_hdr: extensions.append('.hdr')
+    if preferences.use_exr: extensions.append('.exr')
     
-    # If no extensions are enabled, return empty list
     if not extensions:
         return enum_items
     
-    image_paths = []
-    failed_previews = []
-    
-    # Only look for images in the current directory (not in subfolders)
-    for fn in os.listdir(current_dir):
-        if fn.lower().endswith(tuple(extensions)):
-            image_paths.append(fn)
-    
-    # Add an empty option as the first item
+    # Add empty option
     enum_items.append(('', 'None', '', 0, 0))
     
-    # Add HDRIs
-    for i, fn in enumerate(sorted(image_paths), 1):
-        filepath = os.path.join(current_dir, fn)
+    try:
+        files = os.listdir(current_dir)
         
-        try:
-            if filepath not in pcoll:
-                # Try to load the preview
-                thumb = pcoll.load(filepath, filepath, 'IMAGE')
-                
-                # Verify the preview was loaded successfully
-                if not thumb or not thumb.icon_id:
-                    # If thumbnail generation failed, try loading as image first
-                    img = bpy.data.images.load(filepath, check_existing=True)
-                    img.gl_load()  # Force OpenGL preview generation
-                    
-                    # Try loading preview again
-                    thumb = pcoll.load(filepath, filepath, 'IMAGE')
-                    
-                    # Cleanup temporary image
-                    img.gl_free()
-                    bpy.data.images.remove(img)
-                    
-            else:
-                thumb = pcoll[filepath]
-                
-            # Only add to enum_items if we have a valid thumbnail
-            if thumb and thumb.icon_id:
-                enum_items.append((
-                    filepath,
-                    os.path.splitext(fn)[0],
-                    "",
-                    thumb.icon_id,
-                    i
-                ))
-            else:
-                failed_previews.append(fn)
-                
-        except Exception as e:
-            print(f"Failed to generate preview for {fn}: {str(e)}")
-            failed_previews.append(fn)
-            continue
-    
-    # If any previews failed, print debug info
-    if failed_previews:
-        print(f"\nFailed to generate previews for {len(failed_previews)} files:")
-        for fn in failed_previews:
-            filepath = os.path.join(current_dir, fn)
+        # Collect HDR files
+        hdri_files = []
+        for filename in files:
+            lower_name = filename.lower()
+            if any(lower_name.endswith(ext) for ext in extensions):
+                full_path = os.path.join(current_dir, filename)
+                hdri_files.append((filename, full_path))
+        
+        # Collect thumbnails
+        thumbnails = {}
+        for filename in files:
+            if filename.lower().endswith('_thumb.png'):
+                base_name = os.path.splitext(filename)[0][:-6]
+                thumbnails[base_name] = os.path.join(current_dir, filename)
+        
+        # Process each HDR file
+        for idx, (filename, hdri_path) in enumerate(sorted(hdri_files), 1):
             try:
-                file_size = os.path.getsize(filepath) / (1024 * 1024)  # Size in MB
-                print(f"- {fn} (Size: {file_size:.1f}MB)")
-            except:
-                print(f"- {fn} (Unable to get file size)")
+                base_name = os.path.splitext(filename)[0]
+                base_name = base_name.rsplit('_', 1)[0] 
+                
+                preview_path = thumbnails.get(base_name, hdri_path)
+                
+                if hdri_path not in pcoll:
+                    thumb = pcoll.load(hdri_path, preview_path, 'IMAGE')
+                    if not thumb or not thumb.icon_id:
+                        img = bpy.data.images.load(preview_path, check_existing=True)
+                        img.gl_load()
+                        thumb = pcoll.load(hdri_path, preview_path, 'IMAGE')
+                        img.gl_free()
+                        bpy.data.images.remove(img)
+                else:
+                    thumb = pcoll[hdri_path]
+                
+                if thumb and thumb.icon_id:
+                    enum_items.append((
+                        hdri_path,
+                        base_name,
+                        "Using thumbnail preview" if base_name in thumbnails else "",
+                        thumb.icon_id,
+                        idx
+                    ))
+                
+            except Exception as e:
+                print(f"Error processing {filename}: {str(e)}")
+                continue
+                
+    except Exception as e:
+        print(f"Error scanning directory: {str(e)}")
+    
+    # Cache the results
+    get_hdri_previews.cached_dir = current_dir
+    get_hdri_previews.cached_items = enum_items
     
     return enum_items
-
-def refresh_previews(self, context):
+    
+    
+def refresh_previews(context, new_directory=None):
     """Refresh the preview collection when settings change"""
     pcoll = get_hdri_previews()
+    
+    # Clear cache to force regeneration
+    get_hdri_previews.cached_dir = None
+    get_hdri_previews.cached_items = []
+    
+    # Clear preview collection
     pcoll.clear()
     
-    # Reset current folder and preview when HDRI directory changes
     if hasattr(context.scene, "hdri_settings"):
-        context.scene.hdri_settings.current_folder = self.hdri_directory
-        context.scene.hdri_settings.hdri_preview = ''
+        current_settings = context.scene.hdri_settings
+        
+        # Update current folder if new directory is provided
+        if new_directory is not None:
+            current_settings.current_folder = new_directory
+        
+        # Force a single preview regeneration
+        enum_items = generate_previews(None, context)
+        if len(enum_items) > 1:
+            current_settings.hdri_preview = enum_items[1][0]
+        
+        for area in context.screen.areas:
+            area.tag_redraw()
 
 def get_folders(context):
     """Get list of subfolders in HDRI directory"""
     preferences = context.preferences.addons[__name__].preferences
-    base_dir = preferences.hdri_directory
-    current_dir = context.scene.hdri_settings.current_folder
-
-    if not current_dir or os.path.normpath(current_dir) == os.path.normpath(base_dir):
-        current_dir = base_dir
+    base_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
     
-    items = []
-    if not os.path.exists(current_dir):
-        return items
-
-    # Check if current directory is actually inside base directory
+    # Ensure current_folder is within base directory
+    if not context.scene.hdri_settings.current_folder:
+        context.scene.hdri_settings.current_folder = base_dir
+        
+    current_dir = os.path.normpath(os.path.abspath(context.scene.hdri_settings.current_folder))
+    
+    # If somehow outside base directory, reset to base
     try:
         rel_path = os.path.relpath(current_dir, base_dir)
         if rel_path.startswith('..'):
-            # If we somehow got outside the base directory, reset to base
-            context.scene.hdri_settings.current_folder = base_dir
             current_dir = base_dir
+            context.scene.hdri_settings.current_folder = base_dir
     except ValueError:
-        # If on different drive or invalid path, reset to base
-        context.scene.hdri_settings.current_folder = base_dir
         current_dir = base_dir
-
-    # Check if in a subfolder of the HDRI directory
-    if os.path.normpath(current_dir) != os.path.normpath(base_dir):
-        # Check if one level deep from base_dir
-        is_direct_child = os.path.dirname(os.path.normpath(current_dir)) == os.path.normpath(base_dir)
-
-        # Always add home button in subfolders
-        items.append((base_dir, "", "Return to HDRI folder", 'HOME', 0))
-        
-        # Only add back button if we're deeper than one level
-        if not is_direct_child:
-            items.append(("parent", "", "Go to parent folder", 'FILE_PARENT', 1))
-
+        context.scene.hdri_settings.current_folder = base_dir
+    
+    items = []
+    
+    # Only show parent folder button if we're in a subfolder AND not directly in base_dir
+    if current_dir != base_dir:
+        parent_dir = os.path.dirname(current_dir)
+        # Only add parent navigation if it wouldn't take us outside base_dir
+        if os.path.normpath(parent_dir) == os.path.normpath(base_dir) or \
+           os.path.normpath(parent_dir).startswith(os.path.normpath(base_dir)):
+            items.append(("parent", "", "Go to parent folder", 'FILE_PARENT', 0))
+    
     # Add subfolders
-    for i, dirname in enumerate(sorted(os.listdir(current_dir)), len(items)):
-        full_path = os.path.join(current_dir, dirname)
-        if os.path.isdir(full_path):
-            # Verify this subdirectory is still within base_dir
-            try:
-                rel_path = os.path.relpath(full_path, base_dir)
-                if not rel_path.startswith('..'):
-                    items.append((full_path, dirname, "Enter folder", 'FILE_FOLDER', i))
-            except ValueError:
-                continue
+    try:
+        if os.path.exists(current_dir):
+            for idx, dirname in enumerate(sorted(os.listdir(current_dir)), start=len(items)):
+                full_path = os.path.join(current_dir, dirname)
+                if os.path.isdir(full_path):
+                    # Verify subfolder is within base directory
+                    try:
+                        rel_path = os.path.relpath(full_path, base_dir)
+                        if not rel_path.startswith('..'):
+                            items.append((full_path, dirname, "Enter folder", 'FILE_FOLDER', idx))
+                    except ValueError:
+                        continue
+    except Exception as e:
+        print(f"Error reading directory {current_dir}: {str(e)}")
+    
+    return items
+
     
     return items
 def update_background_strength(self, context):
@@ -557,61 +561,39 @@ class HDRI_OT_change_folder(Operator):
     
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
-        base_dir = preferences.hdri_directory
+        base_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
         hdri_settings = context.scene.hdri_settings
         
+        # Handle parent directory navigation
         if self.folder_path == "parent":
-            # Handle back button - go up one level
-            current = hdri_settings.current_folder
+            current = os.path.normpath(os.path.abspath(hdri_settings.current_folder))
             new_path = os.path.dirname(current)
             
-            try:
-                rel_path = os.path.relpath(new_path, base_dir)
-                if rel_path.startswith('..'):
-                    self.report({'WARNING'}, "Cannot navigate above HDRI directory")
-                    return {'CANCELLED'}
-            except ValueError:
-                self.report({'WARNING'}, "Invalid path")
+            # Only allow if new path is base_dir or within it
+            if not (os.path.normpath(new_path) == os.path.normpath(base_dir) or \
+                   os.path.normpath(new_path).startswith(os.path.normpath(base_dir))):
+                self.report({'WARNING'}, "Cannot navigate above HDRI directory")
                 return {'CANCELLED'}
                 
-            hdri_settings.current_folder = new_path
-        else:
-            # Handle both home button (base_dir) and folder navigation
-            try:
-                if os.path.normpath(self.folder_path) == os.path.normpath(base_dir):
-                    hdri_settings.current_folder = base_dir
-                else:
-                    rel_path = os.path.relpath(self.folder_path, base_dir)
-                    if rel_path.startswith('..'):
-                        self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
-                        return {'CANCELLED'}
-                    hdri_settings.current_folder = self.folder_path
-            except ValueError:
-                self.report({'WARNING'}, "Invalid path")
-                return {'CANCELLED'}
+            self.folder_path = new_path
         
-        # Clear previews
-        pcoll = get_hdri_previews()
-        pcoll.clear()
+        # Normalize target path
+        target_path = os.path.normpath(os.path.abspath(self.folder_path))
         
-        # Get the first available HDRI in the new folder
-        current_dir = hdri_settings.current_folder
-        if current_dir and os.path.exists(current_dir):
-            extensions = set()
-            if preferences.use_hdr:
-                extensions.add('.hdr')
-            if preferences.use_exr:
-                extensions.add('.exr')
-            if preferences.use_png:
-                extensions.add('.png')
-            if preferences.use_jpg:
-                extensions.update(('.jpg', '.jpeg'))
-            
-            for fn in sorted(os.listdir(current_dir)):
-                if fn.lower().endswith(tuple(extensions)):
-                    hdri_settings.hdri_preview = os.path.join(current_dir, fn)
-                    break
+        # Verify target is base_dir or within it
+        if not (os.path.normpath(target_path) == os.path.normpath(base_dir) or \
+               os.path.normpath(target_path).startswith(os.path.normpath(base_dir))):
+            self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
+            return {'CANCELLED'}
         
+        # Update current folder
+        hdri_settings.current_folder = target_path
+        
+        # Clear preview cache for folder change
+        get_hdri_previews.cached_dir = None
+        get_hdri_previews.cached_items = []
+        
+        # Force UI update
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
@@ -655,6 +637,23 @@ class HDRI_OT_reset_to_previous(Operator):
         if hdri_settings.previous_hdri_path:
             img = bpy.data.images.load(hdri_settings.previous_hdri_path, check_existing=True)
             env_tex.image = img
+            
+            # Update current folder to match the previous HDR's location
+            prev_dir = os.path.dirname(hdri_settings.previous_hdri_path)
+            if prev_dir != hdri_settings.current_folder:
+                hdri_settings.current_folder = prev_dir
+                # Clear preview cache to force regeneration
+                get_hdri_previews.cached_dir = None
+                get_hdri_previews.cached_items = []
+            
+            # Generate previews to ensure the path exists in enum items
+            enum_items = generate_previews(self, context)
+            
+            # Find the HDR in the enum items
+            for item in enum_items:
+                if item[0] == hdri_settings.previous_hdri_path:
+                    hdri_settings.hdri_preview = hdri_settings.previous_hdri_path
+                    break
             
         mapping.inputs['Rotation'].default_value = hdri_settings.previous_rotation
         node_background.inputs['Strength'].default_value = hdri_settings.previous_strength
@@ -885,6 +884,20 @@ class HDRISettings(PropertyGroup):
         description="Previous strength value",
         default=1.0
     )
+    
+    hdri_preview: EnumProperty(
+        items=generate_previews,
+        name="HDRI Preview",
+        description="Preview of available HDRIs",
+        options={'SKIP_SAVE'}
+    )
+    
+    current_folder: StringProperty(
+        name="Current Folder",
+        description="Current HDRI folder being viewed",
+        default="",
+        subtype='DIR_PATH'
+    )
 
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
@@ -1064,6 +1077,33 @@ class QuickHDRIPreferences(AddonPreferences):
         max=360.0,
         step=0.1
     )
+    
+    preview_limit: IntProperty(
+        name="Preview Limit",
+        description="Maximum number of HDRI previews to load at once (0 = no limit)",
+        default=0,
+        min=0,
+        max=1000
+    )
+    
+    preview_sort: EnumProperty(
+        name="Preview Sort",
+        description="How to sort HDRIs when preview limit is active",
+        items=[
+            ('NAME', 'Name', 'Sort alphabetically by name'),
+            ('DATE', 'Date', 'Sort by most recently modified'),
+            ('SIZE', 'Size', 'Sort by file size')
+        ],
+        default='NAME'
+    )
+    
+    hdri_directory: StringProperty(
+        name="HDRI Directory",
+        subtype='DIR_PATH',
+        description="Directory containing HDRI files",
+        default="",
+        update=lambda self, context: refresh_previews(context, self.hdri_directory)
+    )
 
     def update_shortcut(self, context):
         """Update the keyboard shortcut"""
@@ -1234,6 +1274,15 @@ class QuickHDRIPreferences(AddonPreferences):
             row.prop(self, "use_exr", toggle=True)
             row.prop(self, "use_png", toggle=True)
             row.prop(self, "use_jpg", toggle=True)
+            
+            # Preview limit
+            row = box.row()
+            row.prop(self, "preview_limit")
+            
+            # Sort method (only shown if preview limit is enabled)
+            if self.preview_limit > 0:
+                row = box.row()
+                row.prop(self, "preview_sort")
         
         # HDRI Settings Section
         box = layout.box()
@@ -1379,108 +1428,86 @@ class HDRI_PT_controls(Panel):
         # Main UI
         # Folder Browser Section
         browser_box = main_column.box()
-        browser_box.use_property_split = False  # Better layout for new design
-        
-        # Header row with breadcrumb navigation
-        header_row = browser_box.row(align=True)
-        header_row.scale_y = 1.2 * preferences.button_scale
-        
-        # Collapsible arrow and label
-        header_sub = header_row.row()
-        header_sub.prop(hdri_settings, "show_browser", 
-                       icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
-                       icon_only=True)
-        header_sub.label(text="HDRI Browser", icon='FILE_FOLDER')
-        
-        # Right-aligned home button
-        home_sub = header_row.row()
-        home_sub.alignment = 'RIGHT'
-        if context.scene.hdri_settings.current_folder != preferences.hdri_directory:
-            op = home_sub.operator("world.change_hdri_folder", text="", icon='HOME')
-            op.folder_path = preferences.hdri_directory
+        browser_header = browser_box.row(align=True)
+        browser_header.prop(hdri_settings, "show_browser", 
+                           icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
+                           icon_only=True)
+        header_row = browser_header.row()
+        header_row.label(text="HDRI Browser", icon='FILE_FOLDER')
 
         if hdri_settings.show_browser:
             # Get current path information
             current_folder = context.scene.hdri_settings.current_folder
             base_dir = preferences.hdri_directory
             
-            try:
-                # Only show breadcrumb navigation when not in root directory
-                if current_folder and os.path.exists(current_folder) and \
-                   os.path.normpath(current_folder) != os.path.normpath(base_dir):
-                    
-                    # Calculate relative path for breadcrumbs
+            if current_folder and os.path.exists(current_folder):
+                # Show breadcrumb navigation
+                try:
                     rel_path = os.path.relpath(current_folder, base_dir)
-                    path_parts = ['HDRI'] + rel_path.split(os.sep)
-                    
-                    # Create breadcrumb row with background
-                    bread_box = browser_box.box()
-                    bread_row = bread_box.row(align=True)
-                    bread_row.scale_y = 0.9 * preferences.button_scale
-                    
-                    # Build breadcrumb path
-                    current_path = base_dir
-                    for i, part in enumerate(path_parts):
-                        # Add separator for all but first item
-                        if i > 0:
-                            bread_row.label(text="›", icon='NONE')
+                    if rel_path != '.':  # Only show if not in root
+                        bread_box = browser_box.box()
+                        bread_row = bread_box.row(align=True)
+                        bread_row.scale_y = 0.9
                         
-                        # Create breadcrumb button
-                        if i < len(path_parts) - 1:  # Not the last item
-                            op = bread_row.operator("world.change_hdri_folder", 
-                                                  text=part,
-                                                  depress=False,
-                                                  emboss=True)
-                            op.folder_path = current_path
-                        else:  # Last item (current folder)
-                            bread_row.label(text=part, icon='FILE_FOLDER')
+                        # Start with HDRI root
+                        op = bread_row.operator("world.change_hdri_folder", text="HDRI")
+                        op.folder_path = base_dir
                         
-                        # Update path for next iteration
-                        if i < len(path_parts) - 1:
-                            current_path = os.path.join(current_path, part)
+                        # Add path components
+                        if rel_path != '.':
+                            path_parts = rel_path.split(os.sep)
+                            current_path = base_dir
+                            for i, part in enumerate(path_parts):
+                                bread_row.label(text="›")
+                                current_path = os.path.join(current_path, part)
+                                if i < len(path_parts) - 1:
+                                    op = bread_row.operator("world.change_hdri_folder", text=part)
+                                    op.folder_path = current_path
+                                else:
+                                    bread_row.label(text=part)
+                        
+                        # Add separator after breadcrumbs
+                        browser_box.separator(factor=0.5)
+                except:
+                    pass  # If path relation fails, skip breadcrumbs
+                
+                # Display folders in a grid
+                folders = get_folders(context)
+                if folders:
+                    # Calculate grid layout
+                    num_items = len(folders)
+                    num_columns = 2 if num_items > 2 else 1  # Use 2 columns if more than 2 items
                     
-                    browser_box.separator(factor=0.5 * preferences.spacing_scale)
+                    # Create grid flow
+                    grid = browser_box.grid_flow(
+                        row_major=True,
+                        columns=num_columns,
+                        even_columns=True,
+                        even_rows=False,
+                        align=True
+                    )
+                    
+                    # Add folders to grid (exclude parent navigation from grid)
+                    for folder_path, name, tooltip, icon, _ in folders:
+                        if folder_path != "parent":  # Skip parent navigation in main grid
+                            row = grid.row(align=True)
+                            row.scale_y = 1.2
+                            row.scale_x = 1.0
                             
-            except (ValueError, OSError) as e:
-                context.scene.hdri_settings.current_folder = base_dir
-                print(f"Path error: {str(e)}")
-            
-            # Folder Grid - only show if there are folders
-            folders = get_folders(context)
-            folder_items = [(p, n, t, i, idx) for p, n, t, i, idx in folders if i == 'FILE_FOLDER']
-            
-            if folder_items:
-                # Create column for folders
-                col = browser_box.column(align=True)
-                col.scale_y = 0.95  # Slightly reduce vertical spacing
-                
-                # Calculate number of items for layout
-                num_items = len(folder_items)
-                columns = 2 if num_items > 3 else 1  # Use 2 columns only if more than 3 items
-                
-                # Create grid
-                grid = col.grid_flow(row_major=True,
-                                   columns=columns,
-                                   even_columns=True,
-                                   even_rows=True,
-                                   align=True)
-                
-                for folder_path, name, tooltip, icon, _ in folder_items:
-                    # Create button for folder
-                    row = grid.row(align=True)
-                    row.scale_y = 1.0  # Standard button height
-                    row.alert = False  # Ensure normal coloring
-                    
-                    # Add folder button with icon
-                    op = row.operator("world.change_hdri_folder",
-                                    text=name,
-                                    icon='FILE_FOLDER',  # Use standard folder icon
-                                    depress=(folder_path == current_folder),
-                                    emboss=True)
-                    op.folder_path = folder_path
-                    
-                    # Ensure button fills available space
-                    row.scale_x = 1.0
+                            # Create folder button
+                            op = row.operator(
+                                "world.change_hdri_folder",
+                                text=name,
+                                icon='FILE_FOLDER'
+                            )
+                            op.folder_path = folder_path
+                else:
+                    if os.path.normpath(current_folder) != os.path.normpath(base_dir):
+                        # If in a subfolder with no subfolders, show empty message
+                        box = browser_box.box()
+                        row = box.row()
+                        row.alignment = 'CENTER'
+                        row.label(text="No subfolders found", icon='INFO')
         
         # HDRI Preview Section
         if has_hdri_files(context):

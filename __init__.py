@@ -2069,6 +2069,15 @@ def unregister():
     # Remove scene properties
     del bpy.types.Scene.hdri_settings
     
-    # Clean up preview collection
+    # Safely clean up preview collection
     if hasattr(get_hdri_previews, "preview_collection"):
-        bpy.utils.previews.remove(get_hdri_previews.preview_collection)
+        try:
+            preview_collection = get_hdri_previews.preview_collection
+            if preview_collection:
+                bpy.utils.previews.remove(preview_collection)
+            del get_hdri_previews.preview_collection
+        except Exception as e:
+            print(f"Note: Preview collection cleanup - {str(e)}")
+            
+if __name__ == "__main__":
+    register()

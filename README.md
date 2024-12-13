@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.4.6 for Blender
+# Quick HDRI Controls v2.4.8 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0+-green.svg)
-![Version](https://img.shields.io/badge/Version-2.4.6-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.4.8-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -65,6 +65,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 (All are enabled by default)
 
 ![image](https://github.com/user-attachments/assets/2ce6fd31-adf5-40e8-abfe-3168cce47869)
+
 (Preview limit is related to .png thumbnails for HDRIs that you can use to save on resources) 
 
 4. Close the preferences
@@ -79,11 +80,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
 
-![image](https://github.com/user-attachments/assets/9e08da51-b2d9-4bb8-a538-124ad9da2d1d)
+![image](https://github.com/user-attachments/assets/bb644a5b-dee0-4516-941a-b9b0b1a63e4f)
 
 4. Once a folder has been selected, 'HDRI Select' appears.
 
-![image](https://github.com/user-attachments/assets/99006cff-9db7-48a2-8320-4863d483c171)
+![image](https://github.com/user-attachments/assets/4fb8ba5f-e043-4876-a964-c1294a25d65e)
 
 - Click the box to see thumbnails of your HDRIs
    (You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
@@ -95,10 +96,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 - Click the preview window to show the HDRIs in the selected location, select your HDRI.
 - Click "Load Selected HDRI" to use it
    - Click Reset to revert to previously selected HDRI
+- Once loaded, use navigation arrows to cycle through HDRs in the present folder.
 
 5. 'Settings' will appear once an HDRI has been loaded.
 
-![image](https://github.com/user-attachments/assets/5eb1fdca-2103-4198-bd32-c5a0a72f10d5)
+![image](https://github.com/user-attachments/assets/610f1e59-526d-49ff-845e-a392021bb51f)
 
 Buttons:
 - Keep Rotation lock (keeps rotation changes between HDRI switching)
@@ -114,7 +116,7 @@ Options:
 
  Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/5cd6a2c7-31ed-4875-b2e3-e9880f09b2ee)
+![image](https://github.com/user-attachments/assets/0d38d7c0-5302-4ac2-a2c3-f13b88872ba3)
 
 
 ## Tips & Tricks
@@ -156,12 +158,18 @@ MacOS (Intel, Apple Silicon has not been tested)
    MacOS: Shift, Command, Option
    
  - A-Z key options
- - Confirm with OS or blender shortcuts to ensure no issues
-   
  - BE SURE TO APPLY CHANGES IN PREFERENCES UI
  - When the key combination is pressed, the HDRI panel will appear where the cursor is
 
-![image](https://github.com/user-attachments/assets/03b5816c-236f-4c94-b823-9daae277c078)
+![image](https://github.com/user-attachments/assets/1bfe5687-b784-418a-9f4f-812cd37ea65e)
+
+Keyboard Shortcut Conflicts
+
+![image](https://github.com/user-attachments/assets/3ec991ee-c3e6-4edf-be86-c33b9a173840)
+
+ - Conflicts will show in dropdown menu.
+ - Even if there is a conflict, from time to time it can work since we are in the 3dviewport.
+
 
 
 

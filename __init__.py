@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 6),
+    "version": (2, 4, 7),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -821,6 +821,101 @@ class HDRI_OT_update_shortcut(Operator):
         self.report({'INFO'}, "Shortcut updated successfully")
         return {'FINISHED'}
         
+def find_keymap_conflicts(self, context):
+    """Find all keymap items that conflict with current shortcut settings"""
+    conflicts = []
+    
+    # Get current shortcut settings
+    is_mac = sys.platform == 'darwin'
+    current_key = self.popup_key
+    current_ctrl = self.popup_ctrl
+    current_shift = self.popup_shift
+    current_alt = self.popup_alt
+    current_oskey = self.popup_ctrl if is_mac else False
+    
+    # Check all keyconfig categories
+    wm = context.window_manager
+    keyconfigs_to_check = [
+        ('Blender', wm.keyconfigs.default),
+        ('Blender User', wm.keyconfigs.user),
+        ('Addons', wm.keyconfigs.addon)
+    ]
+    
+    for config_name, keyconfig in keyconfigs_to_check:
+        if keyconfig:
+            for keymap in keyconfig.keymaps:
+                for kmi in keymap.keymap_items:
+                    if kmi.type == current_key and \
+                       kmi.ctrl == (current_ctrl if not is_mac else False) and \
+                       kmi.shift == current_shift and \
+                       kmi.alt == current_alt and \
+                       kmi.oskey == (current_ctrl if is_mac else False) and \
+                       kmi.active:  # Only check active shortcuts
+                        
+                        # Don't report our own shortcut as a conflict
+                        if kmi.idname != HDRI_OT_popup_controls.bl_idname:
+                            conflicts.append({
+                                'config': config_name,
+                                'keymap': keymap.name,
+                                'name': kmi.name or kmi.idname,
+                                'type': kmi.type,
+                                'ctrl': kmi.ctrl,
+                                'shift': kmi.shift,
+                                'alt': kmi.alt,
+                                'oskey': kmi.oskey
+                            })
+    
+    return conflicts
+
+class HDRI_OT_show_shortcut_conflicts(Operator):
+    bl_idname = "world.show_hdri_shortcut_conflicts"
+    bl_label = "Show Shortcut Conflicts"
+    bl_description = "Show any conflicts with the current keyboard shortcut"
+    
+    def draw(self, context):
+        layout = self.layout
+        preferences = context.preferences.addons[__name__].preferences
+        
+        # Find conflicts
+        conflicts = preferences.find_keymap_conflicts(context)
+        
+        if conflicts:
+            layout.label(text="The following shortcuts conflict:", icon='ERROR')
+            
+            # Group conflicts by keyconfig
+            for config_name in ['Blender', 'Blender User', 'Addons']:
+                config_conflicts = [c for c in conflicts if c['config'] == config_name]
+                if config_conflicts:
+                    box = layout.box()
+                    box.label(text=config_name, icon='KEYINGSET')
+                    
+                    for conflict in config_conflicts:
+                        row = box.row()
+                        # Format shortcut description
+                        keys = []
+                        if conflict['ctrl']:
+                            keys.append('Ctrl' if not sys.platform == 'darwin' else '⌘')
+                        if conflict['shift']:
+                            keys.append('Shift')
+                        if conflict['alt']:
+                            keys.append('Alt')
+                        if conflict['oskey'] and not sys.platform == 'darwin':
+                            keys.append('OS')
+                        keys.append(conflict['type'])
+                        shortcut = ' + '.join(keys)
+                        
+                        row.label(text=f"{conflict['name']} ({shortcut})")
+                        sub = row.row()
+                        sub.label(text=f"in {conflict['keymap']}")
+        else:
+            layout.label(text="No conflicts found!", icon='CHECKMARK')
+    
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+        
 class HDRISettings(PropertyGroup):
     hdri_preview: EnumProperty(
         items=generate_previews,
@@ -911,6 +1006,12 @@ class QuickHDRIPreferences(AddonPreferences):
     update_available: BoolProperty(
         name="Update Available",
         default=False
+    )
+    #Show Conflicts
+    show_conflicts: BoolProperty(
+        name="Show Conflicts",
+        description="Show keyboard shortcut conflicts",
+        default=True
     )
 
     # Keyboard shortcut properties
@@ -1104,6 +1205,61 @@ class QuickHDRIPreferences(AddonPreferences):
         default="",
         update=lambda self, context: refresh_previews(context, self.hdri_directory)
     )
+    
+    def find_keymap_conflicts(self, context):
+        """Find all keymap items that conflict with current shortcut settings"""
+        conflicts = []
+        seen_conflicts = set()  # Track unique conflicts
+        
+        # Get current shortcut settings
+        is_mac = sys.platform == 'darwin'
+        current_key = self.popup_key
+        current_ctrl = self.popup_ctrl
+        current_shift = self.popup_shift
+        current_alt = self.popup_alt
+        current_oskey = self.popup_ctrl if is_mac else False
+        
+        # Check all keyconfig categories
+        wm = context.window_manager
+        keyconfigs_to_check = [
+            ('Blender', wm.keyconfigs.default),
+            ('Blender User', wm.keyconfigs.user),
+            ('Addons', wm.keyconfigs.addon)
+        ]
+        
+        for config_name, keyconfig in keyconfigs_to_check:
+            if keyconfig:
+                for keymap in keyconfig.keymaps:
+                    for kmi in keymap.keymap_items:
+                        if kmi.type == current_key and \
+                           kmi.ctrl == (current_ctrl if not is_mac else False) and \
+                           kmi.shift == current_shift and \
+                           kmi.alt == current_alt and \
+                           kmi.oskey == (current_ctrl if is_mac else False) and \
+                           kmi.active:  # Only check active shortcuts
+                            
+                            # Don't report our own shortcut as a conflict
+                            if kmi.idname != HDRI_OT_popup_controls.bl_idname:
+                                # Create a unique identifier for this conflict
+                                conflict_id = f"{kmi.idname}_{keymap.name}"
+                                
+                                if conflict_id not in seen_conflicts:
+                                    seen_conflicts.add(conflict_id)
+                                    conflicts.append({
+                                        'config': config_name,
+                                        'keymap': keymap.name,
+                                        'name': kmi.name or kmi.idname,
+                                        'type': kmi.type,
+                                        'ctrl': kmi.ctrl,
+                                        'shift': kmi.shift,
+                                        'alt': kmi.alt,
+                                        'oskey': kmi.oskey
+                                    })
+        
+        # Sort conflicts by config name and then by keymap name for consistent display
+        conflicts.sort(key=lambda x: (x['config'], x['keymap'], x['name']))
+        
+        return conflicts
 
     def update_shortcut(self, context):
         """Update the keyboard shortcut"""
@@ -1207,7 +1363,8 @@ class QuickHDRIPreferences(AddonPreferences):
             tips_col = tips_box.column(align=True)
             tips_col.label(text="Quick Tips:", icon='INFO')
             tips_col.label(text="• Use keyboard shortcut for quick access")
-            tips_col.label(text="• Organize HDRI folders")
+            tips_col.label(text="• Organize HDRI directory")
+            tips_col.label(test="• Use PNG thumbnails for HDRs to ease resources usage")
             tips_col.label(text="• Check for updates regularly (make features suggestions")
         
         # Keyboard Shortcuts Section
@@ -1230,8 +1387,11 @@ class QuickHDRIPreferences(AddonPreferences):
                 current_shortcut.append("⌥ Option" if sys.platform == 'darwin' else "Alt")
             current_shortcut.append(self.popup_key)
             
-            col.label(text="Current Shortcut: " + " + ".join(current_shortcut))
+            # Current shortcut row
+            row = col.row()
+            row.label(text="Current Shortcut: " + " + ".join(current_shortcut))
             
+            # Modifier keys
             row = col.row(align=True)
             if sys.platform == 'darwin':
                 row.prop(self, "popup_ctrl", text="⌘ Command", toggle=True)
@@ -1242,8 +1402,66 @@ class QuickHDRIPreferences(AddonPreferences):
                 row.prop(self, "popup_shift", text="Shift", toggle=True)
                 row.prop(self, "popup_alt", text="Alt", toggle=True)
                 
+            # Key selection
             col.prop(self, "popup_key", text="Key")
+            col.separator()
+            
+            # Apply button
             col.operator("world.update_hdri_shortcut", text="Apply Shortcut Change")
+            col.separator()
+            
+            # Get conflicts
+            conflicts = self.find_keymap_conflicts(context)
+            
+            # Conflicts section with status-based header
+            conflict_box = col.box()
+            header_row = conflict_box.row()
+            header_row.prop(self, "show_conflicts", 
+                          icon='TRIA_DOWN' if self.show_conflicts else 'TRIA_RIGHT',
+                          icon_only=True, emboss=False)
+            
+            status_row = header_row.row()
+            if conflicts:
+                status_row.alert = True
+                status_row.label(text="Conflicts Found", icon='ERROR')
+            else:
+                status_row.label(text="No Conflicts Found", icon='CHECKMARK')
+                status_row.alert = False
+            
+            if self.show_conflicts:
+                if conflicts:
+                    # Group conflicts by keyconfig
+                    for config_name in ['Blender', 'Blender User', 'Addons']:
+                        config_conflicts = [c for c in conflicts if c['config'] == config_name]
+                        if config_conflicts:
+                            sub_box = conflict_box.box()
+                            row = sub_box.row()
+                            row.label(text=config_name + ":", icon='KEYINGSET')
+                            
+                            for conflict in config_conflicts:
+                                # Format shortcut description
+                                keys = []
+                                if conflict['ctrl']:
+                                    keys.append('Ctrl' if not sys.platform == 'darwin' else '⌘')
+                                if conflict['shift']:
+                                    keys.append('Shift')
+                                if conflict['alt']:
+                                    keys.append('Alt')
+                                if conflict['oskey'] and not sys.platform == 'darwin':
+                                    keys.append('OS')
+                                keys.append(conflict['type'])
+                                shortcut = ' + '.join(keys)
+                                
+                                row = sub_box.row()
+                                split = row.split(factor=0.7)
+                                split.label(text=conflict['name'])
+                                split.label(text=shortcut)
+                                
+                                # Show keymap in smaller text
+                                row = sub_box.row()
+                                row.scale_y = 0.8
+                                row.label(text=f"Found in: {conflict['keymap']}")
+                                sub_box.separator(factor=0.5)
         
         # Interface Settings Section
         box = layout.box()
@@ -1331,6 +1549,18 @@ class HDRI_OT_toggle_visibility(Operator):
             
             return {'FINISHED'}
         return {'CANCELLED'}
+        
+class HDRI_OT_delete_world(Operator):
+    bl_idname = "world.delete_hdri_world"
+    bl_label = "Delete World"
+    bl_description = "Delete the current world"
+    
+    def execute(self, context):
+        if context.scene.world:
+            world = context.scene.world
+            bpy.data.worlds.remove(world, do_unlink=True)
+            self.report({'INFO'}, "World deleted")
+        return {'FINISHED'}
 
             
 class HDRI_PT_controls(Panel):
@@ -1674,14 +1904,27 @@ class HDRI_PT_controls(Panel):
         # Footer
         footer = main_column.row(align=True)
         footer.scale_y = 0.8
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
         
+        # Settings button
         settings_btn = footer.operator(
             "preferences.addon_show",
             text="",
             icon='PREFERENCES',
-            emboss=False,
+            emboss=False
         )
+
+        # Version number
+        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+        # Add delete world button
+        delete_btn = footer.operator(
+            "world.delete_hdri_world",
+            text="",
+            icon='TRASH',
+            emboss=False
+        )
+
+
         settings_btn.module = __name__
                     
 def draw_hdri_menu(self, context):
@@ -1709,6 +1952,8 @@ classes = (
     HDRI_OT_toggle_visibility,
     HDRI_OT_browse_directory,
     HDRI_OT_restart_prompt,
+    HDRI_OT_delete_world,
+    HDRI_OT_show_shortcut_conflicts,
 )
 
 def register():
@@ -1742,7 +1987,7 @@ def register():
     
     # Run update check at startup if enabled
     check_for_update_on_startup()
-    
+
 def unregister():
     # Remove load handler
     bpy.app.handlers.load_post.remove(load_handler)
@@ -1765,6 +2010,3 @@ def unregister():
     # Clean up preview collection
     if hasattr(get_hdri_previews, "preview_collection"):
         bpy.utils.previews.remove(get_hdri_previews.preview_collection)
-
-if __name__ == "__main__":
-    register()

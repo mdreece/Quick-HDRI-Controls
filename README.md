@@ -97,14 +97,6 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 ![image](https://github.com/user-attachments/assets/610f1e59-526d-49ff-845e-a392021bb51f)
 
-
-   (You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
-      Add the .png thumbnails to the same directory as the hdr.)
-  
-![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
-
-
-
 Buttons:
 - Keep Rotation lock (keeps rotation changes between HDRI switching)
 - Reset HDRI Rotation (resets all rotation options to 0.0)
@@ -121,6 +113,12 @@ Options:
  Full Dropdown Panel
 
 ![image](https://github.com/user-attachments/assets/0d38d7c0-5302-4ac2-a2c3-f13b88872ba3)
+
+
+You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
+Add the .png thumbnails to the same directory as the hdr.
+  
+![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
 
 
 ## Tips & Tricks

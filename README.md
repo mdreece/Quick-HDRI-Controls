@@ -86,17 +86,9 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 ![image](https://github.com/user-attachments/assets/4fb8ba5f-e043-4876-a964-c1294a25d65e)
 
+![image](https://github.com/user-attachments/assets/5d795ee9-2cc8-498a-b8df-b46b0f36fa3c)
+
 - Click the box to see thumbnails of your HDRIs
-   (You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
-      Add the .png thumbnails to the same directory as the hdr.)
-  
-![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
-
-
-
-![image](https://github.com/user-attachments/assets/46e57d73-6d12-4e46-8973-b86f29b6c852)
-
-- Click the preview window to show the HDRIs in the selected location, select your HDRI.
 - Click "Load Selected HDRI" to use it
    - Click Reset to revert to previously selected HDRI
 - Once loaded, use navigation arrows to cycle through HDRs in the present folder.
@@ -104,6 +96,14 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 5. 'Settings' will appear once an HDRI has been loaded.
 
 ![image](https://github.com/user-attachments/assets/610f1e59-526d-49ff-845e-a392021bb51f)
+
+
+   (You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
+      Add the .png thumbnails to the same directory as the hdr.)
+  
+![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
+
+
 
 Buttons:
 - Keep Rotation lock (keeps rotation changes between HDRI switching)

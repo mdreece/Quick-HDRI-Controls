@@ -1,6 +1,6 @@
 # Quick HDRI Controls v2.4.6 for Blender
 
-![Blender Version](https://img.shields.io/badge/Blender-4.2.0+-green.svg)
+![Blender Version](https://img.shields.io/badge/Blender-4.3.0+-green.svg)
 ![Version](https://img.shields.io/badge/Version-2.4.6-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
@@ -60,13 +60,14 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
  - If this is not done, when attempting to use you will be prompted to set it anyway
    
 ![image](https://github.com/user-attachments/assets/2af89aa1-9333-4e4b-8abd-79dccd056116)
- - Open Preferences to HDRI Directory
+ - Open Preferences set to HDRI Directory
  - Open/Choose HDRI Directory directly
 
 3. In 'Supported File Tyypes' select which file types you want to use (HDR, EXR, PNG, JPG)
 (All are enabled by default)
 
-![image](https://github.com/user-attachments/assets/f468276b-5d99-45ed-af7c-47679367d3ef)
+![image](https://github.com/user-attachments/assets/2ce6fd31-adf5-40e8-abfe-3168cce47869)
+(Preview limit is related to .png thumbnails for HDRIs that you can use to save on resources) 
 
 4. Close the preferences
 
@@ -84,11 +85,17 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 4. Once a folder has been selected, 'HDRI Select' appears.
 
-![image](https://github.com/user-attachments/assets/0dad27cc-da0b-41c1-8cce-78ef564dddd2)
+![image](https://github.com/user-attachments/assets/99006cff-9db7-48a2-8320-4863d483c171)
 
 - Click the box to see thumbnails of your HDRIs
-- Click one to select it
-- Hit "Load Selected HDRI" to use it
+   (You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
+      Add the .png thumbnails to the same directory as the hdr.)
+  
+![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
+
+
+- Click the preview window to show the HDRIs in the selected location, select your HDRI.
+- Click "Load Selected HDRI" to use it
    - Click Reset to revert to prviously selected HDRI
 
 5. 'Settings' will appear once an HDRI has been loaded.
@@ -151,7 +158,7 @@ MacOS (Intel, Apple Silicon has not been tested)
  - BE SURE TO APPLY CHANGES IN PREFERENCES UI
  - When the key combination is pressed, the HDRI panel will appear where the cursor is
 
-![image](https://github.com/user-attachments/assets/8181d86e-d6f3-4a16-ba1d-d7aa893c1bfa)
+![image](https://github.com/user-attachments/assets/03b5816c-236f-4c94-b823-9daae277c078)
 
 
 

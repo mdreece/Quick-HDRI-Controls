@@ -96,7 +96,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 - Click the preview window to show the HDRIs in the selected location, select your HDRI.
 - Click "Load Selected HDRI" to use it
-   - Click Reset to revert to prviously selected HDRI
+   - Click Reset to revert to previously selected HDRI
 
 5. 'Settings' will appear once an HDRI has been loaded.
 
@@ -109,7 +109,7 @@ Buttons:
 - HDRI Visibiliy (adjusts ray visibility of the selected HDRI)
 
 Options:
--  X, Y, Z rotation ( + and - relates to rotation increment in Preferences)
+-  X, Y, Z rotation ( + and - relates to rotation step size in Preferences)
 - Control the lighting strength
   - Addon version
   - Quick access to preferences

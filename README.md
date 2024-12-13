@@ -114,6 +114,11 @@ Options:
   - Addon version
   - Quick access to preferences
 
+ Full Dropdown Panel
+
+![image](https://github.com/user-attachments/assets/5cd6a2c7-31ed-4875-b2e3-e9880f09b2ee)
+
+
 ## Tips & Tricks
 
 ### For Best Results

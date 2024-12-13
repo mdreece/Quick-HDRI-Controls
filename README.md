@@ -225,7 +225,7 @@ Stay up to date:
    
 ![image](https://github.com/user-attachments/assets/582a0099-5be8-4f99-bc92-d6df699a9751)
 
-2. Click on 'Check for Updates'
+2. Click on 'Check Now'
  - If there are updates a message will prompt to update
    
 ![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)

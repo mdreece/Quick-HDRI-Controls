@@ -111,8 +111,9 @@ Buttons:
 Options:
 -  X, Y, Z rotation ( + and - relates to rotation step size in Preferences)
 - Control the lighting strength
-  - Addon version
   - Quick access to preferences
+  - Addon version
+  - Delete World
 
  Full Dropdown Panel
 

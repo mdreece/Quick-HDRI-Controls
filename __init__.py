@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 7),
+    "version": (2, 4, 8),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1011,7 +1011,7 @@ class QuickHDRIPreferences(AddonPreferences):
     show_conflicts: BoolProperty(
         name="Show Conflicts",
         description="Show keyboard shortcut conflicts",
-        default=True
+        default=False
     )
 
     # Keyboard shortcut properties
@@ -1060,7 +1060,7 @@ class QuickHDRIPreferences(AddonPreferences):
         default=False
     )
 
-    # Directory and File Type Settings
+    # Directory
     hdri_directory: StringProperty(
         name="HDRI Directory",
         subtype='DIR_PATH',
@@ -1116,7 +1116,7 @@ class QuickHDRIPreferences(AddonPreferences):
         description="Scale of UI buttons",
         default=1.0,
         min=0.5,
-        max=2.0,
+        max=100.0,
         step=0.05
     )
     
@@ -1125,7 +1125,7 @@ class QuickHDRIPreferences(AddonPreferences):
         description="Scale of UI element spacing",
         default=1.0,
         min=0.5,
-        max=2.0,
+        max=100.0,
         step=0.1
     )
     
@@ -1134,12 +1134,6 @@ class QuickHDRIPreferences(AddonPreferences):
         name="Compact UI",
         description="Use compact UI layout",
         default=True
-    )
-    
-    show_file_path: BoolProperty(
-        name="Show Full Path",
-        description="Show full file path instead of relative path",
-        default=False
     )
     
     # Interface Settings
@@ -1291,7 +1285,7 @@ class QuickHDRIPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         
-        # HDRI Directory (Always visible as it's critical)
+        # HDRI Directory (Always visible as it's critical!!!!!!)
         main_box = layout.box()
         row = main_box.row()
         row.scale_y = 1.2
@@ -1364,7 +1358,7 @@ class QuickHDRIPreferences(AddonPreferences):
             tips_col.label(text="Quick Tips:", icon='INFO')
             tips_col.label(text="• Use keyboard shortcut for quick access")
             tips_col.label(text="• Organize HDRI directory")
-            tips_col.label(test="• Use PNG thumbnails for HDRs to ease resources usage")
+            tips_col.label(text="• Use PNG thumbnails for HDRs to ease resources usage")
             tips_col.label(text="• Check for updates regularly (make features suggestions")
         
         # Keyboard Shortcuts Section
@@ -1516,11 +1510,12 @@ class QuickHDRIPreferences(AddonPreferences):
             col.prop(self, "rotation_increment", text="Rotation Step Size")
 
     # Add the properties to control section visibility
-    show_updates: BoolProperty(default=True)
-    show_shortcuts: BoolProperty(default=True)
-    show_interface: BoolProperty(default=True)
-    show_filetypes: BoolProperty(default=True)
-    show_hdri_settings: BoolProperty(default=True)
+    show_updates: BoolProperty(default=False)
+    show_shortcuts: BoolProperty(default=False)
+    show_interface: BoolProperty(default=False)
+    show_filetypes: BoolProperty(default=False)
+    show_hdri_settings: BoolProperty(default=False)
+    show_conflicts: BoolProperty(default=False)
         
 class HDRI_OT_toggle_visibility(Operator):
     bl_idname = "world.toggle_hdri_visibility"
@@ -1562,6 +1557,57 @@ class HDRI_OT_delete_world(Operator):
             self.report({'INFO'}, "World deleted")
         return {'FINISHED'}
 
+class HDRI_OT_previous_hdri(Operator):
+    bl_idname = "world.previous_hdri"
+    bl_label = "Previous HDRI"
+    bl_description = "Load the previous HDRI in the current folder"
+    
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+        enum_items = generate_previews(self, context)
+        
+        # Find current HDRI index
+        current_index = -1
+        for i, item in enumerate(enum_items):
+            if item[0] == hdri_settings.hdri_preview:
+                current_index = i
+                break
+        
+        # Get previous HDRI (skip the first 'None' item)
+        if current_index > 1:
+            hdri_settings.hdri_preview = enum_items[current_index - 1][0]
+            bpy.ops.world.load_selected_hdri()
+        elif current_index == 1:  # If at first HDRI, wrap to last
+            hdri_settings.hdri_preview = enum_items[-1][0]
+            bpy.ops.world.load_selected_hdri()
+            
+        return {'FINISHED'}
+
+class HDRI_OT_next_hdri(Operator):
+    bl_idname = "world.next_hdri"
+    bl_label = "Next HDRI"
+    bl_description = "Load the next HDRI in the current folder"
+    
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+        enum_items = generate_previews(self, context)
+        
+        # Find current HDRI index
+        current_index = -1
+        for i, item in enumerate(enum_items):
+            if item[0] == hdri_settings.hdri_preview:
+                current_index = i
+                break
+        
+        # Get next HDRI (skip the first 'None' item)
+        if current_index >= 0 and current_index < len(enum_items) - 1:
+            hdri_settings.hdri_preview = enum_items[current_index + 1][0]
+            bpy.ops.world.load_selected_hdri()
+        elif current_index == len(enum_items) - 1:  # If at last HDRI, wrap to first
+            hdri_settings.hdri_preview = enum_items[1][0]  # Skip 'None' item
+            bpy.ops.world.load_selected_hdri()
+            
+        return {'FINISHED'}           
             
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
@@ -1695,18 +1741,15 @@ class HDRI_PT_controls(Panel):
                                     op.folder_path = current_path
                                 else:
                                     bread_row.label(text=part)
-                        
-                        # Add separator after breadcrumbs
-                        browser_box.separator(factor=0.5)
                 except:
-                    pass  # If path relation fails, skip breadcrumbs
+                    pass
                 
-                # Display folders in a grid
+                # Display folders only if they exist
                 folders = get_folders(context)
                 if folders:
                     # Calculate grid layout
                     num_items = len(folders)
-                    num_columns = 2 if num_items > 2 else 1  # Use 2 columns if more than 2 items
+                    num_columns = 2 if num_items > 2 else 1
                     
                     # Create grid flow
                     grid = browser_box.grid_flow(
@@ -1717,27 +1760,19 @@ class HDRI_PT_controls(Panel):
                         align=True
                     )
                     
-                    # Add folders to grid (exclude parent navigation from grid)
+                    # Add folders to grid
                     for folder_path, name, tooltip, icon, _ in folders:
-                        if folder_path != "parent":  # Skip parent navigation in main grid
+                        if folder_path != "parent":
                             row = grid.row(align=True)
                             row.scale_y = 1.2
                             row.scale_x = 1.0
                             
-                            # Create folder button
                             op = row.operator(
                                 "world.change_hdri_folder",
                                 text=name,
                                 icon='FILE_FOLDER'
                             )
                             op.folder_path = folder_path
-                else:
-                    if os.path.normpath(current_folder) != os.path.normpath(base_dir):
-                        # If in a subfolder with no subfolders, show empty message
-                        box = browser_box.box()
-                        row = box.row()
-                        row.alignment = 'CENTER'
-                        row.label(text="No subfolders found", icon='INFO')
         
         # HDRI Preview Section
         if has_hdri_files(context):
@@ -1755,13 +1790,37 @@ class HDRI_PT_controls(Panel):
             if hdri_settings.show_preview:
                 preview_box.scale_y = preferences.button_scale
                 
-                # Show current HDRI name
-                if env_tex and env_tex.image:
-                    row = preview_box.row()
-                    row.alert = False
-                    row.alignment = 'CENTER'
-                    row.scale_y = preferences.button_scale
-                    row.label(text=env_tex.image.name, icon='CHECKMARK')
+                # Show current HDRI name and navigation
+                if env_tex and env_tex.image and has_active_hdri(context):
+                    nav_box = preview_box.box()
+                    nav_row = nav_box.row(align=True)
+                    
+                    # Previous button
+                    prev_sub = nav_row.row(align=True)
+                    prev_sub.scale_x = 8.5
+                    prev_op = prev_sub.operator(
+                        "world.previous_hdri", 
+                        text="", 
+                        icon='TRIA_LEFT',
+                        emboss=True  
+                    )
+                    
+                    # HDRI name in center
+                    name_row = nav_row.row(align=True)
+                    name_row.alignment = 'CENTER'
+                    name_row.scale_x = 2.0  
+                    name_row.label(text=env_tex.image.name)
+                    
+                    # Next button 
+                    next_sub = nav_row.row(align=True)
+                    next_sub.scale_x = 8.5
+                    next_op = next_sub.operator(
+                        "world.next_hdri", 
+                        text="", 
+                        icon='TRIA_RIGHT',
+                        emboss=True  
+                    )
+                    
                     preview_box.separator(factor=0.5 * preferences.spacing_scale)
                 
                 preview_box.template_icon_view(
@@ -1769,6 +1828,7 @@ class HDRI_PT_controls(Panel):
                     show_labels=True,
                     scale=preferences.preview_scale
                 )
+               
                 
                 # Load and Reset buttons row
                 row = preview_box.row(align=True)
@@ -1954,6 +2014,8 @@ classes = (
     HDRI_OT_restart_prompt,
     HDRI_OT_delete_world,
     HDRI_OT_show_shortcut_conflicts,
+    HDRI_OT_previous_hdri,
+    HDRI_OT_next_hdri,
 )
 
 def register():

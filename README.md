@@ -245,7 +245,7 @@ Stay up to date:
 
 ## Requirements
 
-- Blender 4.2.0 (could work on previous versions)
+- Blender 4.3.0 (could work on previous versions)
 - Windows 10, Windows 11, MacOS Sequoia, Linux
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures

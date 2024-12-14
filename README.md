@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.4.8 for Blender
+# Quick HDRI Controls v2.4.9 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.4.8-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.4.9-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -9,8 +9,7 @@ v2.0 Video Demonstration: https://youtu.be/YFAPNMnai0U
 
 Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
 
-![Screenshot 2024-12-13 010717](https://github.com/user-attachments/assets/262b95bf-8aaa-417d-be2f-53ddf8747620)
-
+![Screenshot 2024-12-13 182141](https://github.com/user-attachments/assets/d50f4dab-6dff-4afe-b19a-36d07b5a5631)
 
 
 ## Features
@@ -83,9 +82,9 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 4. Once a folder has been selected, 'HDRI Select' appears.
 
-![image](https://github.com/user-attachments/assets/4fb8ba5f-e043-4876-a964-c1294a25d65e)
+![Screenshot 2024-12-13 181705](https://github.com/user-attachments/assets/b78a08f4-1d95-4696-a8fe-e69b5cd65b22)
 
-![image](https://github.com/user-attachments/assets/5d795ee9-2cc8-498a-b8df-b46b0f36fa3c)
+![Screenshot 2024-12-13 181739](https://github.com/user-attachments/assets/30e1fc8e-9206-4611-984f-106fd93752f9)
 
 - Click the box to see thumbnails of your HDRIs
 - Click "Load Selected HDRI" to use it
@@ -111,7 +110,7 @@ Options:
 
  Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/0d38d7c0-5302-4ac2-a2c3-f13b88872ba3)
+![Screenshot 2024-12-13 181650](https://github.com/user-attachments/assets/fb9e0a31-914c-434b-9e18-98a3dd3a63cd)
 
 
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
@@ -162,7 +161,7 @@ MacOS (Intel, Apple Silicon has not been tested)
  - BE SURE TO APPLY CHANGES IN PREFERENCES UI
  - When the key combination is pressed, the HDRI panel will appear where the cursor is
 
-![image](https://github.com/user-attachments/assets/1bfe5687-b784-418a-9f4f-812cd37ea65e)
+![image](https://github.com/user-attachments/assets/c587a7be-d51d-4824-9214-d4b0ed93351b)
 
 Keyboard Shortcut Conflicts
 

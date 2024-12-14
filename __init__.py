@@ -707,7 +707,39 @@ class HDRI_OT_setup_nodes(Operator):
     bl_description = "Create and setup the required nodes for HDRI control"
     
     def execute(self, context):
-        ensure_world_nodes()
+        preferences = context.preferences.addons[__name__].preferences
+        hdri_settings = context.scene.hdri_settings
+        
+        # Verify HDRI directory exists and is accessible
+        if not preferences.hdri_directory or not os.path.exists(preferences.hdri_directory):
+            self.report({'ERROR'}, "HDRI directory not found. Please select a valid directory in preferences.")
+            bpy.ops.preferences.addon_show(module=__name__)
+            return {'CANCELLED'}
+            
+        # If current folder is not set or doesn't exist, reset to HDRI directory
+        if not hdri_settings.current_folder or not os.path.exists(hdri_settings.current_folder):
+            hdri_settings.current_folder = preferences.hdri_directory
+            
+        # Setup nodes
+        mapping, env_tex, background = ensure_world_nodes()
+        
+        # Check if there are any HDRIs in the current directory
+        if not has_hdri_files(context):
+            self.report({'WARNING'}, "No supported HDRI files found in the current directory.")
+            return {'FINISHED'}
+            
+        # Generate previews for the current directory
+        enum_items = generate_previews(self, context)
+        
+        # If we have HDRIs, set the preview to the first one
+        if len(enum_items) > 1:  # Skip 'None' item
+            hdri_settings.hdri_preview = enum_items[1][0]
+            
+        # Force redraw of UI
+        for area in context.screen.areas:
+            area.tag_redraw()
+            
+        self.report({'INFO'}, "HDRI system initialized successfully")
         return {'FINISHED'}
 
 class HDRI_OT_load_selected(Operator):

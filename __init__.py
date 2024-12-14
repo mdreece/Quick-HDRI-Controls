@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 9),
+    "version": (2, 5, 0),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -376,6 +376,32 @@ def cleanup_preview_cache():
     for attr in dir(generate_previews):
         if attr.startswith('preview_cache_'):
             delattr(generate_previews, attr)
+            
+def get_hdri_metadata(image):
+    """Extract metadata from HDRI image"""
+    if not image:
+        return None
+        
+    metadata = {
+        'filename': os.path.basename(image.filepath) if image.filepath else image.name,
+        'resolution': f"{image.size[0]}x{image.size[1]}",
+        'color_space': image.colorspace_settings.name,
+        'file_format': image.file_format,
+        'channels': image.channels,
+        'file_size': os.path.getsize(image.filepath) if image.filepath else 0,
+        'filepath': image.filepath,
+    }
+    
+    # Convert file size to human-readable format
+    if metadata['file_size']:
+        size_bytes = metadata['file_size']
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024:
+                metadata['file_size'] = f"{size_bytes:.1f} {unit}"
+                break
+            size_bytes /= 1024
+            
+    return metadata
             
 class HDRI_OT_cleanup_unused(Operator):
     bl_idname = "world.cleanup_unused_hdri"
@@ -1024,6 +1050,12 @@ class HDRISettings(PropertyGroup):
         description="Current HDRI folder being viewed",
         default="",
         subtype='DIR_PATH'
+    )
+    
+    show_metadata: BoolProperty(
+        name="Show Metadata",
+        description="Show/Hide HDRI metadata information",
+        default=False
     )
 
 class QuickHDRIPreferences(AddonPreferences):
@@ -1877,6 +1909,57 @@ class HDRI_PT_controls(Panel):
                     icon='LOOP_BACK')
             
             main_column.separator(factor=0.5 * preferences.spacing_scale)
+            
+                        # Add small separator before metadata section
+            preview_box.separator(factor=0.3)
+            
+            # Metadata dropdown
+            meta_row = preview_box.row(align=True)
+            meta_row.scale_y = 0.9  # Make it slightly smaller than regular UI
+            meta_row.prop(hdri_settings, "show_metadata",
+                icon='TRIA_DOWN' if hdri_settings.show_metadata else 'TRIA_RIGHT',
+                icon_only=True,
+                emboss=False)
+            meta_row.label(text="Image Information", icon='INFO')
+            
+            if hdri_settings.show_metadata and env_tex and env_tex.image:
+                meta_box = preview_box.box()
+                meta_col = meta_box.column(align=True)
+                meta_col.scale_y = 0.9  # Smaller scale for compact appearance
+                
+                # Get metadata
+                metadata = get_hdri_metadata(env_tex.image)
+                
+                if metadata:
+                    # Filename (new!)
+                    row = meta_col.row(align=True)
+                    row.label(text="File:", icon='FILE_IMAGE')
+                    row.label(text=metadata['filename'])
+                  
+                    # Resolution
+                    row = meta_col.row(align=True)
+                    row.label(text="Resolution:", icon='TEXTURE')
+                    row.label(text=metadata['resolution'])
+                    
+                    # Color Space
+                    row = meta_col.row(align=True)
+                    row.label(text="Color Space:", icon='COLOR')
+                    row.label(text=metadata['color_space'])
+                    
+                    # Channels
+                    row = meta_col.row(align=True)
+                    row.label(text="Channels:", icon='NODE_COMPOSITING')
+                    row.label(text=str(metadata['channels']))
+                    
+                    # File Size
+                    row = meta_col.row(align=True)
+                    row.label(text="File Size:", icon='FILE_BLANK')
+                    row.label(text=metadata['file_size'])
+                    
+                    # File Format
+                    row = meta_col.row(align=True)
+                    row.label(text="Format:", icon='FILE')
+                    row.label(text=metadata['file_format'])
         
         # HDRI Settings Section
         if has_active_hdri(context):

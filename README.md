@@ -87,7 +87,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 ![Screenshot 2024-12-13 181739](https://github.com/user-attachments/assets/30e1fc8e-9206-4611-984f-106fd93752f9)
 
 - Click the box to see thumbnails of your HDRIs
-- Click "Load Selected HDRI" to use it
+- Click on the desired HDRI to load it to use it
    - Click Reset to revert to previously selected HDRI
 - Once loaded, use navigation arrows to cycle through HDRs in the present folder.
 
@@ -110,7 +110,7 @@ Options:
 
  Full Dropdown Panel
 
-![Screenshot 2024-12-13 181650](https://github.com/user-attachments/assets/fb9e0a31-914c-434b-9e18-98a3dd3a63cd)
+![image](https://github.com/user-attachments/assets/b196d0b3-a2fc-4406-a47f-a34606697763)
 
 
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
@@ -161,7 +161,7 @@ MacOS (Intel, Apple Silicon has not been tested)
  - BE SURE TO APPLY CHANGES IN PREFERENCES UI
  - When the key combination is pressed, the HDRI panel will appear where the cursor is
 
-![image](https://github.com/user-attachments/assets/c587a7be-d51d-4824-9214-d4b0ed93351b)
+![image](https://github.com/user-attachments/assets/ee5479f0-7324-48c9-9127-5225903c8cd7)
 
 Keyboard Shortcut Conflicts
 

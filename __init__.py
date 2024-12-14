@@ -17,7 +17,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 4, 8),
+    "version": (2, 4, 9),
     "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1790,47 +1790,45 @@ class HDRI_PT_controls(Panel):
             if hdri_settings.show_preview:
                 preview_box.scale_y = preferences.button_scale
                 
-                # Show current HDRI name and navigation
+                # HDRI preview grid first
+                preview_box.template_icon_view(
+                    hdri_settings, "hdri_preview",
+                    show_labels=True,
+                    scale=preferences.preview_scale
+                )
+                
+                # Then show navigation controls if HDRI is active
                 if env_tex and env_tex.image and has_active_hdri(context):
                     nav_box = preview_box.box()
                     nav_row = nav_box.row(align=True)
                     
                     # Previous button
                     prev_sub = nav_row.row(align=True)
-                    prev_sub.scale_x = 8.5
+                    prev_sub.scale_x = 1.2
                     prev_op = prev_sub.operator(
                         "world.previous_hdri", 
                         text="", 
                         icon='TRIA_LEFT',
-                        emboss=True  
+                        emboss=True
                     )
                     
                     # HDRI name in center
                     name_row = nav_row.row(align=True)
                     name_row.alignment = 'CENTER'
-                    name_row.scale_x = 2.0  
+                    name_row.scale_x = 2.0
                     name_row.label(text=env_tex.image.name)
                     
-                    # Next button 
+                    # Next button
                     next_sub = nav_row.row(align=True)
-                    next_sub.scale_x = 8.5
+                    next_sub.scale_x = 1.2
                     next_op = next_sub.operator(
                         "world.next_hdri", 
                         text="", 
                         icon='TRIA_RIGHT',
-                        emboss=True  
+                        emboss=True
                     )
-                    
-                    preview_box.separator(factor=0.5 * preferences.spacing_scale)
                 
-                preview_box.template_icon_view(
-                    hdri_settings, "hdri_preview",
-                    show_labels=True,
-                    scale=preferences.preview_scale
-                )
-               
-                
-                # Load and Reset buttons row
+                # Load and Reset buttons
                 row = preview_box.row(align=True)
                 row.scale_y = 1.2 * preferences.button_scale
                 

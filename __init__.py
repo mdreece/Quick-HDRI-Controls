@@ -1786,93 +1786,70 @@ class HDRI_OT_reset_to_previous(Operator):
     
     def execute(self, context):
         hdri_settings = context.scene.hdri_settings
+        preferences = context.preferences.addons[__name__].preferences
         
         if not hdri_settings.previous_hdri_path or not os.path.exists(hdri_settings.previous_hdri_path):
             self.report({'WARNING'}, "No previous HDRI available")
             return {'CANCELLED'}
         
-        # Store current state
-        current_state = {
-            'hdri_path': None,
-            'rotation': (0, 0, 0),
-            'strength': 1.0
-        }
+        # Update current folder to the directory of the previous HDRI
+        previous_hdri_dir = os.path.dirname(hdri_settings.previous_hdri_path)
+        hdri_settings.current_folder = previous_hdri_dir
         
-        # Get current world state
+        # Force regeneration of previews for the new directory
+        get_hdri_previews.cached_dir = None
+        get_hdri_previews.cached_items = []
+        
+        # Regenerate previews
+        enum_items = generate_previews(self, context)
+        
+        # Check if the previous HDRI path exists in the new preview list
+        if any(item[0] == hdri_settings.previous_hdri_path for item in enum_items):
+            hdri_settings.hdri_preview = hdri_settings.previous_hdri_path
+        else:
+            # If the exact path is not found, try to find a match based on filename
+            previous_filename = os.path.basename(hdri_settings.previous_hdri_path)
+            for item in enum_items:
+                if os.path.basename(item[0]) == previous_filename:
+                    hdri_settings.hdri_preview = item[0]
+                    break
+            else:
+                # If no match is found, use the first HDRI in the list (skipping 'None')
+                if len(enum_items) > 1:
+                    hdri_settings.hdri_preview = enum_items[1][0]
+                else:
+                    self.report({'WARNING'}, "Could not find previous HDRI in the new directory")
+                    return {'CANCELLED'}
+        
+        # Rest of the existing reset logic remains the same
+        # Store current state as previous
         world = context.scene.world
         if world and world.use_nodes:
             for node in world.node_tree.nodes:
                 if node.type == 'TEX_ENVIRONMENT' and node.image:
-                    current_state['hdri_path'] = node.image.filepath
+                    self.previous_hdri_path = node.image.filepath
                 elif node.type == 'MAPPING':
-                    try:
-                        current_state['rotation'] = tuple(node.inputs[2].default_value)
-                    except:
-                        for input in node.inputs:
-                            if input.type == 'VECTOR':
-                                current_state['rotation'] = tuple(input.default_value)
-                                break
+                    self.previous_rotation = node.inputs['Rotation'].default_value.copy()
                 elif node.type == 'BACKGROUND':
-                    try:
-                        current_state['strength'] = float(node.inputs[1].default_value)
-                    except:
-                        for input in node.inputs:
-                            if input.type == 'VALUE':
-                                current_state['strength'] = float(input.default_value)
-                                break
-        # Only proceed if we have valid states
-        if not current_state['hdri_path'] or not os.path.exists(current_state['hdri_path']):
-            self.report({'WARNING'}, "Cannot store current HDRI state")
-            return {'CANCELLED'}
+                    self.previous_strength = node.inputs['Strength'].default_value
         
         # Set up nodes
         mapping, env_tex, node_background = ensure_world_nodes()
         
+        # Load the new image
         try:
-            # Load previous HDRI
-            img = bpy.data.images.load(hdri_settings.previous_hdri_path, check_existing=True)
+            img = bpy.data.images.load(hdri_settings.hdri_preview, check_existing=True)
             env_tex.image = img
-            
-            # Update the preview to match
-            hdri_settings.hdri_preview = hdri_settings.previous_hdri_path
-            
-            # Set rotation
-            if mapping:
-                try:
-                    mapping.inputs[2].default_value = hdri_settings.previous_rotation
-                except:
-                    for input in mapping.inputs:
-                        if input.type == 'VECTOR':
-                            input.default_value = hdri_settings.previous_rotation
-                            break
-            
-            # Set strength
-            if node_background:
-                try:
-                    node_background.inputs[1].default_value = hdri_settings.previous_strength
-                except:
-                    for input in node_background.inputs:
-                        if input.type == 'VALUE':
-                            input.default_value = hdri_settings.previous_strength
-                            break
-            
-            # Store current state as previous
-            hdri_settings.previous_hdri_path = current_state['hdri_path']
-            hdri_settings.previous_rotation = current_state['rotation']
-            hdri_settings.previous_strength = current_state['strength']
-            
-            # Update current folder
-            hdri_settings.current_folder = os.path.dirname(hdri_settings.previous_hdri_path)
-            
-            # Clear preview cache to force regeneration
-            get_hdri_previews.cached_dir = None
-            get_hdri_previews.cached_items = []
-            
-            return {'FINISHED'}
-            
         except Exception as e:
-            self.report({'ERROR'}, f"Failed to reset HDRI: {str(e)}")
+            print(f"Failed to load HDRI: {str(e)}")
             return {'CANCELLED'}
+        
+        # Force redraw of areas
+        for area in context.screen.areas:
+            area.tag_redraw()
+        
+        return {'FINISHED'}
+            
 class HDRI_OT_previous_hdri(Operator):
     bl_idname = "world.previous_hdri"
     bl_label = "Previous HDRI"
@@ -1930,32 +1907,18 @@ class HDRI_OT_generate_previews(Operator):
         # Ensure we're using the full, absolute path
         hdri_path = os.path.abspath(hdri_path)
         
-        # Debug print
-        print(f"Original HDRI Path: {hdri_path}")
-        
         # Get the directory of the original HDRI
         directory = os.path.dirname(hdri_path)
-        
-        # Debug print
-        print(f"Directory: {directory}")
         
         # Get the original filename and remove resolution suffixes
         filename = os.path.basename(hdri_path)
         
-        # Debug print
-        print(f"Original Filename: {filename}")
-        
         # Remove resolution suffixes like 2k, 4k, 8k (case insensitive)
-        clean_filename = re.sub(r'(_\d+[kK])?(\.[^.]+)$', '', filename)
-        
-        # Debug print
-        print(f"Clean Filename: {clean_filename}")
+        # Replace underscores with hyphens
+        clean_filename = re.sub(r'(_\d+[kK])?(\.[^.]+)$', '', filename).replace('_', '-')
         
         # Construct the new thumbnail path
         thumb_path = os.path.join(directory, f"{clean_filename}_thumb.png")
-        
-        # Debug print
-        print(f"Constructed Thumb Path: {thumb_path}")
         
         return thumb_path
         
@@ -2108,6 +2071,20 @@ class HDRI_OT_generate_previews(Operator):
         ]
 
     def generate_single_preview(self, context, hdri_path):
+        # Rename the HDRI file to replace underscores with hyphens
+        directory = os.path.dirname(hdri_path)
+        filename = os.path.basename(hdri_path)
+        new_filename = filename.replace('_', '-')
+        new_hdri_path = os.path.join(directory, new_filename)
+        
+        # Rename the file if the new filename is different
+        if new_filename != filename:
+            try:
+                os.rename(hdri_path, new_hdri_path)
+                hdri_path = new_hdri_path  # Update the path to the new filename
+            except Exception as e:
+                print(f"Could not rename file {hdri_path}: {str(e)}")
+        
         preferences = context.preferences.addons[__name__].preferences
         preview_blend_path = os.path.join(os.path.dirname(__file__), "Preview.blend")
         

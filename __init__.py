@@ -2090,6 +2090,13 @@ class HDRI_OT_generate_previews(Operator):
             else:
                 self.report({'INFO'}, 
                     f"Successfully generated {total_successful} previews")
+                
+            # Refresh the HDRI directory connection
+            refresh_previews(context)
+            
+            # Force redraw of UI to show new thumbnails
+            for area in context.screen.areas:
+                area.tag_redraw()
 
     def get_hdri_files(self, folder):
         supported_extensions = ['.hdr', '.exr']

@@ -1233,7 +1233,6 @@ class QuickHDRIPreferences(AddonPreferences):
         max=1000,
         subtype='PERCENTAGE'
     )
-
     preview_generation_type: EnumProperty(
         name="Preview Generation Type",
         description="Choose whether to generate preview for a single HDRI or multiple",
@@ -1243,19 +1242,16 @@ class QuickHDRIPreferences(AddonPreferences):
         ],
         default='SINGLE'
     )
-
     preview_single_file: StringProperty(
         name="HDRI File",
         description="Single HDRI file to generate preview for",
         subtype='FILE_PATH'
     )
-
     preview_multiple_folder: StringProperty(
         name="HDRI Folder",
         description="Folder containing HDRIs to generate previews for",
         subtype='DIR_PATH'
     )
-
     preview_samples: IntProperty(
         name="Render Samples",
         description="Number of samples for preview renders",
@@ -1264,7 +1260,6 @@ class QuickHDRIPreferences(AddonPreferences):
         max=999999
     )
     
-
     # Preview display with image loading
     def get_preview_icon(self, context=None):
         if self.preview_image and os.path.exists(self.preview_image):
@@ -1275,7 +1270,6 @@ class QuickHDRIPreferences(AddonPreferences):
             except:
                 return 0
         return 0
-
     preview_image: StringProperty(
         name="Current Preview Image",
         description="Path to currently displayed preview image",
@@ -1605,7 +1599,6 @@ class QuickHDRIPreferences(AddonPreferences):
                    icon='TRIA_DOWN' if self.show_preview_generation else 'TRIA_RIGHT',
                    icon_only=True, emboss=False)
         header.label(text="Preview Generation", icon='RENDERLAYERS')
-
         # Status indicator on the right
         status = header.row()
         status.alignment = 'RIGHT'
@@ -1614,7 +1607,6 @@ class QuickHDRIPreferences(AddonPreferences):
             status.label(text="Processing...", icon='SORTTIME')
         else:
             status.label(text="Ready", icon='CHECKMARK')
-
         if self.show_preview_generation:
             main_col = preview_box.column()
             
@@ -1707,7 +1699,7 @@ class QuickHDRIPreferences(AddonPreferences):
             if self.is_generating:
                 progress_box = main_col.box()
                 progress_header = progress_box.row()
-                progress_header.label(text="Thumbnail Generation in Progress : UI may freeze", icon='TIME')
+                progress_header.label(text="Generation Progress", icon='TIME')
             
             main_col.separator()
             
@@ -1919,8 +1911,6 @@ class HDRI_OT_next_hdri(Operator):
             hdri_settings.hdri_preview = enum_items[1][0]  # Skip 'None' item
             
         return {'FINISHED'}      
-
-
 class HDRI_OT_generate_previews(Operator):
     bl_idname = "world.generate_hdri_previews"
     bl_label = "Generate HDRI Previews"
@@ -1983,7 +1973,6 @@ class HDRI_OT_generate_previews(Operator):
             thumb_path = self.get_thumb_path(current_file)
             if os.path.exists(thumb_path):
                 preferences.preview_image = thumb_path
-
     def modal(self, context, event):
         preferences = context.preferences.addons[__name__].preferences
         
@@ -2011,7 +2000,6 @@ class HDRI_OT_generate_previews(Operator):
                     area.tag_redraw()
         
         return {'RUNNING_MODAL'}
-
     def modal(self, context, event):
         if event.type == 'TIMER':
             # Check if we've processed all files
@@ -2035,7 +2023,6 @@ class HDRI_OT_generate_previews(Operator):
             self._current_file_index += 1
         
         return {'RUNNING_MODAL'}
-
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
         
@@ -2059,7 +2046,6 @@ class HDRI_OT_generate_previews(Operator):
         wm.modal_handler_add(self)
         
         return {'RUNNING_MODAL'}
-
     def cancel(self, context):
         # Clean up timer
         if self._timer:
@@ -2067,7 +2053,6 @@ class HDRI_OT_generate_previews(Operator):
         
         # End progress
         context.window_manager.progress_end()
-
     def finish_preview_generation(self, context):
             preferences = context.preferences.addons[__name__].preferences
             context.window_manager.event_timer_remove(self._timer)
@@ -2090,7 +2075,6 @@ class HDRI_OT_generate_previews(Operator):
             else:
                 self.report({'INFO'}, 
                     f"Successfully generated {total_successful} previews")
-
     def get_hdri_files(self, folder):
         supported_extensions = ['.hdr', '.exr']
         return [
@@ -2099,7 +2083,6 @@ class HDRI_OT_generate_previews(Operator):
             if os.path.isfile(os.path.join(folder, f)) 
             and os.path.splitext(f)[1].lower() in supported_extensions
         ]
-
     def generate_single_preview(self, context, hdri_path):
         preferences = context.preferences.addons[__name__].preferences
         preview_blend_path = os.path.join(os.path.dirname(__file__), "Preview.blend")
@@ -2168,7 +2151,6 @@ class HDRI_OT_clear_preview_stats(Operator):
     bl_idname = "world.clear_preview_stats"
     bl_label = "Clear Statistics"
     bl_description = "Clear preview generation statistics"
-
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
         preferences.preview_stats_total = 0
@@ -2179,7 +2161,6 @@ class HDRI_OT_clear_preview_stats(Operator):
         preferences.preview_image = ""
         preferences.show_generation_stats = False
         return {'FINISHED'}
-
 # Update the finish_preview_generation method in HDRI_OT_generate_previews:
     def finish_preview_generation(self, context):
         preferences = context.preferences.addons[__name__].preferences
@@ -2204,7 +2185,6 @@ class HDRI_OT_clear_preview_stats(Operator):
         else:
             self.report({'INFO'}, 
                 f"Successfully generated {preferences.preview_stats_completed} previews")
-
         
             
 class HDRI_PT_controls(Panel):
@@ -2691,12 +2671,12 @@ classes = (
     HDRI_OT_clear_preview_stats,
 )
 def register():
-    extract_addon_zips()
-    
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
+    # Extract Update ZIP files first
+    extract_addon_zips()
     
     # Add keymap entry
     wm = bpy.context.window_manager

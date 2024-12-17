@@ -48,7 +48,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 
-![image](https://github.com/user-attachments/assets/5d0a283c-9381-4d63-960d-b79636a60c37)
+![image](https://github.com/user-attachments/assets/ff45ba7d-2743-4f46-b7d5-edb700c6d17c)
 
 2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
@@ -119,6 +119,21 @@ Add the .png thumbnails to the same directory as the hdr.
   
 ![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
 
+![image](https://github.com/user-attachments/assets/88460dba-c484-4bd2-b778-577924bbb4b8)
+
+Processing Type:
+ Single File: Select a single .hdr or .exr file from you file browser and create a _thumb.png for it.
+ Batch PRocess: Select a folder with .hdr and/or .exr files and create _thumb.png for each.
+ (For both the _thumb.png is in the same folder location as the chosen .hdr or .exr)
+
+ User Source selection to choose you HDR or folder of HDRs
+ - Choose you desired resolution %
+ - Choose number of samples
+ - GENERATE
+
+Example of original and _thumb.png instance:
+
+![image](https://github.com/user-attachments/assets/5e0789da-7f73-4ad3-aed4-f6e905646c28)
 
 ## Tips & Tricks
 

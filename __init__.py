@@ -2104,9 +2104,12 @@ class HDRI_OT_generate_previews(Operator):
         else:
             self.report({'INFO'}, 
                 f"Successfully generated {total_successful} previews")
-            
-        # Refresh the HDRI directory connection
-        refresh_previews(context)
+        
+        # Clear the preview collection to force a clean reload
+        if hasattr(get_hdri_previews, "preview_collection"):
+            get_hdri_previews.preview_collection.clear()
+            get_hdri_previews.cached_dir = None
+            get_hdri_previews.cached_items = []
         
         # Force redraw of UI to show new thumbnails
         for area in context.screen.areas:
@@ -2137,7 +2140,7 @@ class HDRI_OT_generate_previews(Operator):
         if new_filename != filename:
             try:
                 os.rename(hdri_path, new_hdri_path)
-                hdri_path = new_hdri_path  # Update the path to the new filename
+                hdri_path = new_hdri_path  # Update to the new filename
             except Exception as e:
                 print(f"Could not rename file {hdri_path}: {str(e)}")
         

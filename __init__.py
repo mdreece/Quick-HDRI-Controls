@@ -17,8 +17,8 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 2),
-    "blender": (4, 2, 0),
+    "version": (2, 5, 3),
+    "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
@@ -663,6 +663,7 @@ class HDRI_OT_reset_rotation(Operator):
                 mapping.inputs['Rotation'].default_value = (0, 0, 0)
         
         return {'FINISHED'}
+      #hello fello helmo
 class HDRI_OT_quick_rotate(Operator):
     bl_idname = "world.quick_rotate_hdri"
     bl_label = "HDRI Rotation"
@@ -1264,23 +1265,35 @@ class QuickHDRIPreferences(AddonPreferences):
         max=999999
     )
     
+    preview_image: StringProperty(
+        name="Preview Image",
+        description="Name of the currently displayed preview image",
+        default=""
+    )
+    
 
     # Preview display with image loading
     def get_preview_icon(self, context=None):
+        """Get the preview icon ID for an image"""
         if self.preview_image and os.path.exists(self.preview_image):
             try:
+                # Load or get existing image
                 if self.preview_image not in bpy.data.images:
-                    bpy.data.images.load(self.preview_image)
-                return bpy.data.images[self.preview_image].preview.icon_id
-            except:
+                    preview_img = bpy.data.images.load(self.preview_image)
+                else:
+                    preview_img = bpy.data.images[self.preview_image]
+                
+                # Force a reload of the image
+                preview_img.reload()
+                
+                # Return the preview icon ID
+                return preview_img.preview.icon_id
+                
+            except Exception as e:
+                print(f"Failed to load preview image: {str(e)}")
                 return 0
         return 0
 
-    preview_image: StringProperty(
-        name="Current Preview Image",
-        description="Path to currently displayed preview image",
-        default=""
-    )
     
     # Statistics
     preview_stats_total: IntProperty(default=0)
@@ -1599,127 +1612,176 @@ class QuickHDRIPreferences(AddonPreferences):
             col.prop(self, "rotation_increment", text="Rotation Step Size")
             
         # Preview Generation Section
-        preview_box = layout.box()
-        header = preview_box.row()
+        section_box = layout.box()
+        header = section_box.row(align=True)
         header.prop(self, "show_preview_generation", 
                    icon='TRIA_DOWN' if self.show_preview_generation else 'TRIA_RIGHT',
                    icon_only=True, emboss=False)
-        header.label(text="Preview Generation", icon='RENDERLAYERS')
-
-        # Status indicator on the right
-        status = header.row()
-        status.alignment = 'RIGHT'
+        
+        # Main header with status indicator
+        header_split = header.split(factor=0.7)
+        title_row = header_split.row()
+        title_row.label(text="Preview Generation", icon='IMAGE_DATA')
+        
+        # Status indicator
+        status_row = header_split.row(align=True)
+        status_row.alignment = 'RIGHT'
         if self.is_generating:
-            status.alert = True
-            status.label(text="Processing...", icon='SORTTIME')
+            status_row.alert = True
+            status_row.label(text="●", icon='SORTTIME')
+            status_row.label(text="Processing")
         else:
-            status.label(text="Ready", icon='CHECKMARK')
+            status_row.label(text="●", icon='CHECKMARK')
+            status_row.label(text="Ready")
 
         if self.show_preview_generation:
-            main_col = preview_box.column()
-            
-            # Step 1: Generation Type
-            step1_box = main_col.box()
-            step1_header = step1_box.row()
-            step1_header.label(text="Step 1: Choose Generation Type", icon='MODIFIER')
-            
-            # Mode buttons in a single row
-            mode_row = step1_box.row(align=True)
-            mode_row.scale_y = 1.2
-            # Single mode with description
-            single_col = mode_row.column(align=True)
-            single_col.prop_enum(self, "preview_generation_type", 'SINGLE', 
-                                text="Single HDRI", icon='IMAGE_DATA')
-            if self.preview_generation_type == 'SINGLE':
-                single_desc = step1_box.box()
-                single_desc.scale_y = 0.8
-                single_desc.label(text="Generate preview for a single HDRI file")
-            
-            # Multiple mode with description
-            multi_col = mode_row.column(align=True)
-            multi_col.prop_enum(self, "preview_generation_type", 'MULTIPLE', 
-                               text="Batch Process", icon='FILE_FOLDER')
-            if self.preview_generation_type == 'MULTIPLE':
-                multi_desc = step1_box.box()
-                multi_desc.scale_y = 0.8
-                multi_desc.label(text="Process multiple HDRIs in a folder")
-            
-            main_col.separator()
-            
-            # Step 2: Source Selection
-            step2_box = main_col.box()
-            step2_header = step2_box.row()
-            step2_header.label(text="Step 2: Select Source", icon='FILEBROWSER')
-            
-            select_col = step2_box.column()
-            if self.preview_generation_type == 'SINGLE':
-                select_col.prop(self, "preview_single_file", text="HDRI File")
-            else:
-                select_col.prop(self, "preview_multiple_folder", text="HDRI Folder")
-            
-            # Show a preview/summary box
-            summary_box = step2_box.box()
-            summary_box.scale_y = 0.8
-            if self.preview_generation_type == 'SINGLE':
-                if self.preview_single_file:
-                    summary_box.label(text=f"Selected: {os.path.basename(self.preview_single_file)}")
+            # Main container
+            main_container = section_box.column()
+            main_container.separator(factor=0.5)
+
+            # Active Job Status Panel (if processing or has results)
+            if self.is_generating or (self.preview_stats_total > 0 and not self.is_generating):
+                status_panel = main_container.box()
+                status_panel.alert = self.is_generating
+                
+                # Status Panel Header
+                status_header = status_panel.row()
+                status_header.scale_y = 1.2
+                if self.is_generating:
+                    status_header.label(text="Active Job Status", icon='RENDER_STILL')
                 else:
-                    summary_box.label(text="No file selected")
-            else:
-                if self.preview_multiple_folder:
-                    file_count = len([f for f in os.listdir(self.preview_multiple_folder) 
-                                    if f.lower().endswith(('.hdr', '.exr'))])
-                    summary_box.label(text=f"Found {file_count} HDRI files in folder")
+                    status_header.label(text="Last Job Results", icon='FILE_TICK')
+                
+                status_panel.separator(factor=0.5)
+                
+                # Progress Information Grid
+                grid = status_panel.grid_flow(row_major=True, columns=2, even_columns=True)
+                
+                # Current File (when generating)
+                if self.is_generating and self.preview_stats_current_file:
+                    file_row = grid.row()
+                    file_row.label(text="Current File:")
+                    file_row.label(text=os.path.basename(self.preview_stats_current_file))
+                
+                # Progress Statistics
+                if self.preview_stats_total > 0:
+                    # Completion Status
+                    progress = self.preview_stats_completed / self.preview_stats_total
+                    prog_row = grid.row()
+                    prog_row.label(text="Completion:")
+                    prog_row.label(text=f"{progress:.1%} ({self.preview_stats_completed}/{self.preview_stats_total})")
+                    
+                    # Time Elapsed
+                    if self.preview_stats_time > 0:
+                        minutes = int(self.preview_stats_time // 60)
+                        seconds = int(self.preview_stats_time % 60)
+                        time_row = grid.row()
+                        time_row.label(text="Time Elapsed:")
+                        time_row.label(text=f"{minutes:02d}:{seconds:02d}")
+                    
+                    # Failed Items
+                    if self.preview_stats_failed > 0:
+                        fail_row = grid.row()
+                        fail_row.alert = True
+                        fail_row.label(text="Failed Jobs:")
+                        fail_row.label(text=str(self.preview_stats_failed))
+                
+                # Clear Results Button (when not generating)
+                if not self.is_generating and self.preview_stats_total > 0:
+                    status_panel.separator(factor=0.5)
+                    clear_row = status_panel.row()
+                    clear_row.alignment = 'RIGHT'
+                    clear_op = clear_row.operator("world.clear_preview_stats", 
+                                                text="Clear History",
+                                                icon='X')
+
+            # Configuration Panels
+            if not self.is_generating:
+                main_container.separator(factor=1.0)
+                
+                # Job Configuration Panel
+                config_panel = main_container.box()
+                config_panel.label(text="Job Configuration", icon='PREFERENCES')
+                
+                # Type Selection
+                type_box = config_panel.box()
+                type_row = type_box.row(align=True)
+                type_row.scale_y = 1.2
+                type_row.label(text="Processing Type:", icon='MODIFIER')
+                type_grid = type_row.grid_flow(row_major=True, columns=2, even_columns=True)
+                type_grid.prop_enum(self, "preview_generation_type", 'SINGLE',
+                                  text="Single File", icon='IMAGE_DATA')
+                type_grid.prop_enum(self, "preview_generation_type", 'MULTIPLE',
+                                  text="Batch Process", icon='FILE_FOLDER')
+                
+                # Source Selection
+                source_box = config_panel.box()
+                source_col = source_box.column()
+                source_col.label(text="Source Selection:", icon='FILEBROWSER')
+                source_col.separator(factor=0.3)
+                
+                # File/Folder Selection
+                source_row = source_col.row(align=True)
+                if self.preview_generation_type == 'SINGLE':
+                    source_row.prop(self, "preview_single_file", text="")
                 else:
-                    summary_box.label(text="No folder selected")
-            
-            main_col.separator()
-            
-            # Step 3: Quality Settings
-            step3_box = main_col.box()
-            step3_header = step3_box.row()
-            step3_header.label(text="Step 3: Configure Settings", icon='SETTINGS')
-            
-            # Settings in a grid
-            grid = step3_box.grid_flow(row_major=True, columns=2, even_columns=True)
-            
-            # Resolution settings
-            res_col = grid.column()
-            res_col.label(text="Resolution Scale:")
-            res_col.prop(self, "preview_resolution", text="%")
-            
-            # Sample settings
-            sample_col = grid.column()
-            sample_col.label(text="Render Samples:")
-            sample_col.prop(self, "preview_samples", text="")
-            
-            # Resolution info box
-            res_box = step3_box.box()
-            res_box.scale_y = 0.8
-            actual_x = int(1024 * (self.preview_resolution / 100))
-            actual_y = int(768 * (self.preview_resolution / 100))
-            res_row = res_box.row()
-            res_row.label(text=f"Output Size: {actual_x} × {actual_y} pixels")
-            
-            main_col.separator()
-            
-            # Progress Section (when active)
-            if self.is_generating:
-                progress_box = main_col.box()
-                progress_header = progress_box.row()
-                progress_header.label(text="Thumbnail Generation in Progress : UI may freeze", icon='TIME')
-            
-            main_col.separator()
-            
-            # Action Buttons
-            action_row = main_col.row(align=True)
-            action_row.scale_y = 1.5
-            
-            # Generate button
-            gen_row = action_row.row(align=True)
-            gen_row.enabled = not self.is_generating
-            text = "Generate Preview" if self.preview_generation_type == 'SINGLE' else "Start Batch Process"
-            gen_row.operator("world.generate_hdri_previews", text=text, icon='RENDER_STILL')
+                    source_row.prop(self, "preview_multiple_folder", text="")
+                
+                # Source Information
+                info_box = source_col.box()
+                info_box.scale_y = 0.9
+                if self.preview_generation_type == 'SINGLE':
+                    if self.preview_single_file:
+                        info_box.label(text=f"Selected: {os.path.basename(self.preview_single_file)}")
+                    else:
+                        info_box.label(text="No file selected")
+                else:
+                    if self.preview_multiple_folder:
+                        file_count = len([f for f in os.listdir(self.preview_multiple_folder) 
+                                        if f.lower().endswith(('.hdr', '.exr'))])
+                        info_box.label(text=f"Found {file_count} HDRI file{'s' if file_count != 1 else ''}")
+                    else:
+                        info_box.label(text="No folder selected")
+                
+                # Quality Settings Panel
+                main_container.separator(factor=1.0)
+                quality_panel = main_container.box()
+                quality_panel.label(text="Quality Settings", icon='SETTINGS')
+                
+                # Settings Grid
+                quality_box = quality_panel.box()
+                quality_grid = quality_box.grid_flow(row_major=True, columns=2, even_columns=True)
+                
+                # Resolution Column
+                res_col = quality_grid.column(align=True)
+                res_col.label(text="Resolution Scale:")
+                res_col.prop(self, "preview_resolution", text="%")
+                
+                # Samples Column
+                sample_col = quality_grid.column(align=True)
+                sample_col.label(text="Render Samples:")
+                sample_col.prop(self, "preview_samples", text="")
+                
+                # Output Resolution Info
+                res_box = quality_panel.box()
+                res_box.scale_y = 0.9
+                actual_x = int(1024 * (self.preview_resolution / 100))
+                actual_y = int(768 * (self.preview_resolution / 100))
+                res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
+                
+                # Action Section
+                main_container.separator(factor=1.0)
+                action_box = main_container.box()
+                
+                # Generate Button
+                action_row = action_box.row(align=True)
+                action_row.scale_y = 1.5
+                action_row.operator(
+                    "world.generate_hdri_previews",
+                    text="Generate Preview" if self.preview_generation_type == 'SINGLE' 
+                         else "Start Batch Process",
+                    icon='RENDER_STILL'
+                )
            
         
     # Add the properties to control section visibility
@@ -1930,22 +1992,37 @@ class HDRI_OT_generate_previews(Operator):
         preferences.preview_stats_time = 0.0
         preferences.preview_stats_current_file = ""
         preferences.is_generating = True
+        preferences.preview_image = ""  # Clear any existing preview
         self._start_time = datetime.now()
         
     def update_stats(self, context, success, current_file):
+        """Update stats and handle preview image loading"""
         preferences = context.preferences.addons[__name__].preferences
         if success:
             preferences.preview_stats_completed += 1
+            
+            # Load and display the newly generated thumbnail
+            thumb_path = self.get_thumb_path(current_file)
+            if os.path.exists(thumb_path):
+                # Update the preview image path
+                preferences.preview_image = thumb_path
+                
+                # Force UI update
+                for window in context.window_manager.windows:
+                    for area in window.screen.areas:
+                        if area.type == 'PREFERENCES':
+                            area.tag_redraw()
         else:
             preferences.preview_stats_failed += 1
+        
         preferences.preview_stats_current_file = os.path.basename(current_file)
         preferences.preview_stats_time = (datetime.now() - self._start_time).total_seconds()
         
-        # Update preview image
-        if success:
-            thumb_path = self.get_thumb_path(current_file)
-            if os.path.exists(thumb_path):
-                preferences.preview_image = thumb_path
+        # Force redraw of preferences
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == 'PREFERENCES':
+                    area.tag_redraw()
 
     def modal(self, context, event):
         preferences = context.preferences.addons[__name__].preferences
@@ -1961,41 +2038,22 @@ class HDRI_OT_generate_previews(Operator):
             if not success:
                 self._failed_files.append(current_hdri)
             
+            # Update statistics
             self.update_stats(context, success, current_hdri)
-            
-            progress = (self._current_file_index + 1) / self._total_files
-            context.window_manager.progress_update(progress * 100)
-            
-            self._current_file_index += 1
-            
-            # Force redraw of UI
-            for area in context.screen.areas:
-                if area.type == 'PREFERENCES':
-                    area.tag_redraw()
-        
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        if event.type == 'TIMER':
-            # Check if we've processed all files
-            if self._current_file_index >= self._total_files:
-                # Finish up
-                self.finish_preview_generation(context)
-                return {'FINISHED'}
-            
-            # Process current file
-            current_hdri = self._preview_files[self._current_file_index]
-            success = self.generate_single_preview(context, current_hdri)
-            
-            if not success:
-                self._failed_files.append(current_hdri)
             
             # Update progress
             progress = (self._current_file_index + 1) / self._total_files
             context.window_manager.progress_update(progress * 100)
             
-            # Move to next file
             self._current_file_index += 1
+            
+            # Force redraw of preferences window
+            for window in context.window_manager.windows:
+                for area in window.screen.areas:
+                    if area.type == 'PREFERENCES':
+                        area.tag_redraw()
+                    elif area.type == 'VIEW_3D':
+                        area.tag_redraw()
         
         return {'RUNNING_MODAL'}
 
@@ -2018,48 +2076,46 @@ class HDRI_OT_generate_previews(Operator):
         wm = context.window_manager
         wm.progress_begin(0, 100)
         
+        # Use a shorter timer interval for more frequent updates
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         
         return {'RUNNING_MODAL'}
 
+    def finish_preview_generation(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        context.window_manager.event_timer_remove(self._timer)
+        context.window_manager.progress_end()
+        
+        # Calculate total completed
+        total_completed = self._current_file_index
+        total_failed = len(self._failed_files)
+        total_successful = total_completed - total_failed
+        
+        # Update final statistics
+        preferences.preview_stats_completed = total_successful
+        preferences.preview_stats_failed = total_failed
+        preferences.is_generating = False
+        
+        if self._failed_files:
+            failed_names = [os.path.basename(f) for f in self._failed_files]
+            self.report({'WARNING'}, 
+                f"Generated {total_successful} previews with {total_failed} failures")
+        else:
+            self.report({'INFO'}, 
+                f"Successfully generated {total_successful} previews")
+            
+        # Refresh the HDRI directory connection
+        refresh_previews(context)
+        
+        # Force redraw of UI to show new thumbnails
+        for area in context.screen.areas:
+            area.tag_redraw()
+
     def cancel(self, context):
-        # Clean up timer
         if self._timer:
             context.window_manager.event_timer_remove(self._timer)
-        
-        # End progress
         context.window_manager.progress_end()
-
-    def finish_preview_generation(self, context):
-            preferences = context.preferences.addons[__name__].preferences
-            context.window_manager.event_timer_remove(self._timer)
-            context.window_manager.progress_end()
-            
-            # Calculate total completed
-            total_completed = self._current_file_index
-            total_failed = len(self._failed_files)
-            total_successful = total_completed - total_failed
-            
-            # Update final statistics
-            preferences.preview_stats_completed = total_successful
-            preferences.preview_stats_failed = total_failed
-            preferences.is_generating = False
-            
-            if self._failed_files:
-                failed_names = [os.path.basename(f) for f in self._failed_files]
-                self.report({'WARNING'}, 
-                    f"Generated {total_successful} previews with {total_failed} failures")
-            else:
-                self.report({'INFO'}, 
-                    f"Successfully generated {total_successful} previews")
-                
-            # Refresh the HDRI directory connection
-            refresh_previews(context)
-            
-            # Force redraw of UI to show new thumbnails
-            for area in context.screen.areas:
-                area.tag_redraw()
 
     def get_hdri_files(self, folder):
         supported_extensions = ['.hdr', '.exr']
@@ -2591,7 +2647,7 @@ class HDRI_PT_controls(Panel):
                             row = col.row(align=True)
                             row.prop(mapping.inputs['Rotation'], "default_value", index=i, text=axis)
                             sub = row.row(align=True)
-                            sub.scale_x = 1.0  # Updated to match compact mode
+                            sub.scale_x = 1.0  # Updated to match comp mode
                             # Add reset button for rotation
                             reset_op = sub.operator("world.quick_rotate_hdri", text="", icon='LOOP_BACK')
                             reset_op.axis = i

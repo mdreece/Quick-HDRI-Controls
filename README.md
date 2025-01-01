@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.5.3 for Blender
+# Quick HDRI Controls v2.5.4 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.5.3-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.5.4-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -9,8 +9,7 @@ v2.5.3 Video Demonstration: [https://youtu.be/YFAPNMnai0U](https://youtu.be/tIpI
 
 Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
 
-![image](https://github.com/user-attachments/assets/516db820-9f63-4ad0-a009-d66872723012)
-
+![image](https://github.com/user-attachments/assets/bfb0a8bc-b3ad-4bba-b622-d16943a6a3d1)
 
 
 ## Features
@@ -48,7 +47,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 
-![image](https://github.com/user-attachments/assets/ff45ba7d-2743-4f46-b7d5-edb700c6d17c)
+![image](https://github.com/user-attachments/assets/b977a654-6bf7-4ccb-9d6b-1ef5638119f2)
 
 2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
 
@@ -60,10 +59,10 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
  - Open Preferences set to HDRI Directory
  - Open/Choose HDRI Directory directly
 
-3. In 'Supported File Tyypes' select which file types you want to use (HDR, EXR, PNG, JPG)
+3. In 'HDRI Settings' select which file types you want to use (HDR, EXR, PNG, JPG)
 (All are enabled by default)
 
-![image](https://github.com/user-attachments/assets/2ce6fd31-adf5-40e8-abfe-3168cce47869)
+![image](https://github.com/user-attachments/assets/64f7d509-f9cb-4bc7-978c-693b7f0b5417)
 
 (Preview limit is related to .png thumbnails for HDRIs that you can use to save on resources) 
 
@@ -94,7 +93,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 5. 'Settings' will appear once an HDRI has been loaded.
 
-![image](https://github.com/user-attachments/assets/610f1e59-526d-49ff-845e-a392021bb51f)
+![image](https://github.com/user-attachments/assets/025a3773-b03e-45eb-95c7-64e86edd76b1)
 
 Buttons:
 - Keep Rotation lock (keeps rotation changes between HDRI switching)
@@ -109,11 +108,19 @@ Options:
   - Addon version
   - Delete World
 
+#Proxies (more info below: close tab for better performance)
+
+![image](https://github.com/user-attachments/assets/e154145c-75f7-4e69-ba14-7eb0e16ae32d)
+
+Proxy Resolution Selection: Choose the desired resolution for your proxy of the selected HDRI
+Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
+
+
  Full Dropdown Panel
 
 ![image](https://github.com/user-attachments/assets/b196d0b3-a2fc-4406-a47f-a34606697763)
 
-
+## Preview Thumbnail Generation
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
 Add the .png thumbnails to the same directory as the hdr.
   
@@ -122,8 +129,11 @@ Add the .png thumbnails to the same directory as the hdr.
 ![image](https://github.com/user-attachments/assets/88460dba-c484-4bd2-b778-577924bbb4b8)
 
 Processing Type:
+
  Single File: Select a single .hdr or .exr file from you file browser and create a _thumb.png for it.
+
  Batch PRocess: Select a folder with .hdr and/or .exr files and create _thumb.png for each.
+
  (For both the _thumb.png is in the same folder location as the chosen .hdr or .exr)
 
  User Source selection to choose you HDR or folder of HDRs
@@ -134,6 +144,21 @@ Processing Type:
 Example of original and _thumb.png instance:
 
 ![image](https://github.com/user-attachments/assets/5e0789da-7f73-4ad3-aed4-f6e905646c28)
+
+## Proxy Settings
+
+![image](https://github.com/user-attachments/assets/d13e9918-c338-4f0e-aba3-ef2591f73897)
+
+Default Resolution: The desired default resolution for proxies (if set to ORIGINAL, no proxies will be created and full resolution HDRI will be used - options = 1K, 2K, 4K, Original)
+Default Application: Options are 'Viewport Only' (default) and 'Both'
+        Viewport Only: The selected HDRI proxy will be used for viewport rendering. When a render begins (single frame or animation) the full resolution HDRI will be loaded in. Once completed the proxy will be    reloaded for viewport rendering.
+        Both: The selected HDRI proxy will be used for both viewport and final rendering.
+#Cache Settings
+Cache Size Limit: Limits the amount of space that proxy files can take up (in MB)
+Clear Proxy Cache: Will clear/delete all proxy files and folders for HDRIs
+#Advanced Settings: More than likely these will not need to be adjusted. Compression using ZIP works well in both MacOS and Windows. The format option is for you to set the proxies to be HDR or EXR formats
+
+
 
 ## Tips & Tricks
 
@@ -206,11 +231,12 @@ To access these options:
 
 ### HDRI Settings
 
-![image](https://github.com/user-attachments/assets/7a907fc4-d83e-4468-9924-5bf1aff142ef)
+![image](https://github.com/user-attachments/assets/50a5d22b-4346-4525-a88e-241b4c7b1d24)
 
  - Keep Rotation options between HDRI changes
  - Maximum Strength value for lighting in scenes
  - Rotations step degree for when rotating HDRIs in increments
+ - Supported File Types" explained above
 
 
 

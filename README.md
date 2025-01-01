@@ -150,11 +150,14 @@ Example of original and _thumb.png instance:
 ![image](https://github.com/user-attachments/assets/d13e9918-c338-4f0e-aba3-ef2591f73897)
 
 Default Resolution: The desired default resolution for proxies (if set to ORIGINAL, no proxies will be created and full resolution HDRI will be used - options = 1K, 2K, 4K, Original)
+
 Default Application: Options are 'Viewport Only' (default) and 'Both'
+
     - Viewport Only: The selected HDRI proxy will be used for viewport rendering. When a render begins (single frame or animation) the full resolution HDRI will be loaded in. Once completed the proxy will be    reloaded for viewport rendering.
     - Both: The selected HDRI proxy will be used for both viewport and final rendering.
    
 ###Cache Settings
+
  - Cache Size Limit: Limits the amount of space that proxy files can take up (in MB)
  - Clear Proxy Cache: Will clear/delete all proxy files and folders for HDRIs
 

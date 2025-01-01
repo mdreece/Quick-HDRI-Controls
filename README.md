@@ -116,7 +116,7 @@ Proxy Resolution Selection: Choose the desired resolution for your proxy of the 
 Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
 
 
- Full Dropdown Panel
+### Full Dropdown Panel
 
 ![image](https://github.com/user-attachments/assets/b196d0b3-a2fc-4406-a47f-a34606697763)
 

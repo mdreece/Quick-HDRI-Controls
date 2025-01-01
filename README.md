@@ -126,7 +126,7 @@ Add the .png thumbnails to the same directory as the hdr.
   
 ![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
 
-![image](https://github.com/user-attachments/assets/88460dba-c484-4bd2-b778-577924bbb4b8)
+![image](https://github.com/user-attachments/assets/281e96a0-8e96-4b45-a005-64ccddcaaec7)
 
 Processing Type:
 
@@ -139,6 +139,8 @@ Processing Type:
  User Source selection to choose you HDR or folder of HDRs
  - Choose you desired resolution %
  - Choose number of samples
+ - Choose Render Device
+ - Select scene type: Orbs (orbs preview) or Monk ( single suzanne)
  - GENERATE
 
 Example of original and _thumb.png instance:

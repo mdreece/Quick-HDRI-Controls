@@ -20,7 +20,7 @@ bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
     "version": (2, 5, 4),
-    "blender": (4, 2, 0),
+    "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
@@ -1647,7 +1647,6 @@ class QuickHDRIPreferences(AddonPreferences):
         ],
         default='CPU'
     )
-
     preview_scene_type: EnumProperty(
         name="Scene Type",
         description="Objects to include in the preview scene",
@@ -2082,7 +2081,6 @@ class QuickHDRIPreferences(AddonPreferences):
                 device_col = quality_grid.column(align=True)
                 device_col.label(text="Render Device:")
                 device_col.prop(self, "preview_render_device", text="")
-
                 # Scene Type Column  
                 scene_col = quality_grid.column(align=True)
                 scene_col.label(text="Scene Type:")
@@ -2548,6 +2546,28 @@ class HDRI_OT_generate_previews(Operator):
         return {'RUNNING_MODAL'}
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
+        
+        # Validation for file/folder selection
+        if preferences.preview_generation_type == 'SINGLE':
+            if not preferences.preview_single_file or not os.path.exists(preferences.preview_single_file):
+                self.report({'ERROR'}, "Please select a valid HDRI file")
+                def draw_file_warning(self, context):
+                    layout = self.layout
+                    layout.label(text="No HDRI File Selected", icon='ERROR')
+                    layout.label(text="Please choose a single HDRI file to generate a preview")
+                
+                context.window_manager.popup_menu(draw_file_warning, title="File Selection", icon='ERROR')
+                return {'CANCELLED'}
+        else:  # Multiple/Batch mode
+            if not preferences.preview_multiple_folder or not os.path.exists(preferences.preview_multiple_folder):
+                self.report({'ERROR'}, "Please select a valid HDRI folder")
+                def draw_folder_warning(self, context):
+                    layout = self.layout
+                    layout.label(text="No HDRI Folder Selected", icon='ERROR')
+                    layout.label(text="Please choose a folder containing HDRI files")
+                
+                context.window_manager.popup_menu(draw_folder_warning, title="Folder Selection", icon='ERROR')
+                return {'CANCELLED'}
         
         self._failed_files = []
         self._current_file_index = 0
@@ -3274,6 +3294,21 @@ def register():
         bpy.app.handlers.render_cancel.append(reset_proxy_after_render)
     if reset_proxy_after_render_complete not in bpy.app.handlers.render_complete:
         bpy.app.handlers.render_complete.append(reset_proxy_after_render_complete)
+        
+    # Version compatibility check
+    current_blender_version = bpy.app.version
+    recommended_version = bl_info['blender']
+    
+    if (current_blender_version[0] < recommended_version[0] or 
+        (current_blender_version[0] == recommended_version[0] and 
+         current_blender_version[1] < recommended_version[1])):
+        def draw_version_warning(self, context):
+            layout = self.layout
+            layout.label(text="Quick HDRI Controls Compatibility Warning", icon='ERROR')
+            layout.label(text=f"This addon is recommended for Blender {recommended_version[0]}.{recommended_version[1]}+")
+            layout.label(text="You may experience compatibility issues with your current Blender version.")
+        
+        bpy.context.window_manager.popup_menu(draw_version_warning, title="Version Compatibility", icon='ERROR')
     
     # Add keymap entry
     wm = bpy.context.window_manager

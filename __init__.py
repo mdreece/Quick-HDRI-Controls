@@ -1638,6 +1638,26 @@ class QuickHDRIPreferences(AddonPreferences):
         default=""
     )
     
+    preview_render_device: EnumProperty(
+        name="Render Device",
+        description="Device to use for preview rendering",
+        items=[
+            ('CPU', 'CPU', 'Use CPU for rendering'),
+            ('GPU', 'GPU', 'Use GPU for rendering')
+        ],
+        default='CPU'
+    )
+
+    preview_scene_type: EnumProperty(
+        name="Scene Type",
+        description="Objects to include in the preview scene",
+        items=[
+            ('ORBS', 'Orbs', 'Use the Orbs collection'),
+            ('MONK', 'Monk', 'Use the Monk collection')
+        ],
+        default='ORBS'
+    )
+    
     default_proxy_resolution: EnumProperty(
         name="Default Proxy Resolution",
         description="Default resolution for HDRI proxies",
@@ -2057,6 +2077,16 @@ class QuickHDRIPreferences(AddonPreferences):
                 actual_x = int(1024 * (self.preview_resolution / 100))
                 actual_y = int(768 * (self.preview_resolution / 100))
                 res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
+                
+                # Render Device Column
+                device_col = quality_grid.column(align=True)
+                device_col.label(text="Render Device:")
+                device_col.prop(self, "preview_render_device", text="")
+
+                # Scene Type Column  
+                scene_col = quality_grid.column(align=True)
+                scene_col.label(text="Scene Type:")
+                scene_col.prop(self, "preview_scene_type", text="")
                 
                 # Action Section
                 main_container.separator(factor=1.0)
@@ -2615,6 +2645,19 @@ class HDRI_OT_generate_previews(Operator):
             if not preview_scene:
                 print("Could not find Preview scene")
                 return False
+            
+            # Set render device based on preference
+            if preferences.preview_render_device == 'CPU':
+                preview_scene.cycles.device = 'CPU'
+            else:
+                preview_scene.cycles.device = 'GPU'
+            
+            # Set collection visibility based on scene type preference
+            for collection in preview_scene.collection.children:
+                if collection.name == 'Orbs':
+                    collection.hide_render = preferences.preview_scene_type != 'ORBS'
+                elif collection.name == 'Monk':
+                    collection.hide_render = preferences.preview_scene_type != 'MONK'
             
             # Load the HDRI image
             try:

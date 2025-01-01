@@ -20,7 +20,7 @@ bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
     "version": (2, 5, 4),
-    "blender": (4, 3, 0),
+    "blender": (4, 2, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",

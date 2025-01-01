@@ -19,13 +19,14 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 4),
-    "blender": (4, 3, 0),
+    "version": [2, 5, 4],
+    "blender": [4, 3, 0],
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
     "category": "3D View",
-    "support": "COMMUNITY"
+    "support": "COMMUNITY",
+    "doc_url": "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
 }
 # Stored keymap entries to remove them when unregistering
 addon_keymaps = []

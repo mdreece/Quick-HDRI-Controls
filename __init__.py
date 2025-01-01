@@ -25,6 +25,7 @@ bl_info = {
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
     "category": "3D View",
+    "support": "COMMUNITY"
 }
 # Stored keymap entries to remove them when unregistering
 addon_keymaps = []

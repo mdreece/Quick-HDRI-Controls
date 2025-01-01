@@ -15,7 +15,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
                       BoolProperty, FloatVectorProperty)
 from bpy.app.handlers import persistent
 import numpy as np
-from PIL import Image
+
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",

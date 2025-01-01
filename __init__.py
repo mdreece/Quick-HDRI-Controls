@@ -14,10 +14,12 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
                       CollectionProperty, PointerProperty, IntProperty, 
                       BoolProperty, FloatVectorProperty)
 from bpy.app.handlers import persistent
+import numpy as np
+from PIL import Image
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 3),
+    "version": (2, 5, 4),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -26,12 +28,13 @@ bl_info = {
 }
 # Stored keymap entries to remove them when unregistering
 addon_keymaps = []
+original_paths = {}
 def get_hdri_previews():
     """Get or create the preview collection"""
     if not hasattr(get_hdri_previews, "preview_collection"):
         pcoll = bpy.utils.previews.new()
         get_hdri_previews.preview_collection = pcoll
-        # Add cache for current directory
+        #cache for current directory
         get_hdri_previews.cached_dir = None
         get_hdri_previews.cached_items = []
     return get_hdri_previews.preview_collection
@@ -156,13 +159,10 @@ def get_folders(context):
     """Get list of subfolders in HDRI directory"""
     preferences = context.preferences.addons[__name__].preferences
     base_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
-    
     # Ensure current_folder is within base directory
     if not context.scene.hdri_settings.current_folder:
         context.scene.hdri_settings.current_folder = base_dir
-        
     current_dir = os.path.normpath(os.path.abspath(context.scene.hdri_settings.current_folder))
-    
     # If somehow outside base directory, reset to base
     try:
         rel_path = os.path.relpath(current_dir, base_dir)
@@ -172,9 +172,7 @@ def get_folders(context):
     except ValueError:
         current_dir = base_dir
         context.scene.hdri_settings.current_folder = base_dir
-    
     items = []
-    
     # Only show parent folder button if we're in a subfolder AND not directly in base_dir
     if current_dir != base_dir:
         parent_dir = os.path.dirname(current_dir)
@@ -182,13 +180,12 @@ def get_folders(context):
         if os.path.normpath(parent_dir) == os.path.normpath(base_dir) or \
            os.path.normpath(parent_dir).startswith(os.path.normpath(base_dir)):
             items.append(("parent", "", "Go to parent folder", 'FILE_PARENT', 0))
-    
-    # Add subfolders
+    # Add subfolders, but exclude the 'proxies' folder
     try:
         if os.path.exists(current_dir):
             for idx, dirname in enumerate(sorted(os.listdir(current_dir)), start=len(items)):
                 full_path = os.path.join(current_dir, dirname)
-                if os.path.isdir(full_path):
+                if os.path.isdir(full_path) and dirname != 'proxies':
                     # Verify subfolder is within base directory
                     try:
                         rel_path = os.path.relpath(full_path, base_dir)
@@ -198,9 +195,6 @@ def get_folders(context):
                         continue
     except Exception as e:
         print(f"Error reading directory {current_dir}: {str(e)}")
-    
-    return items
-    
     return items
 def update_background_strength(self, context):
     if context.scene.world and context.scene.world.use_nodes:
@@ -355,7 +349,33 @@ def ensure_world_nodes():
     node_mapping.location = (-300, 300)
     node_coord.location = (-600, 300)
     
+    # Set up proxy handling
+    if hasattr(scene, "hdri_settings"):
+        hdri_settings = scene.hdri_settings
+        preferences = bpy.context.preferences.addons[__name__].preferences
+        
+        # Initialize proxy settings from preferences if not already set
+        if not hdri_settings.is_property_set("proxy_resolution"):
+            hdri_settings.proxy_resolution = preferences.default_proxy_resolution
+        if not hdri_settings.is_property_set("proxy_mode"):
+            hdri_settings.proxy_mode = preferences.default_proxy_mode
+    
     return node_mapping, node_env, node_background
+    
+def cleanup_hdri_proxies():
+    """Clean up old proxy files"""
+    proxy_dir = os.path.join(tempfile.gettempdir(), 'hdri_proxies')
+    if os.path.exists(proxy_dir):
+        try:
+            # Remove files older than 24 hours
+            current_time = time.time()
+            for file in os.listdir(proxy_dir):
+                file_path = os.path.join(proxy_dir, file)
+                if os.path.isfile(file_path):
+                    if current_time - os.path.getmtime(file_path) > 86400:  # 24 hours
+                        os.remove(file_path)
+        except Exception as e:
+            print(f"Error cleaning proxies: {str(e)}")
 def has_hdri_files(context):
     """Check if current folder has any supported HDRI files"""
     preferences = context.preferences.addons[__name__].preferences
@@ -433,6 +453,317 @@ def get_hdri_metadata(image):
             size_bytes /= 1024
             
     return metadata
+    
+def detect_hdri_resolution(filepath):
+    """
+    Detect HDRI resolution from filename or metadata.
+    Returns tuple of (original_resolution, available_resolutions)
+    """
+    import os
+    import re
+    
+    # Standard resolutions in pixels (width)
+    STANDARD_RESOLUTIONS = {
+        1024: "1k",
+        2048: "2k",
+        4096: "4k",
+        6144: "6k",
+        8192: "8k",
+        16384: "16k"
+    }
+    
+    # Resolution patterns in filenames
+    RESOLUTION_PATTERNS = [
+        r'[\-_](\d+)[kK]',  # Match _2k, -2K, etc.
+        r'[\-_](\d+)p',     # Match _2048p, etc.
+        r'[\-_](\d+)x\d+',  # Match _2048x1024, etc.
+        r'(\d+)[kK]',       # Match 2k, 2K without separator
+    ]
+    
+    def get_nearest_standard_resolution(pixels):
+        """Convert pixel width to nearest standard resolution"""
+        nearest = min(STANDARD_RESOLUTIONS.keys(), 
+                     key=lambda x: abs(x - pixels))
+        return STANDARD_RESOLUTIONS[nearest]
+    
+    # First try to detect from filename
+    filename = os.path.basename(filepath)
+    base_name = os.path.splitext(filename)[0]
+    
+    for pattern in RESOLUTION_PATTERNS:
+        match = re.search(pattern, base_name)
+        if match:
+            # Convert matched value to pixels
+            value = match.group(1)
+            if value.lower().endswith('k'):
+                pixels = int(float(value[:-1]) * 1024)
+            else:
+                pixels = int(value)
+            
+            detected_res = get_nearest_standard_resolution(pixels)
+            
+            # Get base filename without resolution
+            clean_name = re.sub(pattern, '', base_name)
+            
+            # Look for other available resolutions
+            dir_path = os.path.dirname(filepath)
+            available_res = []
+            
+            for f in os.listdir(dir_path):
+                if f.startswith(clean_name) and f.endswith(os.path.splitext(filename)[1]):
+                    for pat in RESOLUTION_PATTERNS:
+                        res_match = re.search(pat, f)
+                        if res_match:
+                            res_value = res_match.group(1)
+                            if res_value.lower().endswith('k'):
+                                res_pixels = int(float(res_value[:-1]) * 1024)
+                            else:
+                                res_pixels = int(res_value)
+                            available_res.append(get_nearest_standard_resolution(res_pixels))
+                            break
+            
+            return detected_res, list(set(available_res))
+    
+    # If no resolution in filename, try to get from image metadata
+    try:
+        img = bpy.data.images.load(filepath, check_existing=True)
+        width = img.size[0]
+        detected_res = get_nearest_standard_resolution(width)
+        # Clean up if image was newly loaded
+        if img.users == 0:
+            bpy.data.images.remove(img)
+        return detected_res, [detected_res]
+    except:
+        return None, []
+        
+def get_proxy_directory(filepath):
+    """Get or create the proxy directory for the given HDRI file"""
+    hdri_dir = os.path.dirname(filepath)
+    proxy_dir = os.path.join(hdri_dir, 'proxies')
+    os.makedirs(proxy_dir, exist_ok=True)
+    return proxy_dir
+        
+def create_hdri_proxy(original_path, target_resolution):
+    """Create a proxy version of an HDRI at the specified resolution."""
+    resolution_map = {
+        '1K': 1024,
+        '2K': 2048,
+        '4K': 4096,
+        '6K': 6144,
+        '8K': 8192,
+        '16K': 16384
+    }
+    
+    target_width = resolution_map.get(target_resolution)
+    if not target_width:
+        return None
+        
+    # Get proxy directory in same folder as HDRI
+    proxy_dir = get_proxy_directory(original_path)
+    
+    # Generate proxy filename
+    base_name = os.path.splitext(os.path.basename(original_path))[0]
+    proxy_name = f"{base_name}_{target_resolution}.hdr"
+    proxy_path = os.path.join(proxy_dir, proxy_name)
+    
+    # Check if proxy already exists
+    if os.path.exists(proxy_path):
+        return proxy_path
+    
+    try:
+        # Load original image
+        original_img = bpy.data.images.load(original_path, check_existing=True)
+        original_width = original_img.size[0]
+        
+        # Don't create proxy if target resolution is higher than original
+        if target_width >= original_width:
+            if original_img.users == 0:
+                bpy.data.images.remove(original_img)
+            return original_path
+        
+        # Calculate new dimensions
+        aspect_ratio = original_img.size[1] / original_img.size[0]
+        target_height = int(target_width * aspect_ratio)
+        
+        # Create resized image
+        original_img.scale(target_width, target_height)
+        
+        # Save with proper keyword argument
+        original_img.save(filepath=proxy_path)
+        
+        # Clean up
+        if original_img.users == 0:
+            bpy.data.images.remove(original_img)
+        
+        return proxy_path
+    except Exception as e:
+        print(f"Error creating proxy: {str(e)}")
+        return None
+        
+@persistent
+def reload_original_for_render(dummy):
+    """Handler to reload original image for rendering"""
+    context = bpy.context
+    if context.scene.world and context.scene.world.use_nodes:
+        for node in context.scene.world.node_tree.nodes:
+            if node.type == 'TEX_ENVIRONMENT' and node.image:
+                settings = context.scene.hdri_settings
+                original_path = original_paths.get(node.image.name)
+                
+                # Only reload original for 'VIEWPORT' mode
+                if original_path and settings.proxy_mode == 'VIEWPORT':
+                    node.image = bpy.data.images.load(original_path, check_existing=True)
+                break
+@persistent
+def reset_proxy_after_render(dummy):
+    """Handler to reset proxy image after render cancellation"""
+    context = bpy.context
+    if context.scene.world and context.scene.world.use_nodes:
+        for node in context.scene.world.node_tree.nodes:
+            if node.type == 'TEX_ENVIRONMENT' and node.image:
+                settings = context.scene.hdri_settings
+                original_path = original_paths.get(node.image.name)
+                
+                # Reset to proxy only for 'VIEWPORT' mode
+                if original_path and settings.proxy_mode == 'VIEWPORT':
+                    proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
+                    if proxy_path:
+                        node.image = bpy.data.images.load(proxy_path, check_existing=True)
+                break
+@persistent
+def reset_proxy_after_render_complete(dummy):
+    """Handler to reset proxy image after rendering completes"""
+    context = bpy.context
+    if context.scene.world and context.scene.world.use_nodes:
+        env_tex = None
+        for node in context.scene.world.node_tree.nodes:
+            if node.type == 'TEX_ENVIRONMENT':
+                env_tex = node
+                break
+                
+        if env_tex and env_tex.image:
+            settings = context.scene.hdri_settings
+            original_path = original_paths.get(env_tex.image.name, env_tex.image.filepath)
+            
+            if settings.proxy_mode == 'VIEWPORT':
+                proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
+                if proxy_path:
+                    # Clear existing image to ensure clean reload
+                    current_image = env_tex.image
+                    env_tex.image = None
+                    if current_image.users == 0:
+                        bpy.data.images.remove(current_image)
+                        
+                    # Load proxy
+                    env_tex.image = bpy.data.images.load(proxy_path, check_existing=True)
+        
+        
+def update_hdri_proxy(self, context):
+    """Update handler for proxy resolution and mode changes"""
+    if not context.scene.world or not context.scene.world.use_nodes:
+        return
+    
+    # Find environment texture node
+    env_tex = None
+    for node in context.scene.world.node_tree.nodes:
+        if node.type == 'TEX_ENVIRONMENT':
+            env_tex = node
+            break
+            
+    if not env_tex or not env_tex.image:
+        return
+        
+    settings = context.scene.hdri_settings
+    
+    # Close proxy settings on any resolution or mode change
+    context.scene.hdri_settings.show_proxy_settings = False
+        
+    # Get the original path
+    image_key = env_tex.image.name
+    original_path = original_paths.get(image_key, env_tex.image.filepath)
+    
+    # If set to original, load the original file  
+    if settings.proxy_resolution == 'ORIGINAL':
+        # Clear existing image to ensure clean load
+        current_image = env_tex.image 
+        env_tex.image = None
+        if current_image.users == 0:
+            bpy.data.images.remove(current_image)
+            
+        # Load original     
+        img = bpy.data.images.load(original_path, check_existing=True)
+        env_tex.image = img
+        return
+        
+    # Check if the proxy image is already loaded   
+    proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
+    if proxy_path in bpy.data.images:
+        env_tex.image = bpy.data.images[proxy_path]
+    else:
+        # Clear existing image
+        current_image = env_tex.image
+        env_tex.image = None  
+        if current_image.users == 0:
+            bpy.data.images.remove(current_image)
+            
+        # Load proxy and store original path     
+        img = bpy.data.images.load(proxy_path, check_existing=True) 
+        original_paths[img.name] = original_path  # Store original path  
+        env_tex.image = img
+        
+    # Check if the proxy image supports viewport display settings
+    try:
+        if hasattr(env_tex.image, 'viewport_display_shader') and hasattr(env_tex.image, 'viewport_display_method'):
+            if settings.proxy_mode == 'VIEWPORT':  
+                env_tex.image.viewport_display_shader = 'PROXY'
+                env_tex.image.viewport_display_method = 'MULTITEXTURE' 
+            else:  # 'RENDER' or 'BOTH'
+                env_tex.image.viewport_display_shader = 'MATERIAL'
+                env_tex.image.viewport_display_method = 'MULTITEXTURE'
+    except AttributeError:
+        # If the attributes are not available, fall back to the 'BOTH' mode
+        env_tex.image.viewport_display_shader = 'PROXY'  
+        env_tex.image.viewport_display_method = 'MULTITEXTURE'
+    # Handle render update - only use handlers for 'VIEWPORT' mode
+    if settings.proxy_mode == 'VIEWPORT':
+        # Add handlers if not already present
+        if reload_original_for_render not in bpy.app.handlers.render_init:
+            bpy.app.handlers.render_init.append(reload_original_for_render)
+        if reset_proxy_after_render not in bpy.app.handlers.render_cancel:
+            bpy.app.handlers.render_cancel.append(reset_proxy_after_render)
+        if reset_proxy_after_render_complete not in bpy.app.handlers.render_complete:
+            bpy.app.handlers.render_complete.append(reset_proxy_after_render_complete)
+    else:
+        # Remove handlers
+        if reload_original_for_render in bpy.app.handlers.render_init:
+            bpy.app.handlers.render_init.remove(reload_original_for_render)
+        if reset_proxy_after_render in bpy.app.handlers.render_cancel:
+            bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
+        if reset_proxy_after_render_complete in bpy.app.handlers.render_complete:
+            bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
+        
+class HDRI_OT_cleanup_hdri_proxies(Operator):
+    bl_idname = "world.cleanup_hdri_proxies"
+    bl_label = "Clean Proxy Cache"
+    bl_description = "Remove old proxy files from cache"
+    def execute(self, context):
+        try:
+            preferences = context.preferences.addons[__name__].preferences
+            hdri_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
+            # Remove all proxy subfolders
+            for root, dirs, files in os.walk(hdri_dir):
+                for dir in dirs:
+                    if dir == 'proxies':
+                        proxy_dir = os.path.join(root, dir)
+                        try:
+                            shutil.rmtree(proxy_dir)
+                            self.report({'INFO'}, f"Removed proxy folder: {proxy_dir}")
+                        except Exception as e:
+                            self.report({'ERROR'}, f"Failed to remove proxy folder: {proxy_dir} ({str(e)})")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to clean proxy cache: {str(e)}")
+            return {'CANCELLED'}
             
 class HDRI_OT_cleanup_unused(Operator):
     bl_idname = "world.cleanup_unused_hdri"
@@ -910,13 +1241,10 @@ class HDRISettings(PropertyGroup):
     def update_hdri_preview(self, context):
         """Automatically load HDRI when selected from preview"""
         filepath = self.hdri_preview
-        
         if not filepath:
             return
-            
         if not os.path.exists(filepath):
             return
-        
         # Store current state as previous
         world = context.scene.world
         if world and world.use_nodes:
@@ -927,9 +1255,7 @@ class HDRISettings(PropertyGroup):
                     self.previous_rotation = node.inputs['Rotation'].default_value.copy()
                 elif node.type == 'BACKGROUND':
                     self.previous_strength = node.inputs['Strength'].default_value
-        
         preferences = context.preferences.addons[__name__].preferences
-        
         # Store current rotation if keep_rotation is enabled
         current_rotation = None
         if preferences.keep_rotation:
@@ -937,10 +1263,8 @@ class HDRISettings(PropertyGroup):
                 if node.type == 'MAPPING':
                     current_rotation = node.inputs['Rotation'].default_value.copy()
                     break
-        
         # Set up nodes
         mapping, env_tex, node_background = ensure_world_nodes()
-        
         # Load the new image
         try:
             img = bpy.data.images.load(filepath, check_existing=True)
@@ -948,12 +1272,24 @@ class HDRISettings(PropertyGroup):
         except Exception as e:
             print(f"Failed to load HDRI: {str(e)}")
             return
-        
         # Apply rotation based on keep_rotation setting
         if preferences.keep_rotation and current_rotation is not None:
             mapping.inputs['Rotation'].default_value = current_rotation
         else:
             mapping.inputs['Rotation'].default_value = (0, 0, 0)
+        # Create a proxy if the user has a proxy resolution set
+        if self.proxy_resolution != 'ORIGINAL':
+            proxy_path = create_hdri_proxy(filepath, self.proxy_resolution)
+            if proxy_path and proxy_path != env_tex.image.filepath:
+                # Clear existing image
+                current_image = env_tex.image
+                env_tex.image = None
+                if current_image.users == 0:
+                    bpy.data.images.remove(current_image)
+                # Load proxy and store original path
+                img = bpy.data.images.load(proxy_path, check_existing=True)
+                original_paths[img.name] = filepath  # Store original path in dictionary
+                env_tex.image = img
     # Properties
     hdri_preview: EnumProperty(
         items=generate_previews,
@@ -1023,6 +1359,41 @@ class HDRISettings(PropertyGroup):
         description="Previous strength value",
         default=1.0
     )
+    
+    proxy_resolution: EnumProperty(
+        name="Proxy Resolution",
+        description="Resolution to use for HDRI",
+        items=[
+            ('ORIGINAL', 'Original', 'Use original resolution'),
+            ('1K', '1K', 'Use 1K resolution'),
+            ('2K', '2K', 'Use 2K resolution'),
+            ('4K', '4K', 'Use 4K resolution'),
+        ],
+        default='ORIGINAL',
+        update=update_hdri_proxy
+    )
+    
+    proxy_mode: EnumProperty(
+        name="Proxy Mode",
+        description="Where to apply proxy resolution",
+        items=[
+            ('VIEWPORT', 'Viewport Only', 'Apply proxy resolution only in viewport'),
+            ('BOTH', 'Both', 'Apply proxy resolution to both viewport and render'),
+        ],
+        default='VIEWPORT',
+        update=update_hdri_proxy  # Add this line
+    )
+    
+    available_resolutions: CollectionProperty(
+        type=PropertyGroup,
+        name="Available Resolutions"
+    )
+    
+    show_proxy_settings: BoolProperty(
+        name="Show Proxy Settings",
+        description="Close this tab after selection for faster performance",
+    )
+    
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
     # Properties for auto-update and update alert
@@ -1231,10 +1602,9 @@ class QuickHDRIPreferences(AddonPreferences):
         description="Percentage of base resolution (1024x768)",
         default=100,
         min=10,
-        max=1000,
+        max=200,
         subtype='PERCENTAGE'
     )
-
     preview_generation_type: EnumProperty(
         name="Preview Generation Type",
         description="Choose whether to generate preview for a single HDRI or multiple",
@@ -1244,19 +1614,16 @@ class QuickHDRIPreferences(AddonPreferences):
         ],
         default='SINGLE'
     )
-
     preview_single_file: StringProperty(
         name="HDRI File",
         description="Single HDRI file to generate preview for",
         subtype='FILE_PATH'
     )
-
     preview_multiple_folder: StringProperty(
         name="HDRI Folder",
         description="Folder containing HDRIs to generate previews for",
         subtype='DIR_PATH'
     )
-
     preview_samples: IntProperty(
         name="Render Samples",
         description="Number of samples for preview renders",
@@ -1271,7 +1638,73 @@ class QuickHDRIPreferences(AddonPreferences):
         default=""
     )
     
-
+    default_proxy_resolution: EnumProperty(
+        name="Default Proxy Resolution",
+        description="Default resolution for HDRI proxies",
+        items=[
+            ('ORIGINAL', 'Original', 'Use original resolution'),
+            ('1K', '1K', 'Use 1K resolution'),
+            ('2K', '2K', 'Use 2K resolution'),
+            ('4K', '4K', 'Use 4K resolution'),
+        ],
+        default='ORIGINAL'
+    )
+    
+    default_proxy_mode: EnumProperty(
+        name="Default Proxy Mode",
+        description="Default proxy application mode",
+        items=[
+            ('VIEWPORT', 'Viewport Only', 'Apply proxy resolution only in viewport'),
+            ('BOTH', 'Both', 'Apply proxy resolution to both viewport and render'),
+        ],
+        default='VIEWPORT'
+    )
+    
+    show_proxy_settings: BoolProperty(
+        name="Show Proxy Settings",
+        description="Show or hide proxy settings",
+        default=False
+    )
+    
+    proxy_cache_limit: IntProperty(
+        name="Proxy Cache Limit",
+        description="Maximum size for proxy cache in megabytes",
+        default=500,
+        min=1,
+        max=999999999
+    )
+    proxy_compression: EnumProperty(
+        name="Proxy Compression",
+        description="Compression method for proxy files",
+        items=[
+            ('NONE', 'None', 'No compression'),
+            ('ZIP', 'ZIP', 'ZIP compression'),
+            ('PIZ', 'PIZ', 'PIZ compression (EXR only)'),
+        ],
+        default='ZIP'
+    )
+    
+    proxy_format: EnumProperty(
+        name="Proxy Format",
+        description="File format for proxy files",
+        items=[
+            ('HDR', 'HDR', 'OpenEXR HDR format'),
+            ('EXR', 'EXR', 'OpenEXR format'),
+        ],
+        default='HDR'
+    )
+    
+    show_cache_settings: bpy.props.BoolProperty(
+        name="Show Cache Settings",
+        default=False,
+        description="Toggle the visibility of cache settings"
+    )
+    show_advanced_settings: bpy.props.BoolProperty(
+        name="Show Advanced Settings",
+        default=False,
+        description="Toggle the visibility of advanced settings"
+    )
+        
     # Preview display with image loading
     def get_preview_icon(self, context=None):
         """Get the preview icon ID for an image"""
@@ -1293,7 +1726,6 @@ class QuickHDRIPreferences(AddonPreferences):
                 print(f"Failed to load preview image: {str(e)}")
                 return 0
         return 0
-
     
     # Statistics
     preview_stats_total: IntProperty(default=0)
@@ -1462,6 +1894,223 @@ class QuickHDRIPreferences(AddonPreferences):
             tips_col.label(text="• Organize HDRI directory")
             tips_col.label(text="• Use PNG thumbnails for HDRs to ease resources usage")
             tips_col.label(text="• Check for updates regularly (make features suggestions")
+            
+        # Preview Generation Section
+        section_box = layout.box()
+        header = section_box.row(align=True)
+        header.prop(self, "show_preview_generation", 
+                   icon='TRIA_DOWN' if self.show_preview_generation else 'TRIA_RIGHT',
+                   icon_only=True, emboss=False)
+        
+        # Main header with status indicator
+        header_split = header.split(factor=0.7)
+        title_row = header_split.row()
+        title_row.label(text="Preview Generation", icon='IMAGE_DATA')
+        
+        # Status indicator
+        status_row = header_split.row(align=True)
+        status_row.alignment = 'RIGHT'
+        if self.is_generating:
+            status_row.alert = True
+            status_row.label(text="●", icon='SORTTIME')
+            status_row.label(text="Processing")
+        else:
+            status_row.label(text="●", icon='CHECKMARK')
+            status_row.label(text="Ready")
+        if self.show_preview_generation:
+            # Main container
+            main_container = section_box.column()
+            main_container.separator(factor=0.5)
+            # Active Job Status Panel (if processing or has results)
+            if self.is_generating or (self.preview_stats_total > 0 and not self.is_generating):
+                status_panel = main_container.box()
+                status_panel.alert = self.is_generating
+                
+                # Status Panel Header
+                status_header = status_panel.row()
+                status_header.scale_y = 1.2
+                if self.is_generating:
+                    status_header.label(text="Active Job Status", icon='RENDER_STILL')
+                else:
+                    status_header.label(text="Last Job Results", icon='FILE_TICK')
+                
+                status_panel.separator(factor=0.5)
+                
+                # Progress Information Grid
+                grid = status_panel.grid_flow(row_major=True, columns=2, even_columns=True)
+                
+                # Current File (when generating)
+                if self.is_generating and self.preview_stats_current_file:
+                    file_row = grid.row()
+                    file_row.label(text="Current File:")
+                    file_row.label(text=os.path.basename(self.preview_stats_current_file))
+                
+                # Progress Statistics
+                if self.preview_stats_total > 0:
+                    # Completion Status
+                    progress = self.preview_stats_completed / self.preview_stats_total
+                    prog_row = grid.row()
+                    prog_row.label(text="Completion:")
+                    prog_row.label(text=f"{progress:.1%} ({self.preview_stats_completed}/{self.preview_stats_total})")
+                    
+                    # Time Elapsed
+                    if self.preview_stats_time > 0:
+                        minutes = int(self.preview_stats_time // 60)
+                        seconds = int(self.preview_stats_time % 60)
+                        time_row = grid.row()
+                        time_row.label(text="Time Elapsed:")
+                        time_row.label(text=f"{minutes:02d}:{seconds:02d}")
+                    
+                    # Failed Items
+                    if self.preview_stats_failed > 0:
+                        fail_row = grid.row()
+                        fail_row.alert = True
+                        fail_row.label(text="Failed Jobs:")
+                        fail_row.label(text=str(self.preview_stats_failed))
+                
+                # Clear Results Button (when not generating)
+                if not self.is_generating and self.preview_stats_total > 0:
+                    status_panel.separator(factor=0.5)
+                    clear_row = status_panel.row()
+                    clear_row.alignment = 'RIGHT'
+                    clear_op = clear_row.operator("world.clear_preview_stats", 
+                                                text="Clear History",
+                                                icon='X')
+            # Configuration Panels
+            if not self.is_generating:
+                main_container.separator(factor=1.0)
+                config_panel = main_container.box()
+                config_panel.label(text="Preview Limits", icon='RESTRICT_VIEW_ON')
+                config_row = config_panel.row()
+                config_row.prop(self, "preview_limit")
+                if self.preview_limit > 0:
+                    config_row.prop(self, "preview_sort")
+                
+                
+                
+                # Job Configuration Panel
+                config_panel = main_container.box()
+                config_panel.label(text="Job Configuration", icon='PREFERENCES')
+                
+                # Type Selection
+                type_box = config_panel.box()
+                type_row = type_box.row(align=True)
+                type_row.scale_y = 1.2
+                type_row.label(text="Processing Type:", icon='MODIFIER')
+                type_grid = type_row.grid_flow(row_major=True, columns=2, even_columns=True)
+                type_grid.prop_enum(self, "preview_generation_type", 'SINGLE',
+                                  text="Single File", icon='IMAGE_DATA')
+                type_grid.prop_enum(self, "preview_generation_type", 'MULTIPLE',
+                                  text="Batch Process", icon='FILE_FOLDER')
+                
+                # Source Selection
+                source_box = config_panel.box()
+                source_col = source_box.column()
+                source_col.label(text="Source Selection:", icon='FILEBROWSER')
+                source_col.separator(factor=0.3)
+                
+                # File/Folder Selection
+                source_row = source_col.row(align=True)
+                if self.preview_generation_type == 'SINGLE':
+                    source_row.prop(self, "preview_single_file", text="")
+                else:
+                    source_row.prop(self, "preview_multiple_folder", text="")
+                
+                # Source Information
+                info_box = source_col.box()
+                info_box.scale_y = 0.9
+                if self.preview_generation_type == 'SINGLE':
+                    if self.preview_single_file:
+                        info_box.label(text=f"Selected: {os.path.basename(self.preview_single_file)}")
+                    else:
+                        info_box.label(text="No file selected")
+                else:
+                    if self.preview_multiple_folder:
+                        file_count = len([f for f in os.listdir(self.preview_multiple_folder) 
+                                        if f.lower().endswith(('.hdr', '.exr'))])
+                        info_box.label(text=f"Found {file_count} HDRI file{'s' if file_count != 1 else ''}")
+                    else:
+                        info_box.label(text="No folder selected")
+                
+                # Quality Settings Panel
+                main_container.separator(factor=1.0)
+                quality_panel = main_container.box()
+                quality_panel.label(text="Quality Settings", icon='SETTINGS')
+                
+                # Settings Grid
+                quality_box = quality_panel.box()
+                quality_grid = quality_box.grid_flow(row_major=True, columns=2, even_columns=True)
+                
+                # Resolution Column
+                res_col = quality_grid.column(align=True)
+                res_col.label(text="Resolution Scale:")
+                res_col.prop(self, "preview_resolution", text="%")
+                
+                # Samples Column
+                sample_col = quality_grid.column(align=True)
+                sample_col.label(text="Render Samples:")
+                sample_col.prop(self, "preview_samples", text="")
+                
+                # Output Resolution Info
+                res_box = quality_panel.box()
+                res_box.scale_y = 0.9
+                actual_x = int(1024 * (self.preview_resolution / 100))
+                actual_y = int(768 * (self.preview_resolution / 100))
+                res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
+                
+                # Action Section
+                main_container.separator(factor=1.0)
+                action_box = main_container.box()
+                
+                # Generate Button
+                action_row = action_box.row(align=True)
+                action_row.scale_y = 1.5
+                action_row.operator(
+                    "world.generate_hdri_previews",
+                    text="Generate Preview" if self.preview_generation_type == 'SINGLE' 
+                         else "Start Batch Process",
+                    icon='RENDER_STILL'
+                )
+                
+        # Proxy Settings Section
+        box = layout.box()
+        header = box.row()
+        header.prop(self, "show_proxy_settings", 
+                    icon='TRIA_DOWN' if getattr(self, 'show_proxy_settings', True) else 'TRIA_RIGHT',
+                    icon_only=True, emboss=False)
+        header.label(text="Proxy Settings", icon='COPY_ID')
+        if self.show_proxy_settings:
+            col = box.column(align=True)
+                        
+            # Default proxy settings
+            col.prop(self, "default_proxy_resolution", text="Default Resolution")
+            col.prop(self, "default_proxy_mode", text="Default Application")
+                        
+            # Cache settings as a closable menu
+            cache_header = box.row()
+            cache_header.prop(self, "show_cache_settings", 
+                              icon='TRIA_DOWN' if getattr(self, 'show_cache_settings', True) else 'TRIA_RIGHT',
+                              icon_only=True, emboss=False)
+            cache_header.label(text="Cache Settings", icon='FILE_CACHE')
+            
+            if getattr(self, 'show_cache_settings', True):
+                cache_box = box.box()
+                cache_col = cache_box.column(align=True)
+                cache_col.prop(self, "proxy_cache_limit", text="Cache Size Limit (MB)")
+                cache_col.operator("world.cleanup_hdri_proxies", text="Clear Proxy Cache", icon='TRASH')
+                        
+            # Advanced settings as a closable menu
+            adv_header = box.row()
+            adv_header.prop(self, "show_advanced_settings", 
+                            icon='TRIA_DOWN' if getattr(self, 'show_advanced_settings', True) else 'TRIA_RIGHT',
+                            icon_only=True, emboss=False)
+            adv_header.label(text="Advanced Settings", icon='SETTINGS')
+            
+            if getattr(self, 'show_advanced_settings', True):
+                adv_box = box.box()
+                adv_col = adv_box.column(align=True)
+                adv_col.prop(self, "proxy_format", text="Proxy Format")
+                adv_col.prop(self, "proxy_compression", text="Compression")
         
         # Keyboard Shortcuts Section
         box = layout.box()
@@ -1558,7 +2207,30 @@ class QuickHDRIPreferences(AddonPreferences):
                                 row.scale_y = 0.8
                                 row.label(text=f"Found in: {conflict['keymap']}")
                                 sub_box.separator(factor=0.5)
+                      
+            
         
+        # HDRI Settings Section
+        box = layout.box()
+        header = box.row()
+        header.prop(self, "show_hdri_settings", icon='TRIA_DOWN' if getattr(self, 'show_hdri_settings', True) else 'TRIA_RIGHT',
+                    icon_only=True, emboss=False)
+        header.label(text="HDRI Settings", icon='WORLD_DATA')
+        if getattr(self, 'show_hdri_settings', True):
+            col = box.column(align=True)
+            col.prop(self, "keep_rotation", text="Keep Rotation When Switching HDRIs")
+            col.prop(self, "strength_max", text="Maximum Strength Value")
+            col.prop(self, "rotation_increment", text="Rotation Step Size")
+            
+            #file types section
+            col.separator()
+            col.label(text="Supported File Types", icon='FILE_FOLDER')
+            row = col.row(align=True)
+            row.prop(self, "use_hdr", toggle=True)
+            row.prop(self, "use_exr", toggle=True)
+            row.prop(self, "use_png", toggle=True)
+            row.prop(self, "use_jpg", toggle=True)
+            
         # Interface Settings Section
         box = layout.box()
         header = box.row()
@@ -1573,218 +2245,9 @@ class QuickHDRIPreferences(AddonPreferences):
             col.prop(self, "spacing_scale", text="Spacing Scale")
             col.separator()
             col.prop(self, "show_strength_slider", text="Show Strength Slider")
-            col.prop(self, "show_rotation_values", text="Show Rotation Values")
+            col.prop(self, "show_rotation_values", text="Show Rotation Values")         
         
-        # File Types Section
-        box = layout.box()
-        header = box.row()
-        header.prop(self, "show_filetypes", icon='TRIA_DOWN' if getattr(self, 'show_filetypes', True) else 'TRIA_RIGHT',
-                   icon_only=True, emboss=False)
-        header.label(text="Supported File Types", icon='FILE_FOLDER')
-        
-        if getattr(self, 'show_filetypes', True):
-            row = box.row(align=True)
-            row.prop(self, "use_hdr", toggle=True)
-            row.prop(self, "use_exr", toggle=True)
-            row.prop(self, "use_png", toggle=True)
-            row.prop(self, "use_jpg", toggle=True)
-            
-            # Preview limit
-            row = box.row()
-            row.prop(self, "preview_limit")
-            
-            # Sort method (only shown if preview limit is enabled)
-            if self.preview_limit > 0:
-                row = box.row()
-                row.prop(self, "preview_sort")
-        
-        # HDRI Settings Section
-        box = layout.box()
-        header = box.row()
-        header.prop(self, "show_hdri_settings", icon='TRIA_DOWN' if getattr(self, 'show_hdri_settings', True) else 'TRIA_RIGHT',
-                   icon_only=True, emboss=False)
-        header.label(text="HDRI Settings", icon='WORLD_DATA')
-        
-        if getattr(self, 'show_hdri_settings', True):
-            col = box.column(align=True)
-            col.prop(self, "keep_rotation", text="Keep Rotation When Switching HDRIs")
-            col.prop(self, "strength_max", text="Maximum Strength Value")
-            col.prop(self, "rotation_increment", text="Rotation Step Size")
-            
-        # Preview Generation Section
-        section_box = layout.box()
-        header = section_box.row(align=True)
-        header.prop(self, "show_preview_generation", 
-                   icon='TRIA_DOWN' if self.show_preview_generation else 'TRIA_RIGHT',
-                   icon_only=True, emboss=False)
-        
-        # Main header with status indicator
-        header_split = header.split(factor=0.7)
-        title_row = header_split.row()
-        title_row.label(text="Preview Generation", icon='IMAGE_DATA')
-        
-        # Status indicator
-        status_row = header_split.row(align=True)
-        status_row.alignment = 'RIGHT'
-        if self.is_generating:
-            status_row.alert = True
-            status_row.label(text="●", icon='SORTTIME')
-            status_row.label(text="Processing")
-        else:
-            status_row.label(text="●", icon='CHECKMARK')
-            status_row.label(text="Ready")
-
-        if self.show_preview_generation:
-            # Main container
-            main_container = section_box.column()
-            main_container.separator(factor=0.5)
-
-            # Active Job Status Panel (if processing or has results)
-            if self.is_generating or (self.preview_stats_total > 0 and not self.is_generating):
-                status_panel = main_container.box()
-                status_panel.alert = self.is_generating
-                
-                # Status Panel Header
-                status_header = status_panel.row()
-                status_header.scale_y = 1.2
-                if self.is_generating:
-                    status_header.label(text="Active Job Status", icon='RENDER_STILL')
-                else:
-                    status_header.label(text="Last Job Results", icon='FILE_TICK')
-                
-                status_panel.separator(factor=0.5)
-                
-                # Progress Information Grid
-                grid = status_panel.grid_flow(row_major=True, columns=2, even_columns=True)
-                
-                # Current File (when generating)
-                if self.is_generating and self.preview_stats_current_file:
-                    file_row = grid.row()
-                    file_row.label(text="Current File:")
-                    file_row.label(text=os.path.basename(self.preview_stats_current_file))
-                
-                # Progress Statistics
-                if self.preview_stats_total > 0:
-                    # Completion Status
-                    progress = self.preview_stats_completed / self.preview_stats_total
-                    prog_row = grid.row()
-                    prog_row.label(text="Completion:")
-                    prog_row.label(text=f"{progress:.1%} ({self.preview_stats_completed}/{self.preview_stats_total})")
-                    
-                    # Time Elapsed
-                    if self.preview_stats_time > 0:
-                        minutes = int(self.preview_stats_time // 60)
-                        seconds = int(self.preview_stats_time % 60)
-                        time_row = grid.row()
-                        time_row.label(text="Time Elapsed:")
-                        time_row.label(text=f"{minutes:02d}:{seconds:02d}")
-                    
-                    # Failed Items
-                    if self.preview_stats_failed > 0:
-                        fail_row = grid.row()
-                        fail_row.alert = True
-                        fail_row.label(text="Failed Jobs:")
-                        fail_row.label(text=str(self.preview_stats_failed))
-                
-                # Clear Results Button (when not generating)
-                if not self.is_generating and self.preview_stats_total > 0:
-                    status_panel.separator(factor=0.5)
-                    clear_row = status_panel.row()
-                    clear_row.alignment = 'RIGHT'
-                    clear_op = clear_row.operator("world.clear_preview_stats", 
-                                                text="Clear History",
-                                                icon='X')
-
-            # Configuration Panels
-            if not self.is_generating:
-                main_container.separator(factor=1.0)
-                
-                # Job Configuration Panel
-                config_panel = main_container.box()
-                config_panel.label(text="Job Configuration", icon='PREFERENCES')
-                
-                # Type Selection
-                type_box = config_panel.box()
-                type_row = type_box.row(align=True)
-                type_row.scale_y = 1.2
-                type_row.label(text="Processing Type:", icon='MODIFIER')
-                type_grid = type_row.grid_flow(row_major=True, columns=2, even_columns=True)
-                type_grid.prop_enum(self, "preview_generation_type", 'SINGLE',
-                                  text="Single File", icon='IMAGE_DATA')
-                type_grid.prop_enum(self, "preview_generation_type", 'MULTIPLE',
-                                  text="Batch Process", icon='FILE_FOLDER')
-                
-                # Source Selection
-                source_box = config_panel.box()
-                source_col = source_box.column()
-                source_col.label(text="Source Selection:", icon='FILEBROWSER')
-                source_col.separator(factor=0.3)
-                
-                # File/Folder Selection
-                source_row = source_col.row(align=True)
-                if self.preview_generation_type == 'SINGLE':
-                    source_row.prop(self, "preview_single_file", text="")
-                else:
-                    source_row.prop(self, "preview_multiple_folder", text="")
-                
-                # Source Information
-                info_box = source_col.box()
-                info_box.scale_y = 0.9
-                if self.preview_generation_type == 'SINGLE':
-                    if self.preview_single_file:
-                        info_box.label(text=f"Selected: {os.path.basename(self.preview_single_file)}")
-                    else:
-                        info_box.label(text="No file selected")
-                else:
-                    if self.preview_multiple_folder:
-                        file_count = len([f for f in os.listdir(self.preview_multiple_folder) 
-                                        if f.lower().endswith(('.hdr', '.exr'))])
-                        info_box.label(text=f"Found {file_count} HDRI file{'s' if file_count != 1 else ''}")
-                    else:
-                        info_box.label(text="No folder selected")
-                
-                # Quality Settings Panel
-                main_container.separator(factor=1.0)
-                quality_panel = main_container.box()
-                quality_panel.label(text="Quality Settings", icon='SETTINGS')
-                
-                # Settings Grid
-                quality_box = quality_panel.box()
-                quality_grid = quality_box.grid_flow(row_major=True, columns=2, even_columns=True)
-                
-                # Resolution Column
-                res_col = quality_grid.column(align=True)
-                res_col.label(text="Resolution Scale:")
-                res_col.prop(self, "preview_resolution", text="%")
-                
-                # Samples Column
-                sample_col = quality_grid.column(align=True)
-                sample_col.label(text="Render Samples:")
-                sample_col.prop(self, "preview_samples", text="")
-                
-                # Output Resolution Info
-                res_box = quality_panel.box()
-                res_box.scale_y = 0.9
-                actual_x = int(1024 * (self.preview_resolution / 100))
-                actual_y = int(768 * (self.preview_resolution / 100))
-                res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
-                
-                # Action Section
-                main_container.separator(factor=1.0)
-                action_box = main_container.box()
-                
-                # Generate Button
-                action_row = action_box.row(align=True)
-                action_row.scale_y = 1.5
-                action_row.operator(
-                    "world.generate_hdri_previews",
-                    text="Generate Preview" if self.preview_generation_type == 'SINGLE' 
-                         else "Start Batch Process",
-                    icon='RENDER_STILL'
-                )
-           
-        
-    # Add the properties to control section visibility
+    #properties to control visibility
     show_updates: BoolProperty(default=False)
     show_shortcuts: BoolProperty(default=False)
     show_interface: BoolProperty(default=False)
@@ -1958,8 +2421,6 @@ class HDRI_OT_next_hdri(Operator):
             hdri_settings.hdri_preview = enum_items[1][0]  # Skip 'None' item
             
         return {'FINISHED'}      
-
-
 class HDRI_OT_generate_previews(Operator):
     bl_idname = "world.generate_hdri_previews"
     bl_label = "Generate HDRI Previews"
@@ -2023,7 +2484,6 @@ class HDRI_OT_generate_previews(Operator):
             for area in window.screen.areas:
                 if area.type == 'PREFERENCES':
                     area.tag_redraw()
-
     def modal(self, context, event):
         preferences = context.preferences.addons[__name__].preferences
         
@@ -2056,7 +2516,6 @@ class HDRI_OT_generate_previews(Operator):
                         area.tag_redraw()
         
         return {'RUNNING_MODAL'}
-
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
         
@@ -2081,7 +2540,6 @@ class HDRI_OT_generate_previews(Operator):
         wm.modal_handler_add(self)
         
         return {'RUNNING_MODAL'}
-
     def finish_preview_generation(self, context):
         preferences = context.preferences.addons[__name__].preferences
         context.window_manager.event_timer_remove(self._timer)
@@ -2114,12 +2572,10 @@ class HDRI_OT_generate_previews(Operator):
         # Force redraw of UI to show new thumbnails
         for area in context.screen.areas:
             area.tag_redraw()
-
     def cancel(self, context):
         if self._timer:
             context.window_manager.event_timer_remove(self._timer)
         context.window_manager.progress_end()
-
     def get_hdri_files(self, folder):
         supported_extensions = ['.hdr', '.exr']
         return [
@@ -2128,7 +2584,6 @@ class HDRI_OT_generate_previews(Operator):
             if os.path.isfile(os.path.join(folder, f)) 
             and os.path.splitext(f)[1].lower() in supported_extensions
         ]
-
     def generate_single_preview(self, context, hdri_path):
         # Rename the HDRI file to replace underscores with hyphens
         directory = os.path.dirname(hdri_path)
@@ -2211,7 +2666,6 @@ class HDRI_OT_clear_preview_stats(Operator):
     bl_idname = "world.clear_preview_stats"
     bl_label = "Clear Statistics"
     bl_description = "Clear preview generation statistics"
-
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
         preferences.preview_stats_total = 0
@@ -2222,7 +2676,6 @@ class HDRI_OT_clear_preview_stats(Operator):
         preferences.preview_image = ""
         preferences.show_generation_stats = False
         return {'FINISHED'}
-
 # Update the finish_preview_generation method in HDRI_OT_generate_previews:
     def finish_preview_generation(self, context):
         preferences = context.preferences.addons[__name__].preferences
@@ -2247,7 +2700,6 @@ class HDRI_OT_clear_preview_stats(Operator):
         else:
             self.report({'INFO'}, 
                 f"Successfully generated {preferences.preview_stats_completed} previews")
-
         
             
 class HDRI_PT_controls(Panel):
@@ -2677,6 +3129,36 @@ class HDRI_PT_controls(Panel):
                         sub.scale_x = 1.0
                         sub.scale_y = 1.0
                         sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')
+                
+                # Proxy Settings Section
+                if has_active_hdri(context):
+                    proxy_box = main_column.box()
+                    proxy_row = proxy_box.row(align=False)
+                    proxy_row.scale_y = preferences.button_scale
+                    proxy_row.prop(hdri_settings, "show_proxy_settings",
+                                  icon='TRIA_DOWN' if hdri_settings.show_proxy_settings else 'TRIA_RIGHT',
+                                  icon_only=True)
+                    sub = proxy_row.row(align=True)
+                    sub.alert = False
+                    sub.active = True  # Always keep the row active
+                    sub.label(text="Proxies", icon='IMAGE_DATA')
+                    if hdri_settings.show_proxy_settings:
+                        proxy_col = proxy_box.column(align=True)
+                        proxy_col.scale_y = preferences.button_scale
+                        proxy_col.use_property_split = True
+                        settings = context.scene.hdri_settings
+                        resolution_info = detect_hdri_resolution(original_paths.get(env_tex.image.name, env_tex.image.filepath))[0]
+                        if resolution_info:
+                            resolution_row = proxy_col.row(align=True)
+                            resolution_row.label(text="")
+                            resolution_row.prop(settings, "proxy_resolution", text="", icon='TRIA_DOWN')
+                            resolution_row.prop (settings, "proxy_mode", text="")
+                            
+                            # Close proxy settings after selection
+                            proxy_col.separator()
+                            close_row = proxy_col.row()
+                            close_row.alignment = 'RIGHT'
+                            close_row.label(text="Close when selected", icon='CHECKMARK')
         
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
@@ -2732,6 +3214,7 @@ classes = (
     HDRI_OT_next_hdri,
     HDRI_OT_generate_previews,
     HDRI_OT_clear_preview_stats,
+    HDRI_OT_cleanup_hdri_proxies,
 )
 def register():
     extract_addon_zips()
@@ -2740,6 +3223,14 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
+    bpy.app.handlers.load_post.append(cleanup_hdri_proxies)
+    
+    if reload_original_for_render not in bpy.app.handlers.render_init:
+        bpy.app.handlers.render_init.append(reload_original_for_render)
+    if reset_proxy_after_render not in bpy.app.handlers.render_cancel:
+        bpy.app.handlers.render_cancel.append(reset_proxy_after_render)
+    if reset_proxy_after_render_complete not in bpy.app.handlers.render_complete:
+        bpy.app.handlers.render_complete.append(reset_proxy_after_render_complete)
     
     # Add keymap entry
     wm = bpy.context.window_manager
@@ -2768,6 +3259,12 @@ def register():
 def unregister():
     # Remove load handler
     bpy.app.handlers.load_post.remove(load_handler)
+    
+    bpy.app.handlers.load_post.remove(cleanup_hdri_proxies)
+    
+    bpy.app.handlers.render_init.remove(reload_original_for_render)
+    bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
+    bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
     
     # Remove keymap entries
     for km, kmi in addon_keymaps:

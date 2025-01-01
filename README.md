@@ -108,7 +108,7 @@ Options:
   - Addon version
   - Delete World
 
-#Proxies (more info below: close tab for better performance)
+# Proxies (more info below: close tab for better performance)
 
 ![image](https://github.com/user-attachments/assets/e154145c-75f7-4e69-ba14-7eb0e16ae32d)
 
@@ -156,7 +156,7 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
     - Viewport Only: The selected HDRI proxy will be used for viewport rendering. When a render begins (single frame or animation) the full resolution HDRI will be loaded in. Once completed the proxy will be    reloaded for viewport rendering.
     - Both: The selected HDRI proxy will be used for both viewport and final rendering.
    
-###Cache Settings
+### Cache Settings
 
  - Cache Size Limit: Limits the amount of space that proxy files can take up (in MB)
  - Clear Proxy Cache: Will clear/delete all proxy files and folders for HDRIs

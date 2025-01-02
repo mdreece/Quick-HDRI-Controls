@@ -18,7 +18,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 6),
+    "version": (2, 5, 7),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -453,6 +453,138 @@ def get_hdri_metadata(image):
             
     return metadata
     
+class HDRI_OT_generate_proxies(Operator):
+    bl_idname = "world.generate_hdri_proxies"
+    bl_label = "Generate HDRI Proxies"
+    bl_description = "Generate proxies for HDRI files"
+    
+    def cancel(self, context):
+        if self._timer:
+            context.window_manager.event_timer_remove(self._timer)
+        context.window_manager.progress_end()
+        
+        preferences = context.preferences.addons[__name__].preferences
+        preferences.is_proxy_generating = False
+        
+        self.report({'INFO'}, "Proxy generation cancelled")
+    
+    def initialize_stats(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        preferences.proxy_stats_total = len(self._hdri_files)
+        preferences.proxy_stats_completed = 0
+        preferences.proxy_stats_failed = 0
+        preferences.proxy_stats_time = 0.0
+        preferences.proxy_stats_current_file = ""
+        preferences.is_proxy_generating = True
+        self._start_time = datetime.now()
+    
+    def update_stats(self, context, success, current_file):
+        preferences = context.preferences.addons[__name__].preferences
+        if success:
+            preferences.proxy_stats_completed += 1
+        else:
+            preferences.proxy_stats_failed += 1
+        
+        preferences.proxy_stats_current_file = os.path.basename(current_file)
+        preferences.proxy_stats_time = (datetime.now() - self._start_time).total_seconds()
+        
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == 'PREFERENCES':
+                    area.tag_redraw()
+    
+    def modal(self, context, event):
+        preferences = context.preferences.addons[__name__].preferences
+        
+        if event.type == 'TIMER':
+            if self._current_file_index >= len(self._hdri_files):
+                self.finish_proxy_generation(context)
+                return {'FINISHED'}
+            
+            current_hdri = self._hdri_files[self._current_file_index]
+            success = self.generate_single_proxy(context, current_hdri)
+            
+            self.update_stats(context, success, current_hdri)
+            
+            progress = (self._current_file_index + 1) / len(self._hdri_files)
+            context.window_manager.progress_update(progress * 100)
+            
+            self._current_file_index += 1
+            
+            for window in context.window_manager.windows:
+                for area in window.screen.areas:
+                    if area.type == 'PREFERENCES':
+                        area.tag_redraw()
+        
+        return {'RUNNING_MODAL'}
+    
+    def execute(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        
+        if not preferences.proxy_generation_directory:
+            self.report({'ERROR'}, "Please select a directory for proxy generation")
+            return {'CANCELLED'}
+        
+        self._hdri_files = self.get_hdri_files(preferences.proxy_generation_directory)
+        
+        if not self._hdri_files:
+            self.report({'ERROR'}, "No HDRI files found in the selected directory")
+            return {'CANCELLED'}
+        
+        self._current_file_index = 0
+        
+        self.initialize_stats(context)
+        
+        wm = context.window_manager
+        wm.progress_begin(0, 100)
+        
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
+        
+        return {'RUNNING_MODAL'}
+    
+    def finish_proxy_generation(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        context.window_manager.event_timer_remove(self._timer)
+        context.window_manager.progress_end()
+        preferences.is_proxy_generating = False
+
+        if preferences.proxy_stats_failed > 0:
+            self.report({'WARNING'},
+                        f"Generated {preferences.proxy_stats_completed} proxies with {preferences.proxy_stats_failed} failures")
+        else:
+            self.report({'INFO'},
+                        f"Successfully generated {preferences.proxy_stats_completed} proxies")
+
+        # Use a popup dialog or menu to display the button
+        def draw_callback(self, context):
+            layout = self.layout
+            layout.label(text="Proxy Generation Completed")
+            layout.operator("world.clear_proxy_stats", text="Clear Results", icon='X')
+
+        context.window_manager.popup_menu(draw_callback, title="Proxy Generation Results", icon='INFO')
+
+
+    
+    def get_hdri_files(self, directory):
+        extensions = ('.hdr', '.exr')
+        return [
+            os.path.join(directory, f) 
+            for f in os.listdir(directory) 
+            if f.lower().endswith(extensions)
+        ]
+    
+    def generate_single_proxy(self, context, hdri_path):
+        preferences = context.preferences.addons[__name__].preferences
+        target_resolution = preferences.proxy_generation_resolution
+        
+        try:
+            proxy_path = create_hdri_proxy(hdri_path, target_resolution)
+            return proxy_path is not None
+        except Exception as e:
+            print(f"Error generating proxy for {hdri_path}: {str(e)}")
+            return False
+    
 def detect_hdri_resolution(filepath):
     """
     Detect HDRI resolution from filename or metadata.
@@ -740,6 +872,21 @@ def update_hdri_proxy(self, context):
             bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
         if reset_proxy_after_render_complete in bpy.app.handlers.render_complete:
             bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
+            
+class HDRI_OT_clear_proxy_stats(Operator):
+    bl_idname = "world.clear_proxy_stats"
+    bl_label = "Clear Proxy Generation Stats"
+    bl_description = "Clear proxy generation statistics"
+    
+    def execute(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        preferences.proxy_stats_total = 0
+        preferences.proxy_stats_completed = 0
+        preferences.proxy_stats_failed = 0
+        preferences.proxy_stats_time = 0.0
+        preferences.proxy_stats_current_file = ""
+        preferences.is_proxy_generating = False
+        return {'FINISHED'}
         
 class HDRI_OT_cleanup_hdri_proxies(Operator):
     bl_idname = "world.cleanup_hdri_proxies"
@@ -1383,6 +1530,26 @@ class HDRISettings(PropertyGroup):
         update=update_hdri_proxy  # Add this line
     )
     
+    resolution: EnumProperty(
+        name="Resolution",
+        description="Select resolution for HDRI",
+        items=[
+            ('1K', '1K', '1K Resolution'),
+            ('2K', '2K', '2K Resolution'),
+            ('4K', '4K', '4K Resolution')
+        ],
+        default='1K'
+    )
+    render_device: EnumProperty(
+        name="Render Device",
+        description="Select the device for rendering",
+        items=[
+            ('CPU', 'CPU', 'Use CPU for rendering'),
+            ('GPU', 'GPU', 'Use GPU for rendering'),
+        ],
+        default='GPU'
+    )
+    
     available_resolutions: CollectionProperty(
         type=PropertyGroup,
         name="Available Resolutions"
@@ -1701,8 +1868,27 @@ class QuickHDRIPreferences(AddonPreferences):
             ('ZIP', 'ZIP', 'ZIP compression'),
             ('PIZ', 'PIZ', 'PIZ compression (EXR only)'),
         ],
-        default='ZIP'
+        default='PIZ'
     )
+    
+    proxy_generation_resolution: EnumProperty(
+        name="Proxy Resolution",
+        description="Resolution to use for proxy generation",
+        items=[
+            ('1K', '1K', 'Generate 1K proxies'),
+            ('2K', '2K', 'Generate 2K proxies'),
+            ('4K', '4K', 'Generate 4K proxies'),
+        ],
+        default='1K'
+    )
+    
+    proxy_generation_directory: StringProperty(
+        name="Proxy Generation Directory",
+        subtype='DIR_PATH',
+        description="Directory containing HDRI files for proxy generation",
+        default=""
+    )
+    
     
     proxy_format: EnumProperty(
         name="Proxy Format",
@@ -1711,7 +1897,17 @@ class QuickHDRIPreferences(AddonPreferences):
             ('HDR', 'HDR', 'OpenEXR HDR format'),
             ('EXR', 'EXR', 'OpenEXR format'),
         ],
-        default='HDR'
+        default='EXR'
+    )
+    
+    proxy_generation_device: EnumProperty(
+        name="Render Device",
+        description="Device to use for proxy generation",
+        items=[
+            ('CPU', 'CPU', 'Use CPU for processing'),
+            ('GPU', 'GPU', 'Use GPU for processing')
+        ],
+        default='GPU'
     )
     
     show_cache_settings: bpy.props.BoolProperty(
@@ -1747,13 +1943,21 @@ class QuickHDRIPreferences(AddonPreferences):
                 return 0
         return 0
     
-    # Statistics
+    # Preview Statistics
     preview_stats_total: IntProperty(default=0)
     preview_stats_completed: IntProperty(default=0)
     preview_stats_failed: IntProperty(default=0)
     preview_stats_time: FloatProperty(default=0.0)
     preview_stats_current_file: StringProperty(default="")
     is_generating: BoolProperty(default=False)
+    
+    #Proxy Statistics
+    proxy_stats_total: IntProperty(default=0)
+    proxy_stats_completed: IntProperty(default=0)
+    proxy_stats_failed: IntProperty(default=0)
+    proxy_stats_time: FloatProperty(default=0.0)
+    proxy_stats_current_file: StringProperty(default="")
+    is_proxy_generating: BoolProperty(default=False)
     
     
     def find_keymap_conflicts(self, context):
@@ -2101,45 +2305,115 @@ class QuickHDRIPreferences(AddonPreferences):
                     icon='RENDER_STILL'
                 )
                 
-        # Proxy Settings Section
+        # Proxy Section
         box = layout.box()
         header = box.row()
-        header.prop(self, "show_proxy_settings", 
-                    icon='TRIA_DOWN' if getattr(self, 'show_proxy_settings', True) else 'TRIA_RIGHT',
+        header.prop(self, "show_proxy", 
+                    icon='TRIA_DOWN' if getattr(self, 'show_proxy', True) else 'TRIA_RIGHT',
                     icon_only=True, emboss=False)
         header.label(text="Proxy Settings", icon='COPY_ID')
-        if self.show_proxy_settings:
+        if getattr(self, 'show_proxy', True):
             col = box.column(align=True)
-                        
-            # Default proxy settings
-            col.prop(self, "default_proxy_resolution", text="Default Resolution")
-            col.prop(self, "default_proxy_mode", text="Default Application")
-                        
-            # Cache settings as a closable menu
-            cache_header = box.row()
+            
+            # Proxy Settings
+            settings_col = col.column(align=True)
+            settings_col.prop(self, "default_proxy_resolution", text="Default Resolution")
+            settings_col.prop(self, "default_proxy_mode", text="Default Application")
+            
+            cache_header = settings_col.row()
             cache_header.prop(self, "show_cache_settings", 
                               icon='TRIA_DOWN' if getattr(self, 'show_cache_settings', True) else 'TRIA_RIGHT',
                               icon_only=True, emboss=False)
             cache_header.label(text="Cache Settings", icon='FILE_CACHE')
             
             if getattr(self, 'show_cache_settings', True):
-                cache_box = box.box()
+                cache_box = settings_col.box()
                 cache_col = cache_box.column(align=True)
                 cache_col.prop(self, "proxy_cache_limit", text="Cache Size Limit (MB)")
                 cache_col.operator("world.cleanup_hdri_proxies", text="Clear Proxy Cache", icon='TRASH')
-                        
-            # Advanced settings as a closable menu
-            adv_header = box.row()
+            
+            adv_header = settings_col.row()
             adv_header.prop(self, "show_advanced_settings", 
                             icon='TRIA_DOWN' if getattr(self, 'show_advanced_settings', True) else 'TRIA_RIGHT',
                             icon_only=True, emboss=False)
             adv_header.label(text="Advanced Settings", icon='SETTINGS')
             
             if getattr(self, 'show_advanced_settings', True):
-                adv_box = box.box()
+                adv_box = settings_col.box()
                 adv_col = adv_box.column(align=True)
                 adv_col.prop(self, "proxy_format", text="Proxy Format")
                 adv_col.prop(self, "proxy_compression", text="Compression")
+            
+            # Proxy Generation
+            gen_header = settings_col.row()
+            gen_header.prop(self, "show_proxy_generation", 
+                            icon='TRIA_DOWN' if getattr(self, 'show_proxy_generation', True) else 'TRIA_RIGHT',
+                            icon_only=True, emboss=False)
+            gen_header.label(text="Batch Proxy Generation", icon='RENDER_STILL')
+            
+            if getattr(self, 'show_proxy_generation', True):
+                gen_box = settings_col.box()
+                gen_col = gen_box.column(align=True)             
+                
+                # Directory Selection
+                row = gen_col.row(align=True)
+                row.prop(self, "proxy_generation_directory", text="Folder Batch")
+                
+                # Resolution Selection
+                row = box.row()
+                row.prop(self, "proxy_generation_resolution", text="Resolution")
+                
+                # Processing Device Selection
+                row = box.row()
+                row.prop(self, "proxy_generation_device", text="Render Device")
+                
+                gen_col.separator()
+                
+                # Generation Status
+                if self.is_proxy_generating:
+                    status_box = gen_col.box()
+                    status_box.label(text="Generating Proxies...", icon='TIME')
+                    
+                    status_row = status_box.row(align=True)
+                    status_row.label(text="Current File:")
+                    status_row.label(text=self.proxy_stats_current_file)
+                    
+                    progress_row = status_box.row(align=True)
+                    progress_row.label(text="Progress:")
+                    progress_row.label(text=f"{self.proxy_stats_completed}/{self.proxy_stats_total}")
+                    
+                    time_row = status_box.row(align=True)
+                    time_row.label(text="Elapsed Time:")
+                    time_row.label(text=f"{self.proxy_stats_time:.2f} seconds")
+                else:
+                    # Generation Button
+                    gen_row = gen_col.row(align=True)
+                    gen_row.scale_y = 1.5
+                    box.operator("world.generate_hdri_proxies", text="Generate Proxies")
+                
+                # Generation Results
+                if self.proxy_stats_total > 0 and not self.is_proxy_generating:
+                    result_box = gen_col.box()
+                    
+                    total_row = result_box.row(align=True)
+                    total_row.label(text="Total Files:")
+                    total_row.label(text=str(self.proxy_stats_total))
+                    
+                    completed_row = result_box.row(align=True)
+                    completed_row.label(text="Completed:")
+                    completed_row.label(text=str(self.proxy_stats_completed))
+                    
+                    failed_row = result_box.row(align=True)
+                    failed_row.label(text="Failed:")
+                    failed_row.label(text=str(self.proxy_stats_failed))
+                    
+                    time_row = result_box.row(align=True)
+                    time_row.label(text="Total Time:")
+                    time_row.label(text=f"{self.proxy_stats_time:.2f} seconds")
+                    
+                    # Clear Results Button
+                    clear_row = result_box.row(align=True)
+                    clear_row.operator("world.clear_proxy_stats", text="Clear Results", icon='X')
         
         # Keyboard Shortcuts Section
         box = layout.box()
@@ -2284,6 +2558,9 @@ class QuickHDRIPreferences(AddonPreferences):
     show_hdri_settings: BoolProperty(default=False)
     show_conflicts: BoolProperty(default=False)
     show_preview_generation: BoolProperty(default=False)
+    show_proxy_generation: BoolProperty(default=False)
+    show_proxy: BoolProperty(default=False)
+    show_proxy_generation: BoolProperty(default=False)
         
 class HDRI_OT_toggle_visibility(Operator):
     bl_idname = "world.toggle_hdri_visibility"
@@ -2695,7 +2972,6 @@ class HDRI_OT_generate_previews(Operator):
                 elif collection.name == 'Cube':
                     collection.hide_render = preferences.preview_scene_type != 'CUBE'
                     collection.hide_viewport = preferences.preview_scene_type != 'CUBE'
-
             # Additional object visibility handling for specific objects
             for obj in preview_scene.objects:
                 if preferences.preview_scene_type == 'ORBS':
@@ -2746,7 +3022,6 @@ class HDRI_OT_generate_previews(Operator):
                             for node in material.node_tree.nodes:
                                 if node.type == 'TEX_IMAGE':
                                     node.image = hdri_image
-
             # Setup world environment texture (outside of scene type blocks)
             world = preview_scene.world
             if world and world.use_nodes:
@@ -3089,7 +3364,6 @@ class HDRI_PT_controls(Panel):
             
             main_column.separator(factor=0.5 * preferences.spacing_scale)
                     
-
         
         # HDRI Settings Section
         if has_active_hdri(context):
@@ -3330,6 +3604,8 @@ classes = (
     HDRI_OT_generate_previews,
     HDRI_OT_clear_preview_stats,
     HDRI_OT_cleanup_hdri_proxies,
+    HDRI_OT_generate_proxies,
+    HDRI_OT_clear_proxy_stats,
 )
 def register():
     extract_addon_zips()

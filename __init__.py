@@ -2909,7 +2909,10 @@ class HDRI_PT_controls(Panel):
                            icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
                            icon_only=True)
         header_row = browser_header.row()
-        header_row.label(text="HDRI Browser", icon='FILE_FOLDER')
+        sub = header_row.row(align=True)
+        sub.alert = False
+        sub.active = hdri_settings.show_browser
+        sub.label(text="HDRI Browser", icon='FILE_FOLDER')
         if hdri_settings.show_browser:
             # Get current path information
             current_folder = context.scene.hdri_settings.current_folder
@@ -3037,54 +3040,56 @@ class HDRI_PT_controls(Panel):
                 sub_row.operator("world.reset_to_previous_hdri",
                     text="Reset",
                     icon='LOOP_BACK')
+                # Metadata dropdown
+                meta_row = preview_box.row(align=True)
+                meta_row.label(text="HDRI Metadata", icon='INFO')
+                meta_row.scale_y = 0.3
+                meta_row.prop(hdri_settings, "show_metadata",
+                    icon='TRIA_DOWN' if hdri_settings.show_metadata else 'TRIA_RIGHT',
+                    icon_only=True,
+                    emboss=False)
+                
+                if hdri_settings.show_metadata and env_tex and env_tex.image:
+                    meta_box = preview_box.box()
+                    meta_col = meta_box.column(align=True)
+                    meta_col.scale_y = 0.9
+                    metadata = get_hdri_metadata(env_tex.image)
+                    
+                    if metadata:
+                        # Filename (new!)
+                        row = meta_col.row(align=True)
+                        row.label(text="File:", icon='FILE_IMAGE')
+                        row.label(text=metadata['filename'])
+                      
+                        # Resolution
+                        row = meta_col.row(align=True)
+                        row.label(text="Resolution:", icon='TEXTURE')
+                        row.label(text=metadata['resolution'])
+                        
+                        # Color Space
+                        row = meta_col.row(align=True)
+                        row.label(text="Color Space:", icon='COLOR')
+                        row.label(text=metadata['color_space'])
+                        
+                        # Channels
+                        row = meta_col.row(align=True)
+                        row.label(text="Channels:", icon='NODE_COMPOSITING')
+                        row.label(text=str(metadata['channels']))
+                        
+                        # File Size
+                        row = meta_col.row(align=True)
+                        row.label(text="File Size:", icon='FILE_BLANK')
+                        row.label(text=metadata['file_size'])
+                        
+                        # File Format
+                        row = meta_col.row(align=True)
+                        row.label(text="Format:", icon='FILE')
+                        row.label(text=metadata['file_format'])
+            
             
             main_column.separator(factor=0.5 * preferences.spacing_scale)
                     
-            # Metadata dropdown
-            meta_row = preview_box.row(align=True)
-            meta_row.label(text="HDRI Metadata", icon='INFO')
-            meta_row.scale_y = 0.3
-            meta_row.prop(hdri_settings, "show_metadata",
-                icon='TRIA_DOWN' if hdri_settings.show_metadata else 'TRIA_RIGHT',
-                icon_only=True,
-                emboss=False)
-            
-            if hdri_settings.show_metadata and env_tex and env_tex.image:
-                meta_box = preview_box.box()
-                meta_col = meta_box.column(align=True)
-                meta_col.scale_y = 0.9
-                metadata = get_hdri_metadata(env_tex.image)
-                
-                if metadata:
-                    # Filename (new!)
-                    row = meta_col.row(align=True)
-                    row.label(text="File:", icon='FILE_IMAGE')
-                    row.label(text=metadata['filename'])
-                  
-                    # Resolution
-                    row = meta_col.row(align=True)
-                    row.label(text="Resolution:", icon='TEXTURE')
-                    row.label(text=metadata['resolution'])
-                    
-                    # Color Space
-                    row = meta_col.row(align=True)
-                    row.label(text="Color Space:", icon='COLOR')
-                    row.label(text=metadata['color_space'])
-                    
-                    # Channels
-                    row = meta_col.row(align=True)
-                    row.label(text="Channels:", icon='NODE_COMPOSITING')
-                    row.label(text=str(metadata['channels']))
-                    
-                    # File Size
-                    row = meta_col.row(align=True)
-                    row.label(text="File Size:", icon='FILE_BLANK')
-                    row.label(text=metadata['file_size'])
-                    
-                    # File Format
-                    row = meta_col.row(align=True)
-                    row.label(text="Format:", icon='FILE')
-                    row.label(text=metadata['file_format'])
+
         
         # HDRI Settings Section
         if has_active_hdri(context):

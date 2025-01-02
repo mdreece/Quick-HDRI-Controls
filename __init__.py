@@ -18,7 +18,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 4),
+    "version": (2, 5, 5),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -2546,6 +2546,28 @@ class HDRI_OT_generate_previews(Operator):
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
         
+        # Input validation
+        if preferences.preview_generation_type == 'SINGLE':
+            if not preferences.preview_single_file:
+                self.report({'ERROR'}, "Please select an HDRI file first")
+                return {'CANCELLED'}
+            if not os.path.exists(preferences.preview_single_file):
+                self.report({'ERROR'}, "Selected file does not exist")
+                return {'CANCELLED'}
+            if not preferences.preview_single_file.lower().endswith(('.hdr', '.exr')):
+                self.report({'ERROR'}, "Selected file must be an HDR or EXR file")
+                return {'CANCELLED'}
+        else:  # MULTIPLE mode
+            if not preferences.preview_multiple_folder:
+                self.report({'ERROR'}, "Please select a folder first")
+                return {'CANCELLED'}
+            if not os.path.exists(preferences.preview_multiple_folder):
+                self.report({'ERROR'}, "Selected folder does not exist")
+                return {'CANCELLED'}
+            if not os.path.isdir(preferences.preview_multiple_folder):
+                self.report({'ERROR'}, "Selected path is not a folder")
+                return {'CANCELLED'}
+        
         self._failed_files = []
         self._current_file_index = 0
         
@@ -2553,6 +2575,9 @@ class HDRI_OT_generate_previews(Operator):
             self._preview_files = [preferences.preview_single_file]
         else:
             self._preview_files = self.get_hdri_files(preferences.preview_multiple_folder)
+            if not self._preview_files:
+                self.report({'ERROR'}, "No HDR or EXR files found in selected folder")
+                return {'CANCELLED'}
         
         self._total_files = len(self._preview_files)
         
@@ -2649,12 +2674,79 @@ class HDRI_OT_generate_previews(Operator):
             else:
                 preview_scene.cycles.device = 'GPU'
             
+            # Load the HDRI image
+            hdri_image = None
+            try:
+                hdri_image = bpy.data.images.load(hdri_path, check_existing=True)
+            except Exception as e:
+                print(f"Failed to load HDRI image: {e}")
+                return False
+            
             # Set collection visibility based on scene type preference
             for collection in preview_scene.collection.children:
                 if collection.name == 'Orbs':
                     collection.hide_render = preferences.preview_scene_type != 'ORBS'
+                    collection.hide_viewport = preferences.preview_scene_type != 'ORBS'
                 elif collection.name == 'Monk':
                     collection.hide_render = preferences.preview_scene_type != 'MONK'
+                    collection.hide_viewport = preferences.preview_scene_type != 'MONK'
+            # Additional object visibility handling for specific objects
+            for obj in preview_scene.objects:
+                if preferences.preview_scene_type == 'ORBS':
+                    # For Orbs scene, hide Monk-specific objects
+                    if obj.name == 'HDRI_PLANE_MONK':
+                        obj.hide_render = True
+                        obj.hide_viewport = True
+                    
+                    # Show GROUND_PLANE for Orbs scene
+                    if obj.name == 'GROUND_PLANE':
+                        obj.hide_render = False
+                        obj.hide_viewport = False
+                    
+                    # Ensure HDRI is applied to HDRI_PLANE_ORBS
+                    if obj.name == 'HDRI_PLANE_ORBS' and hdri_image:
+                        for material in obj.data.materials:
+                            for node in material.node_tree.nodes:
+                                if node.type == 'TEX_IMAGE':
+                                    node.image = hdri_image
+                
+                elif preferences.preview_scene_type == 'MONK':
+                    # For Monk scene, hide Orbs-specific objects
+                    if obj.name in ['GROUND_PLANE', 'HDRI_PLANE_ORBS']:
+                        obj.hide_render = True
+                        obj.hide_viewport = True
+                    
+                    # Ensure HDRI is applied to HDRI_PLANE_MONK
+                    if obj.name == 'HDRI_PLANE_MONK' and hdri_image:
+                        for material in obj.data.materials:
+                            for node in material.node_tree.nodes:
+                                if node.type == 'TEX_IMAGE':
+                                    node.image = hdri_image
+            
+            # Setup world environment texture
+            world = preview_scene.world
+            if world and world.use_nodes:
+                for node in world.node_tree.nodes:
+                    if node.type == 'TEX_ENVIRONMENT':
+                        node.image = hdri_image
+            
+            # Set up render settings with fixed base resolution
+            preview_scene.render.resolution_x = 1024
+            preview_scene.render.resolution_y = 768
+            preview_scene.render.resolution_percentage = preferences.preview_resolution
+            preview_scene.cycles.samples = preferences.preview_samples
+            
+            # Set output path
+            preview_scene.render.filepath = thumb_path
+            
+            # Render
+            bpy.ops.render.render(write_still=True, scene=preview_scene.name)
+            
+            return True
+        
+        except Exception as e:
+            print(f"Error generating preview for {hdri_path}: {str(e)}")
+            return False
             
             # Load the HDRI image
             try:

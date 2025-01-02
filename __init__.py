@@ -18,7 +18,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 5),
+    "version": (2, 5, 6),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1646,12 +1646,14 @@ class QuickHDRIPreferences(AddonPreferences):
         ],
         default='CPU'
     )
+    
     preview_scene_type: EnumProperty(
         name="Scene Type",
         description="Objects to include in the preview scene",
         items=[
             ('ORBS', 'Orbs', 'Use the Orbs collection'),
-            ('MONK', 'Monk', 'Use the Monk collection')
+            ('MONK', 'Monk', 'Use the Monk collection'),
+            ('CUBE', 'Cube', 'Use the Cube collection')
         ],
         default='ORBS'
     )
@@ -2690,11 +2692,15 @@ class HDRI_OT_generate_previews(Operator):
                 elif collection.name == 'Monk':
                     collection.hide_render = preferences.preview_scene_type != 'MONK'
                     collection.hide_viewport = preferences.preview_scene_type != 'MONK'
+                elif collection.name == 'Cube':
+                    collection.hide_render = preferences.preview_scene_type != 'CUBE'
+                    collection.hide_viewport = preferences.preview_scene_type != 'CUBE'
+
             # Additional object visibility handling for specific objects
             for obj in preview_scene.objects:
                 if preferences.preview_scene_type == 'ORBS':
-                    # For Orbs scene, hide Monk-specific objects
-                    if obj.name == 'HDRI_PLANE_MONK':
+                    # For Orbs scene, hide Monk and Cube-specific objects
+                    if obj.name in ['HDRI_PLANE_MONK']:
                         obj.hide_render = True
                         obj.hide_viewport = True
                     
@@ -2711,7 +2717,7 @@ class HDRI_OT_generate_previews(Operator):
                                     node.image = hdri_image
                 
                 elif preferences.preview_scene_type == 'MONK':
-                    # For Monk scene, hide Orbs-specific objects
+                    # For Monk scene, hide Orbs and Cube-specific objects
                     if obj.name in ['GROUND_PLANE', 'HDRI_PLANE_ORBS']:
                         obj.hide_render = True
                         obj.hide_viewport = True
@@ -2722,58 +2728,30 @@ class HDRI_OT_generate_previews(Operator):
                             for node in material.node_tree.nodes:
                                 if node.type == 'TEX_IMAGE':
                                     node.image = hdri_image
-            
-            # Setup world environment texture
+                
+                elif preferences.preview_scene_type == 'CUBE':
+                    # For Cube scene, hide Orbs and Monk-specific objects
+                    if obj.name in ['HDRI_PLANE_MONK']:
+                        obj.hide_render = True
+                        obj.hide_viewport = True
+                    
+                    # Show GROUND_PLANE for Cube scene
+                    if obj.name == 'GROUND_PLANE':
+                        obj.hide_render = False
+                        obj.hide_viewport = False
+                    
+                    # Ensure HDRI is applied to both HDRI_PLANE_ORBS
+                    if obj.name in ['HDRI_PLANE_ORBS'] and hdri_image:
+                        for material in obj.data.materials:
+                            for node in material.node_tree.nodes:
+                                if node.type == 'TEX_IMAGE':
+                                    node.image = hdri_image
+
+            # Setup world environment texture (outside of scene type blocks)
             world = preview_scene.world
             if world and world.use_nodes:
                 for node in world.node_tree.nodes:
                     if node.type == 'TEX_ENVIRONMENT':
-                        node.image = hdri_image
-            
-            # Set up render settings with fixed base resolution
-            preview_scene.render.resolution_x = 1024
-            preview_scene.render.resolution_y = 768
-            preview_scene.render.resolution_percentage = preferences.preview_resolution
-            preview_scene.cycles.samples = preferences.preview_samples
-            
-            # Set output path
-            preview_scene.render.filepath = thumb_path
-            
-            # Render
-            bpy.ops.render.render(write_still=True, scene=preview_scene.name)
-            
-            return True
-        
-        except Exception as e:
-            print(f"Error generating preview for {hdri_path}: {str(e)}")
-            return False
-            
-            # Load the HDRI image
-            try:
-                hdri_image = bpy.data.images.load(hdri_path, check_existing=True)
-            except Exception as e:
-                print(f"Failed to load HDRI image: {e}")
-                return False
-            
-            # Find the environment texture node and HDRI_Plane
-            world = preview_scene.world
-            hdri_plane = None
-            
-            for obj in preview_scene.objects:
-                if obj.name == "HDRI_PLANE":
-                    hdri_plane = obj
-                    break
-            
-            # Setup world environment texture
-            if world and world.use_nodes:
-                for node in world.node_tree.nodes:
-                    if node.type == 'TEX_ENVIRONMENT':
-                        node.image = hdri_image
-            
-            # Setup HDRI_Plane material
-            if hdri_plane and hdri_plane.active_material:
-                for node in hdri_plane.active_material.node_tree.nodes:
-                    if node.type == 'TEX_IMAGE':
                         node.image = hdri_image
             
             # Set up render settings with fixed base resolution

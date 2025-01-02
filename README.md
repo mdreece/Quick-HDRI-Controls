@@ -166,8 +166,7 @@ Add the .png thumbnails to the same directory as the hdr.
 
  Single File: Select a single .hdr or .exr file from you file browser and create a _thumb.png for it.
 
- Batch PRocess: Select a folder with .hdr and/or .exr files and create _thumb.png for each.
-
+ Batch Process: Select a folder with .hdr and/or .exr files and create _thumb.png for each.
  (For both the _thumb.png is in the same folder location as the chosen .hdr or .exr)
 
  User Source selection to choose you HDR or folder of HDRs

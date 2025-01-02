@@ -15,7 +15,6 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
                       BoolProperty, FloatVectorProperty)
 from bpy.app.handlers import persistent
 import numpy as np
-
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
@@ -2546,41 +2545,27 @@ class HDRI_OT_generate_previews(Operator):
         return {'RUNNING_MODAL'}
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
-
-        # Check if HDRI directory is set and accessible
-        if not preferences.hdri_directory or not os.path.exists(preferences.hdri_directory):
-            self.report({'WARNING'}, "Please set a valid HDRI directory in the addon preferences")
-            return {'CANCELLED'}
-
-        # Proceed with preview generation
+        
+        self._failed_files = []
+        self._current_file_index = 0
+        
         if preferences.preview_generation_type == 'SINGLE':
-            if not preferences.preview_single_file or not os.path.exists(preferences.preview_single_file):
-                self.report({'WARNING'}, "Please select a valid HDRI file")
-                return {'CANCELLED'}
             self._preview_files = [preferences.preview_single_file]
-        else:  # Multiple/Batch mode
-            if not preferences.preview_multiple_folder or not os.path.exists(preferences.preview_multiple_folder):
-                self.report({'WARNING'}, "Please select a valid HDRI folder")
-                return {'CANCELLED'}
+        else:
             self._preview_files = self.get_hdri_files(preferences.preview_multiple_folder)
-
-        # Check if any HDRI files found in batch mode
-        if not self._preview_files:
-            self.report({'WARNING'}, "No HDRI files found in the selected folder")
-            return {'CANCELLED'}
-
+        
         self._total_files = len(self._preview_files)
-
+        
         # Initialize statistics
         self.initialize_stats(context)
-
+        
         wm = context.window_manager
         wm.progress_begin(0, 100)
-
+        
         # Use a shorter timer interval for more frequent updates
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
-
+        
         return {'RUNNING_MODAL'}
     def finish_preview_generation(self, context):
         preferences = context.preferences.addons[__name__].preferences
@@ -3286,21 +3271,6 @@ def register():
         bpy.app.handlers.render_cancel.append(reset_proxy_after_render)
     if reset_proxy_after_render_complete not in bpy.app.handlers.render_complete:
         bpy.app.handlers.render_complete.append(reset_proxy_after_render_complete)
-        
-    # Version compatibility check
-    current_blender_version = bpy.app.version
-    recommended_version = bl_info['blender']
-    
-    if (current_blender_version[0] < recommended_version[0] or 
-        (current_blender_version[0] == recommended_version[0] and 
-         current_blender_version[1] < recommended_version[1])):
-        def draw_version_warning(self, context):
-            layout = self.layout
-            layout.label(text="Quick HDRI Controls Compatibility Warning", icon='ERROR')
-            layout.label(text=f"This addon is recommended for Blender {recommended_version[0]}.{recommended_version[1]}+")
-            layout.label(text="You may experience compatibility issues with your current Blender version.")
-        
-        bpy.context.window_manager.popup_menu(draw_version_warning, title="Version Compatibility", icon='ERROR')
     
     # Add keymap entry
     wm = bpy.context.window_manager

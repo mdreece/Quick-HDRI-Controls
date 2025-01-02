@@ -134,7 +134,7 @@ Add the .png thumbnails to the same directory as the hdr.
 
 ![image](https://github.com/user-attachments/assets/281e96a0-8e96-4b45-a005-64ccddcaaec7)
 
-###Processing Type:
+### Processing Type:
 
  Single File: Select a single .hdr or .exr file from you file browser and create a _thumb.png for it.
 

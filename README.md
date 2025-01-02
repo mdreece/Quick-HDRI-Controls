@@ -40,9 +40,9 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
    
 ![BL Enable](https://github.com/user-attachments/assets/568ecc23-6b9f-4bf9-b187-026ff2fe358c)
 
+
+
 ##
-
-
 ## Quick Start Guide
 
 ### First Time Setup
@@ -70,7 +70,9 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 4. Close the preferences
 
-### Using the Addon
+
+##
+## Using the Addon
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
 
@@ -118,10 +120,12 @@ Proxy Resolution Selection: Choose the desired resolution for your proxy of the 
 Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
 
 
-### Full Dropdown Panel
+##
+## Full Dropdown Panel
 
 ![image](https://github.com/user-attachments/assets/b196d0b3-a2fc-4406-a47f-a34606697763)
 
+##
 ## Preview Thumbnail Generation
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
 Add the .png thumbnails to the same directory as the hdr.
@@ -130,7 +134,7 @@ Add the .png thumbnails to the same directory as the hdr.
 
 ![image](https://github.com/user-attachments/assets/281e96a0-8e96-4b45-a005-64ccddcaaec7)
 
-Processing Type:
+###Processing Type:
 
  Single File: Select a single .hdr or .exr file from you file browser and create a _thumb.png for it.
 
@@ -149,6 +153,8 @@ Example of original and _thumb.png instance:
 
 ![image](https://github.com/user-attachments/assets/5e0789da-7f73-4ad3-aed4-f6e905646c28)
 
+
+##
 ## Proxy Settings
 
 ![image](https://github.com/user-attachments/assets/d13e9918-c338-4f0e-aba3-ef2591f73897)
@@ -170,7 +176,7 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
  - More than likely these will not need to be adjusted. Compression using ZIP works well in both MacOS and Windows. The format option is for you to set the proxies to be HDR or EXR formats
 
 
-
+##
 ## Tips & Tricks
 
 ### For Best Results
@@ -191,6 +197,7 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 - X and Y rotation help with reflection angles
 - Reset buttons quickly restore default values
 
+##
 ## Keyboard Shortcut
 Keyboard shortcut can be set for quickly pulling up the panel in the 3D viewport
 
@@ -224,8 +231,8 @@ Keyboard Shortcut Conflicts
 
 
 
-
-### Interface Settings
+##
+## Interface Settings
 You can customize:
 - Preview size
 - Button scale
@@ -251,7 +258,7 @@ To access these options:
 
 
 
-
+##
 ## Troubleshooting
 
 ### Common Issues
@@ -269,6 +276,7 @@ To access these options:
 - Click "Initialize HDRI System" button
 - If issues persist, click "Repair HDRI System"
 
+##
 ## Updates
 
 Stay up to date:
@@ -294,7 +302,7 @@ Stay up to date:
 ![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
  
 
-
+##
 ## Requirements
 
 - Blender 4.3.0 (could work on previous versions)
@@ -302,6 +310,7 @@ Stay up to date:
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures
 
+##
 ## Support
 
 Need help? Found a bug? Have a suggestion?
@@ -309,6 +318,7 @@ Need help? Found a bug? Have a suggestion?
 - Check existing issues for solutions
 - Include steps to reproduce any bugs
 
+##
 ## Credits
 
 Created by Dave Nectariad Rome

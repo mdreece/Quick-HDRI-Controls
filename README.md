@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.5.5 for Blender
+# Quick HDRI Controls v2.5.6 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.5.5-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.5.6-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -13,7 +13,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 # Table of Contents
 
-- [Quick HDRI Controls v2.5.5 for Blender](#quick-hdri-controls-v255-for-blender)
+- [Quick HDRI Controls v2.5.6 for Blender](#quick-hdri-controls-v255-for-blender)
   - [Features](#features)
   - [Installation](#installation)
   - [Quick Start Guide](#quick-start-guide)

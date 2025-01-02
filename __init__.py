@@ -20,7 +20,7 @@ bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
     "version": (2, 5, 4),
-    "blender": (4, 2, 0),
+    "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
@@ -2546,49 +2546,41 @@ class HDRI_OT_generate_previews(Operator):
         return {'RUNNING_MODAL'}
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
-        
-        # Validation for file/folder selection
+
+        # Check if HDRI directory is set and accessible
+        if not preferences.hdri_directory or not os.path.exists(preferences.hdri_directory):
+            self.report({'WARNING'}, "Please set a valid HDRI directory in the addon preferences")
+            return {'CANCELLED'}
+
+        # Proceed with preview generation
         if preferences.preview_generation_type == 'SINGLE':
             if not preferences.preview_single_file or not os.path.exists(preferences.preview_single_file):
-                self.report({'ERROR'}, "Please select a valid HDRI file")
-                def draw_file_warning(self, context):
-                    layout = self.layout
-                    layout.label(text="No HDRI File Selected", icon='ERROR')
-                    layout.label(text="Please choose a single HDRI file to generate a preview")
-                
-                context.window_manager.popup_menu(draw_file_warning, title="File Selection", icon='ERROR')
+                self.report({'WARNING'}, "Please select a valid HDRI file")
                 return {'CANCELLED'}
+            self._preview_files = [preferences.preview_single_file]
         else:  # Multiple/Batch mode
             if not preferences.preview_multiple_folder or not os.path.exists(preferences.preview_multiple_folder):
-                self.report({'ERROR'}, "Please select a valid HDRI folder")
-                def draw_folder_warning(self, context):
-                    layout = self.layout
-                    layout.label(text="No HDRI Folder Selected", icon='ERROR')
-                    layout.label(text="Please choose a folder containing HDRI files")
-                
-                context.window_manager.popup_menu(draw_folder_warning, title="Folder Selection", icon='ERROR')
+                self.report({'WARNING'}, "Please select a valid HDRI folder")
                 return {'CANCELLED'}
-        
-        self._failed_files = []
-        self._current_file_index = 0
-        
-        if preferences.preview_generation_type == 'SINGLE':
-            self._preview_files = [preferences.preview_single_file]
-        else:
             self._preview_files = self.get_hdri_files(preferences.preview_multiple_folder)
-        
+
+        # Check if any HDRI files found in batch mode
+        if not self._preview_files:
+            self.report({'WARNING'}, "No HDRI files found in the selected folder")
+            return {'CANCELLED'}
+
         self._total_files = len(self._preview_files)
-        
+
         # Initialize statistics
         self.initialize_stats(context)
-        
+
         wm = context.window_manager
         wm.progress_begin(0, 100)
-        
+
         # Use a shorter timer interval for more frequent updates
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
-        
+
         return {'RUNNING_MODAL'}
     def finish_preview_generation(self, context):
         preferences = context.preferences.addons[__name__].preferences

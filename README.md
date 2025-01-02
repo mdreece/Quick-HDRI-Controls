@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.5.6 for Blender
+# Quick HDRI Controls v2.5.7 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.5.6-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.5.7-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -13,7 +13,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 # Table of Contents
 
-- [Quick HDRI Controls v2.5.6 for Blender](#quick-hdri-controls-v255-for-blender)
+- [Quick HDRI Controls v2.5.7 for Blender](#quick-hdri-controls-v255-for-blender)
   - [Features](#features)
   - [Installation](#installation)
   - [Quick Start Guide](#quick-start-guide)
@@ -25,16 +25,16 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
   - [Proxy Settings](#proxy-settings)
     - [Cache Settings](#cache-settings)
     - [Advanced Settings](#advanced-settings)
+  - [Keyboard Shortcut](#keyboard-shortcut)
+  - [Interface Settings](#interface-settings)
+    - [HDRI Settings](#hdri-settings)
+  - [Updates](#updates)
   - [Tips & Tricks](#tips--tricks)
     - [For Best Results](#for-best-results)
     - [Quick Workflow](#quick-workflow)
     - [Pro Tips](#pro-tips)
-  - [Keyboard Shortcut](#keyboard-shortcut)
-  - [Interface Settings](#interface-settings)
-    - [HDRI Settings](#hdri-settings)
   - [Troubleshooting](#troubleshooting)
     - [Common Issues](#common-issues)
-  - [Updates](#updates)
   - [Requirements](#requirements)
   - [Support](#support)
   - [Credits](#credits)
@@ -54,7 +54,6 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 1. Download the latest release zip file
 
 ![Github_Download](https://github.com/user-attachments/assets/ec266f02-a1e1-4a8a-ae84-43ded0813717)
-
 
  - Click Code
  - Click Download ZIP
@@ -93,8 +92,6 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 (All are enabled by default)
 
 ![image](https://github.com/user-attachments/assets/64f7d509-f9cb-4bc7-978c-693b7f0b5417)
-
-
 
 4. Close the preferences
 
@@ -151,7 +148,9 @@ Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
 ##
 ## Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/b196d0b3-a2fc-4406-a47f-a34606697763)
+![image](https://github.com/user-attachments/assets/761878ed-ffcd-486d-abd2-5ba298ba361b)
+
+
 
 ##
 ## Preview Thumbnail Generation
@@ -173,7 +172,7 @@ Add the .png thumbnails to the same directory as the hdr.
  - Choose you desired resolution %
  - Choose number of samples
  - Choose Render Device
- - Select scene type: Orbs (orbs preview) or Monk (suzanne)
+ - Select scene type: Orbs (orbs preview), Monk (suzanne), Cube (the default twins)
  - GENERATE
 
 Example of original and _thumb.png instance:
@@ -184,7 +183,7 @@ Example of original and _thumb.png instance:
 ##
 ## Proxy Settings
 
-![image](https://github.com/user-attachments/assets/d13e9918-c338-4f0e-aba3-ef2591f73897)
+![image](https://github.com/user-attachments/assets/04767c24-dc3b-401b-be5d-ac6f5178c2f6)
 
 Default Resolution: The desired default resolution for proxies (if set to ORIGINAL, no proxies will be created and full resolution HDRI will be used - options = 1K, 2K, 4K, Original)
 
@@ -202,27 +201,15 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 
  - More than likely these will not need to be adjusted. Compression using ZIP works well in both MacOS and Windows. The format option is for you to set the proxies to be HDR or EXR formats
 
+### Batch Proxy Generation
 
-##
-## Tips & Tricks
+![image](https://github.com/user-attachments/assets/665141b1-c137-490d-898f-402fcd90fc12)
 
-### For Best Results
-- Organize HDRIs into folders (Indoor, Outdoor, Studio, etc.)
-- Use consistent naming for easier browsing
-- Keep your most-used HDRIs in a favorites folder
+Select your desired batch proxy resolution and processing device and click 'Generate Proxies'.
+This process will do the same as when a single image is selected in the panel.
+The proxies will all be in the same location and if one already exists the addon will use it vs creating a new instance.
 
-### Quick Workflow
-1. Open the HDRI Controls panel
-2. Browse to your desired HDRI
-3. Click to select and load
-4. Adjust rotation and strength as needed
-5. Use reset buttons if you need to start over
 
-### Pro Tips
-- Use the strength slider to fine-tune lighting intensity
-- Rotate on the Z-axis to change light direction
-- X and Y rotation help with reflection angles
-- Reset buttons quickly restore default values
 
 ##
 ## Keyboard Shortcut
@@ -284,25 +271,6 @@ To access these options:
  - Supported File Types" explained above
 
 
-
-##
-## Troubleshooting
-
-### Common Issues
-
-**"HDRI Directory Not Set" Message**
-- Open addon preferences
-- Set your HDRI folder path
-
-**No HDRIs Showing**
-- Check that your files are supported types
-- Verify the folder path is correct
-- Make sure file types are enabled in preferences
-
-**System Not Initialized**
-- Click "Initialize HDRI System" button
-- If issues persist, click "Repair HDRI System"
-
 ##
 ## Updates
 
@@ -327,7 +295,47 @@ Stay up to date:
  - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls if there is a pending update
    
 ![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
- 
+
+
+##
+## Tips & Tricks
+
+### For Best Results
+- Organize HDRIs into folders (Indoor, Outdoor, Studio, etc.)
+- Use consistent naming for easier browsing
+- Keep your most-used HDRIs in a favorites folder
+
+### Quick Workflow
+1. Open the HDRI Controls panel
+2. Browse to your desired HDRI
+3. Click to select and load
+4. Adjust rotation and strength as needed
+5. Use reset buttons if you need to start over
+
+### Pro Tips
+- Use the strength slider to fine-tune lighting intensity
+- Rotate on the Z-axis to change light direction
+- X and Y rotation help with reflection angles
+- Reset buttons quickly restore default values
+
+
+##
+## Troubleshooting
+
+### Common Issues
+
+**"HDRI Directory Not Set" Message**
+- Open addon preferences
+- Set your HDRI folder path
+
+**No HDRIs Showing**
+- Check that your files are supported types
+- Verify the folder path is correct
+- Make sure file types are enabled in preferences
+
+**System Not Initialized**
+- Click "Initialize HDRI System" button
+- If issues persist, click "Repair HDRI System"
 
 ##
 ## Requirements

@@ -140,7 +140,7 @@ Processing Type:
  - Choose you desired resolution %
  - Choose number of samples
  - Choose Render Device
- - Select scene type: Orbs (orbs preview) or Monk ( single suzanne)
+ - Select scene type: Orbs (orbs preview) or Monk (suzanne)
  - GENERATE
 
 Example of original and _thumb.png instance:

@@ -94,7 +94,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 ![image](https://github.com/user-attachments/assets/64f7d509-f9cb-4bc7-978c-693b7f0b5417)
 
-(Preview limit is related to .png thumbnails for HDRIs that you can use to save on resources) 
+
 
 4. Close the preferences
 

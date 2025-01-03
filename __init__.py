@@ -3045,7 +3045,11 @@ class HDRI_OT_full_batch_previews(Operator):
     
     def get_all_hdri_files(self, base_dir):
         hdri_files = []
-        for root, _, files in os.walk(base_dir):
+        for root, dirs, files in os.walk(base_dir):
+            # Skip 'proxies' folders
+            if 'proxies' in dirs:
+                dirs.remove('proxies')
+                
             for f in files:
                 if f.lower().endswith(('.hdr', '.exr')):
                     hdri_files.append(os.path.join(root, f))
@@ -3111,7 +3115,11 @@ class HDRI_OT_full_batch_proxies(Operator):
     
     def get_all_hdri_files(self, base_dir):
         hdri_files = []
-        for root, _, files in os.walk(base_dir):
+        for root, dirs, files in os.walk(base_dir):
+            # Skip 'proxies' folders
+            if 'proxies' in dirs:
+                dirs.remove('proxies')
+                
             for f in files:
                 if f.lower().endswith(('.hdr', '.exr')):
                     hdri_files.append(os.path.join(root, f))

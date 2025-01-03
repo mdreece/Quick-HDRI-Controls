@@ -2977,20 +2977,22 @@ class HDRI_OT_full_batch_previews(Operator):
     bl_description = "Generate previews for all HDRIs in all subfolders"
     
     def invoke(self, context, event):
-       message = (
-           "⚠️  Time Estimate  ⚠️\n"
-           "• Batch Process can take several minutes to hours\n"
-           "• Network speeds affect processing time if using NAS\n\n"
-           "🔄  Process Details  🔄\n" 
-           "• Will create thumbnails for ALL .hdr and .exr files\n"
-           "• Searches entire HDRI directory structure\n\n"
-           "Would you like to continue?"
-       )
-       return context.window_manager.invoke_confirm(
-           self,
-           event, 
-           message=message
-       )
+        message = (
+            "⚠️ Batch Process can take several minutes to hours ⚠️\n"
+            "• Network speeds affect processing time if using NAS\n\n"
+            "🔄 Process Details 🔄\n" 
+            "• Creates thumbnails for ALL .hdr and .exr files\n"
+            "• Searches entire HDRI directory structure\n\n"
+            "📝 Settings 📝\n"
+            "• Remember to adjust Quality settings!\n\n"
+            "Would you like to continue?"
+        )
+        
+        return context.window_manager.invoke_confirm(
+            self,
+            event, 
+            message=message
+        )
     
     def get_all_hdri_files(self, base_dir):
         hdri_files = []
@@ -3043,20 +3045,20 @@ class HDRI_OT_full_batch_proxies(Operator):
     bl_description = "Generate proxies for all HDRIs in all subfolders"
     
     def invoke(self, context, event):
-       message = (
-           "⚠️  Time Estimate  ⚠️\n"
-           "• Batch Process can take several minutes to hours\n"
-           "• Network speeds affect processing time if using NAS\n\n"
-           "🔄  Process Details  🔄\n" 
-           "• Will create proxies for ALL .hdr and .exr files\n"
-           "• Searches entire HDRI directory structure\n\n"
-           "Would you like to continue?"
-       )
-       return context.window_manager.invoke_confirm(
-           self,
-           event, 
-           message=message
-       )
+        message = (
+            "⚠️ Batch Process can take several minutes to hours ⚠️\n"
+            "• Network speeds affect processing time if using NAS\n\n"
+            "🔄 Process Details 🔄\n" 
+            "• Creates proxies for ALL .hdr and .exr files\n"
+            "• Searches entire HDRI directory structure\n\n"
+            "Would you like to continue?"
+        )
+        
+        return context.window_manager.invoke_confirm(
+            self,
+            event, 
+            message=message
+        )
     
     def get_all_hdri_files(self, base_dir):
         hdri_files = []

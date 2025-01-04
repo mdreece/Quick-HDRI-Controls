@@ -18,14 +18,13 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 5, 9),
+    "version": (2, 6, 0),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
     "category": "3D View",
 }
-# Stored keymap entries to remove them when unregistering
 addon_keymaps = []
 original_paths = {}
 def get_hdri_previews():
@@ -1816,7 +1815,7 @@ class QuickHDRIPreferences(AddonPreferences):
             ('CPU', 'CPU', 'Use CPU for rendering'),
             ('GPU', 'GPU', 'Use GPU for rendering')
         ],
-        default='CPU'
+        default='GPU'
     )
     
     preview_scene_type: EnumProperty(
@@ -2561,78 +2560,7 @@ class HDRI_OT_delete_world(Operator):
             world = context.scene.world
             bpy.data.worlds.remove(world, do_unlink=True)
             self.report({'INFO'}, "World deleted")
-        return {'FINISHED'}
-        
-class HDRI_OT_reset_to_previous(Operator):
-    bl_idname = "world.reset_to_previous_hdri"
-    bl_label = "Reset to Previous HDRI"
-    bl_description = "Reset to the previously loaded HDRI"
-    
-    def execute(self, context):
-        hdri_settings = context.scene.hdri_settings
-        preferences = context.preferences.addons[__name__].preferences
-        
-        if not hdri_settings.previous_hdri_path or not os.path.exists(hdri_settings.previous_hdri_path):
-            self.report({'WARNING'}, "No previous HDRI available")
-            return {'CANCELLED'}
-        
-        # Update current folder to the directory of the previous HDRI
-        previous_hdri_dir = os.path.dirname(hdri_settings.previous_hdri_path)
-        hdri_settings.current_folder = previous_hdri_dir
-        
-        # Force regeneration of previews for the new directory
-        get_hdri_previews.cached_dir = None
-        get_hdri_previews.cached_items = []
-        
-        # Regenerate previews
-        enum_items = generate_previews(self, context)
-        
-        # Check if the previous HDRI path exists in the new preview list
-        if any(item[0] == hdri_settings.previous_hdri_path for item in enum_items):
-            hdri_settings.hdri_preview = hdri_settings.previous_hdri_path
-        else:
-            # If the exact path is not found, try to find a match based on filename
-            previous_filename = os.path.basename(hdri_settings.previous_hdri_path)
-            for item in enum_items:
-                if os.path.basename(item[0]) == previous_filename:
-                    hdri_settings.hdri_preview = item[0]
-                    break
-            else:
-                # If no match is found, use the first HDRI in the list (skipping 'None')
-                if len(enum_items) > 1:
-                    hdri_settings.hdri_preview = enum_items[1][0]
-                else:
-                    self.report({'WARNING'}, "Could not find previous HDRI in the new directory")
-                    return {'CANCELLED'}
-        
-        # Rest of the existing reset logic remains the same
-        # Store current state as previous
-        world = context.scene.world
-        if world and world.use_nodes:
-            for node in world.node_tree.nodes:
-                if node.type == 'TEX_ENVIRONMENT' and node.image:
-                    self.previous_hdri_path = node.image.filepath
-                elif node.type == 'MAPPING':
-                    self.previous_rotation = node.inputs['Rotation'].default_value.copy()
-                elif node.type == 'BACKGROUND':
-                    self.previous_strength = node.inputs['Strength'].default_value
-        
-        # Set up nodes
-        mapping, env_tex, node_background = ensure_world_nodes()
-        
-        # Load the new image
-        try:
-            img = bpy.data.images.load(hdri_settings.hdri_preview, check_existing=True)
-            env_tex.image = img
-        except Exception as e:
-            print(f"Failed to load HDRI: {str(e)}")
-            return {'CANCELLED'}
-        
-        # Force redraw of areas
-        for area in context.screen.areas:
-            area.tag_redraw()
-        
-        return {'FINISHED'}
+        return {'FINISHED'}     
             
 class HDRI_OT_previous_hdri(Operator):
     bl_idname = "world.previous_hdri"
@@ -3367,7 +3295,7 @@ class HDRI_PT_controls(Panel):
                     scale=preferences.preview_scale
                 )
                 
-                # Then show navigation controls if HDRI is active
+                # Navigation controls only if HDRI is active
                 if env_tex and env_tex.image and has_active_hdri(context):
                     nav_box = preview_box.box()
                     nav_row = nav_box.row(align=True)
@@ -3375,7 +3303,7 @@ class HDRI_PT_controls(Panel):
                     # Previous button
                     prev_sub = nav_row.row(align=True)
                     prev_sub.scale_x = 1.2
-                    prev_op = prev_sub.operator(
+                    prev_sub.operator(
                         "world.previous_hdri", 
                         text="", 
                         icon='TRIA_LEFT',
@@ -3391,71 +3319,41 @@ class HDRI_PT_controls(Panel):
                     # Next button
                     next_sub = nav_row.row(align=True)
                     next_sub.scale_x = 1.2
-                    next_op = next_sub.operator(
+                    next_sub.operator(
                         "world.next_hdri", 
                         text="", 
                         icon='TRIA_RIGHT',
                         emboss=True
                     )
-                
-                # Only keep the Reset button
-                row = preview_box.row(align=True)
-                row.scale_y = 1.2 * preferences.button_scale
-                
-                # Reset button
-                sub_row = row.row(align=True)
-                sub_row.enabled = bool(hdri_settings.previous_hdri_path)
-                sub_row.operator("world.reset_to_previous_hdri",
-                    text="Reset",
-                    icon='LOOP_BACK')
-                # Metadata dropdown
-                meta_row = preview_box.row(align=True)
-                meta_row.label(text="HDRI Metadata", icon='INFO')
-                meta_row.scale_y = 0.3
-                meta_row.prop(hdri_settings, "show_metadata",
-                    icon='TRIA_DOWN' if hdri_settings.show_metadata else 'TRIA_RIGHT',
-                    icon_only=True,
-                    emboss=False)
-                
-                if hdri_settings.show_metadata and env_tex and env_tex.image:
-                    meta_box = preview_box.box()
-                    meta_col = meta_box.column(align=True)
-                    meta_col.scale_y = 0.9
-                    metadata = get_hdri_metadata(env_tex.image)
                     
-                    if metadata:
-                        # Filename (new!)
-                        row = meta_col.row(align=True)
-                        row.label(text="File:", icon='FILE_IMAGE')
-                        row.label(text=metadata['filename'])
-                      
-                        # Resolution
-                        row = meta_col.row(align=True)
-                        row.label(text="Resolution:", icon='TEXTURE')
-                        row.label(text=metadata['resolution'])
-                        
-                        # Color Space
-                        row = meta_col.row(align=True)
-                        row.label(text="Color Space:", icon='COLOR')
-                        row.label(text=metadata['color_space'])
-                        
-                        # Channels
-                        row = meta_col.row(align=True)
-                        row.label(text="Channels:", icon='NODE_COMPOSITING')
-                        row.label(text=str(metadata['channels']))
-                        
-                        # File Size
-                        row = meta_col.row(align=True)
-                        row.label(text="File Size:", icon='FILE_BLANK')
-                        row.label(text=metadata['file_size'])
-                        
-                        # File Format
-                        row = meta_col.row(align=True)
-                        row.label(text="Format:", icon='FILE')
-                        row.label(text=metadata['file_format'])
+                    nav_row.separator(factor=1.0)                  
+
+        # Proxy dropdown
+        proxy_row = main_column.row(align=True)
+        proxy_row.label(text="Proxies", icon='RENDER_RESULT')
+        proxy_row.scale_y = 1.0
+        proxy_row.prop(hdri_settings, "show_proxy_settings",
+            icon='TRIA_DOWN' if hdri_settings.show_proxy_settings else 'TRIA_RIGHT',
+            icon_only=True,
+            emboss=False)
+
+        if hdri_settings.show_proxy_settings:
+            proxy_box = main_column.box()
+            proxy_col = proxy_box.column(align=True)
+            proxy_col.scale_y = 0.9
+            settings = context.scene.hdri_settings
             
+            split = proxy_col.split(factor=0.5)
             
-            main_column.separator(factor=0.5 * preferences.spacing_scale)
+            res_col = split.column()
+            res_col.prop(settings, "proxy_resolution", text="Resolution")
+            
+            # Mode dropdown
+            mode_col = split.column()
+            mode_col.prop(settings, "proxy_mode", text="Mode")
+
+
+        main_column.separator(factor=0.5 * preferences.spacing_scale)
                     
         
         # HDRI Settings Section
@@ -3557,13 +3455,13 @@ class HDRI_PT_controls(Panel):
                         op.axis = 2
                         op.direction = -99
                     
-                    # Add strength slider in compact mode
+                    # strength slider
                     if preferences.show_strength_slider:
                         col.separator()
                         row = col.row(align=True)
                         sub_row = row.row(align=True)
                         sub_row.prop(hdri_settings, "background_strength", text="Strength")
-                        # Reset button with adjusted scale
+                        # Reset button
                         sub = row.row(align=True)
                         sub.scale_x = 1.0
                         sub.scale_y = 1.0
@@ -3584,8 +3482,8 @@ class HDRI_PT_controls(Panel):
                             row = col.row(align=True)
                             row.prop(mapping.inputs['Rotation'], "default_value", index=i, text=axis)
                             sub = row.row(align=True)
-                            sub.scale_x = 1.0  # Updated to match comp mode
-                            # Add reset button for rotation
+                            sub.scale_x = 1.0
+                            #reset button for rotation
                             reset_op = sub.operator("world.quick_rotate_hdri", text="", icon='LOOP_BACK')
                             reset_op.axis = i
                             reset_op.direction = -99
@@ -3610,37 +3508,53 @@ class HDRI_PT_controls(Panel):
                         sub = row.row(align=True)
                         sub.scale_x = 1.0
                         sub.scale_y = 1.0
-                        sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')
-                
-                # Proxy Settings Section
-                if has_active_hdri(context):
-                    proxy_box = main_column.box()
-                    proxy_row = proxy_box.row(align=False)
-                    proxy_row.scale_y = preferences.button_scale
-                    proxy_row.prop(hdri_settings, "show_proxy_settings",
-                                  icon='TRIA_DOWN' if hdri_settings.show_proxy_settings else 'TRIA_RIGHT',
-                                  icon_only=True)
-                    sub = proxy_row.row(align=True)
-                    sub.alert = False
-                    sub.active = True  # Always keep the row active
-                    sub.label(text="Proxies", icon='IMAGE_DATA')
-                    if hdri_settings.show_proxy_settings:
-                        proxy_col = proxy_box.column(align=True)
-                        proxy_col.scale_y = preferences.button_scale
-                        proxy_col.use_property_split = True
-                        settings = context.scene.hdri_settings
-                        resolution_info = detect_hdri_resolution(original_paths.get(env_tex.image.name, env_tex.image.filepath))[0]
-                        if resolution_info:
-                            resolution_row = proxy_col.row(align=True)
-                            resolution_row.label(text="")
-                            resolution_row.prop(settings, "proxy_resolution", text="", icon='TRIA_DOWN')
-                            resolution_row.prop (settings, "proxy_mode", text="")
-                            
-                            # Close proxy settings after selection
-                            proxy_col.separator()
-                            close_row = proxy_col.row()
-                            close_row.alignment = 'RIGHT'
-                            close_row.label(text="Close when selected", icon='CHECKMARK')
+                        sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK') 
+
+                # Metadata at bottom
+                meta_row = rotation_box.row(align=True)
+                meta_row.label(text="Metadata", icon='INFO')
+                meta_row.scale_y = 0.5
+                meta_row.prop(hdri_settings, "show_metadata",
+                    icon='TRIA_DOWN' if hdri_settings.show_metadata else 'TRIA_RIGHT',
+                    icon_only=True,
+                    emboss=False)
+
+                if hdri_settings.show_metadata and env_tex and env_tex.image:
+                    meta_box = rotation_box.box()
+                    meta_col = meta_box.column(align=True)
+                    meta_col.scale_y = 0.9
+                    metadata = get_hdri_metadata(env_tex.image)
+                    
+                    if metadata:
+                        # Filename
+                        row = meta_col.row(align=True)
+                        row.label(text="File:", icon='FILE_IMAGE')
+                        row.label(text=metadata['filename'])
+                      
+                        # Resolution
+                        row = meta_col.row(align=True)
+                        row.label(text="Resolution:", icon='TEXTURE')
+                        row.label(text=metadata['resolution'])
+                        
+                        # Color Space
+                        row = meta_col.row(align=True)
+                        row.label(text="Color Space:", icon='COLOR')
+                        row.label(text=metadata['color_space'])
+                        
+                        # Channels
+                        row = meta_col.row(align=True)
+                        row.label(text="Channels:", icon='NODE_COMPOSITING')
+                        row.label(text=str(metadata['channels']))
+                        
+                        # File Size
+                        row = meta_col.row(align=True)
+                        row.label(text="File Size:", icon='FILE_BLANK')
+                        row.label(text=metadata['file_size'])
+                        
+                        # File Format
+                        row = meta_col.row(align=True)
+                        row.label(text="Format:", icon='FILE')
+                        row.label(text=metadata['file_format'])                        
         
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
@@ -3657,7 +3571,7 @@ class HDRI_PT_controls(Panel):
         )
         # Version number
         footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
-        # Add delete world button
+        #delete world button
         delete_btn = footer.operator(
             "world.delete_hdri_world",
             text="",
@@ -3686,7 +3600,6 @@ classes = (
     HDRI_OT_popup_controls,
     HDRI_OT_update_shortcut,
     HDRI_OT_quick_rotate,
-    HDRI_OT_reset_to_previous,
     HDRI_OT_toggle_visibility,
     HDRI_OT_browse_directory,
     HDRI_OT_restart_prompt,
@@ -3742,31 +3655,25 @@ def register():
     
     # Run update check at startup if enabled
     check_for_update_on_startup()
+    
 def unregister():
-    # Remove load handler
-    bpy.app.handlers.load_post.remove(load_handler)
-    
+    bpy.app.handlers.load_post.remove(load_handler)    
     bpy.app.handlers.load_post.remove(cleanup_hdri_proxies)
-    
     bpy.app.handlers.render_init.remove(reload_original_for_render)
     bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
     bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
     
-    # Remove keymap entries
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
-    # Remove menu item
+
     bpy.types.VIEW3D_HT_header.remove(draw_hdri_menu)
     
-    # Unregister classes in reverse order
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
         
-    # Remove scene properties
-    del bpy.types.Scene.hdri_settings
-    
-    # Safely clean up preview collection
+    del bpy.types.Scene.hdri_settings   
+
     if hasattr(get_hdri_previews, "preview_collection"):
         try:
             preview_collection = get_hdri_previews.preview_collection

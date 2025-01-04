@@ -203,10 +203,10 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 
 ![image](https://github.com/user-attachments/assets/eb8e6318-e447-436e-910f-e80386a561df)
 
-Select your desired batch proxy resolution and processing device and click 'Generate Proxies'.
-A directory does not need to be selected if running batch process.
-This process will do the same as when a single image is selected in the panel.
-The proxies will all be in the same location and if one already exists the addon will use it vs creating a new instance.
+ - Select your desired batch proxy resolution and processing device and click 'Generate Proxies'.
+ - A directory does not need to be selected if running batch process.
+ - This process will do the same as when a single image is selected in the panel.
+ - The proxies will all be in the same location and if one already exists the addon will use it vs creating a new instance.
 
 
 

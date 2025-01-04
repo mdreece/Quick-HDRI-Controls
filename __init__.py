@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 1),
+    "version": (2, 6, 2),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -812,53 +812,65 @@ def update_hdri_proxy(self, context):
     
     # Close proxy settings on any resolution or mode change
     context.scene.hdri_settings.show_proxy_settings = False
-        
-    # Get the original path
-    image_key = env_tex.image.name
-    original_path = original_paths.get(image_key, env_tex.image.filepath)
     
-    # If set to original, load the original file  
-    if settings.proxy_resolution == 'ORIGINAL':
-        # Clear existing image to ensure clean load
-        current_image = env_tex.image 
-        env_tex.image = None
-        if current_image.users == 0:
-            bpy.data.images.remove(current_image)
-            
-        # Load original     
-        img = bpy.data.images.load(original_path, check_existing=True)
-        env_tex.image = img
-        return
-        
-    # Check if the proxy image is already loaded   
-    proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
-    if proxy_path in bpy.data.images:
-        env_tex.image = bpy.data.images[proxy_path]
+    # Get the original path - check in multiple places
+    current_image = env_tex.image
+    original_path = None
+    
+    # First check original_paths using image name
+    if current_image.name in original_paths:
+        original_path = original_paths[current_image.name]
+    # Then check original_paths using basename of filepath
+    elif os.path.basename(current_image.filepath) in original_paths:
+        original_path = original_paths[os.path.basename(current_image.filepath)]
+    # Finally use current filepath
     else:
-        # Clear existing image
-        current_image = env_tex.image
-        env_tex.image = None  
-        if current_image.users == 0:
-            bpy.data.images.remove(current_image)
-            
-        # Load proxy and store original path     
-        img = bpy.data.images.load(proxy_path, check_existing=True) 
-        original_paths[img.name] = original_path  # Store original path  
-        env_tex.image = img
-        
-    # Check if the proxy image supports viewport display settings
+        original_path = current_image.filepath
+    
+    # Always clear current image to force reload
+    env_tex.image = None
+    if current_image.users == 0:
+        bpy.data.images.remove(current_image)
+    
     try:
-        if hasattr(env_tex.image, 'viewport_display_shader') and hasattr(env_tex.image, 'viewport_display_method'):
-            if settings.proxy_mode == 'VIEWPORT':  
-                env_tex.image.viewport_display_shader = 'PROXY'
-                env_tex.image.viewport_display_method = 'MULTITEXTURE' 
-            else:  # 'RENDER' or 'BOTH'
-                env_tex.image.viewport_display_shader = 'MATERIAL'
-                env_tex.image.viewport_display_method = 'MULTITEXTURE'
-    except AttributeError:
-        # If the attributes are not available, fall back to the 'BOTH' mode
-        env_tex.image.viewport_display_shader = 'PROXY'  
-        env_tex.image.viewport_display_method = 'MULTITEXTURE'
+        if settings.proxy_resolution == 'ORIGINAL':
+            # Load original file
+            img = bpy.data.images.load(original_path, check_existing=True)
+            img.reload()  # Force reload of the image
+            env_tex.image = img
+            # Clean up original_paths entries
+            if img.name in original_paths:
+                del original_paths[img.name]
+            if os.path.basename(original_path) in original_paths:
+                del original_paths[os.path.basename(original_path)]
+        else:
+            # Create and load proxy
+            proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
+            if proxy_path:
+                # Force reload even if image exists
+                if proxy_path in bpy.data.images:
+                    bpy.data.images[proxy_path].reload()
+                    img = bpy.data.images[proxy_path]
+                else:
+                    img = bpy.data.images.load(proxy_path, check_existing=True)
+                    
+                original_paths[img.name] = original_path
+                original_paths[os.path.basename(proxy_path)] = original_path
+                env_tex.image = img
+            else:
+                # Fallback to original if proxy creation fails
+                img = bpy.data.images.load(original_path, check_existing=True)
+                env_tex.image = img
+                
+    except Exception as e:
+        print(f"Error updating HDRI proxy: {str(e)}")
+        # Try to restore original if something fails
+        try:
+            img = bpy.data.images.load(original_path, check_existing=True)
+            env_tex.image = img
+        except:
+            pass
+    
     # Handle render update - only use handlers for 'VIEWPORT' mode
     if settings.proxy_mode == 'VIEWPORT':
         # Add handlers if not already present
@@ -876,6 +888,11 @@ def update_hdri_proxy(self, context):
             bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
         if reset_proxy_after_render_complete in bpy.app.handlers.render_complete:
             bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
+            
+    # Force redraw of viewport
+    for area in context.screen.areas:
+        if area.type == 'VIEW_3D':
+            area.tag_redraw()
             
 class HDRI_OT_clear_proxy_stats(Operator):
     bl_idname = "world.clear_proxy_stats"
@@ -1005,13 +1022,36 @@ class HDRI_OT_download_update(Operator):
     bl_label = "Download Update"
     bl_description = "Download and install the latest version"
     
+    def backup_current_version(self, addon_path):
+        """Create a backup in the backups folder before updating"""
+        init_file = os.path.join(addon_path, "__init__.py")
+        
+        if os.path.exists(init_file):
+            # Create backups directory
+            backups_dir = os.path.join(addon_path, "backups")
+            os.makedirs(backups_dir, exist_ok=True)
+            
+            # Create backup filename with version and timestamp
+            version = ".".join(str(x) for x in bl_info['version'])
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = os.path.join(backups_dir, f"__init__.{version}_{timestamp}.bak")
+            
+            try:
+                shutil.copyfile(init_file, backup_file)
+                print(f"Backed up current version to {backup_file}")
+                return True
+            except Exception as e:
+                print(f"Failed to create backup: {str(e)}")
+                return False
+    
     def execute(self, context):
         try:
             addon_path = os.path.dirname(os.path.realpath(__file__))
-            addon_name = os.path.basename(addon_path)
             
             # Backup the current version before updating
-            self.backup_current_version(addon_path)
+            if not self.backup_current_version(addon_path):
+                self.report({'ERROR'}, "Failed to create backup before update")
+                return {'CANCELLED'}
             
             update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/main.zip"
             req = urllib.request.Request(
@@ -1064,18 +1104,10 @@ class HDRI_OT_download_update(Operator):
                 bpy.ops.world.restart_prompt('INVOKE_DEFAULT')
             bpy.app.timers.register(invoke_restart_prompt)
             return {'FINISHED'}
+            
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
-            return {'CANCELLED'}
-    
-    def backup_current_version(self, addon_path):
-        init_file = os.path.join(addon_path, "__init__.py")
-        
-        if os.path.exists(init_file):
-            version = ".".join(str(x) for x in bl_info['version'])
-            backup_file = os.path.join(addon_path, f"__init__.{version}.bak")
-            shutil.copyfile(init_file, backup_file)
-            print(f"Backed up current version to {backup_file}")                      
+            return {'CANCELLED'}                     
             
 class HDRI_OT_restart_prompt(Operator):
     bl_idname = "world.restart_prompt"
@@ -1093,31 +1125,41 @@ class HDRI_OT_restart_prompt(Operator):
         
 class HDRI_OT_revert_version(Operator):
     bl_idname = "world.revert_hdri_version"
-    bl_label = "⚠️THIS PROCESS CANNOT BE UNDONE!⚠️"
-    bl_description = "Revert to the previously backed-up version of the add-on"
-
+    bl_label = "Revert to Previous Version"
+    bl_description = "Revert to the previously backed up version of the add-on"
+    
     def execute(self, context):
         addon_dir = os.path.dirname(__file__)
         init_file = os.path.join(addon_dir, "__init__.py")
-
-        # Find the latest backup file
-        backup_files = glob.glob(os.path.join(addon_dir, "__init__.*.bak"))
+        backups_dir = os.path.join(addon_dir, "backups")  # Changed from backup to backups
+        
+        if not os.path.exists(backups_dir):
+            self.report({'WARNING'}, "No backups directory found")
+            return {'CANCELLED'}
+        
+        # Find all backup files in the backups directory
+        backup_files = glob.glob(os.path.join(backups_dir, "__init__.*.bak"))
+        
         if backup_files:
+            # Sort backup files by modification time (newest first)
             latest_backup = max(backup_files, key=os.path.getctime)
-            shutil.copyfile(latest_backup, init_file)
-            self.report({'INFO'}, f"Loaded version: {os.path.basename(latest_backup)} - Restart Blender")
+            
+            try:
+                shutil.copyfile(latest_backup, init_file)
+                # Extract version from backup filename
+                version_match = re.search(r'__init__\.([\d\.]+)_', os.path.basename(latest_backup))
+                if version_match:
+                    version = version_match.group(1)
+                    self.report({'INFO'}, f"Reverted to version: {version}")
+                else:
+                    self.report({'INFO'}, f"Successfully reverted to backup: {os.path.basename(latest_backup)}")
+                return {'FINISHED'}
+            except Exception as e:
+                self.report({'ERROR'}, f"Failed to revert: {str(e)}")
+                return {'CANCELLED'}
         else:
-            self.report({'WARNING'}, "No backup found")
-
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="Are you sure you want to revert to the previous version?")
-        layout.label(text="This action cannot be undone.")
+            self.report({'WARNING'}, "No backup files found in backups directory")
+            return {'CANCELLED'}
         
 class HDRI_OT_change_folder(Operator):
     bl_idname = "world.change_hdri_folder"
@@ -1434,17 +1476,21 @@ class HDRISettings(PropertyGroup):
             return
         if not os.path.exists(filepath):
             return
+            
         # Store current state as previous
         world = context.scene.world
         if world and world.use_nodes:
             for node in world.node_tree.nodes:
                 if node.type == 'TEX_ENVIRONMENT' and node.image:
                     self.previous_hdri_path = node.image.filepath
+                    self.previous_proxy_resolution = self.proxy_resolution
                 elif node.type == 'MAPPING':
                     self.previous_rotation = node.inputs['Rotation'].default_value.copy()
                 elif node.type == 'BACKGROUND':
                     self.previous_strength = node.inputs['Strength'].default_value
+                    
         preferences = context.preferences.addons[__name__].preferences
+        
         # Store current rotation if keep_rotation is enabled
         current_rotation = None
         if preferences.keep_rotation:
@@ -1452,8 +1498,10 @@ class HDRISettings(PropertyGroup):
                 if node.type == 'MAPPING':
                     current_rotation = node.inputs['Rotation'].default_value.copy()
                     break
+                    
         # Set up nodes
         mapping, env_tex, node_background = ensure_world_nodes()
+        
         # Load the new image
         try:
             img = bpy.data.images.load(filepath, check_existing=True)
@@ -1461,11 +1509,13 @@ class HDRISettings(PropertyGroup):
         except Exception as e:
             print(f"Failed to load HDRI: {str(e)}")
             return
+            
         # Apply rotation based on keep_rotation setting
         if preferences.keep_rotation and current_rotation is not None:
             mapping.inputs['Rotation'].default_value = current_rotation
         else:
             mapping.inputs['Rotation'].default_value = (0, 0, 0)
+            
         # Create a proxy if the user has a proxy resolution set
         if self.proxy_resolution != 'ORIGINAL':
             proxy_path = create_hdri_proxy(filepath, self.proxy_resolution)
@@ -1601,6 +1651,24 @@ class HDRISettings(PropertyGroup):
     show_proxy_settings: BoolProperty(
         name="Show Proxy Settings",
         description="Close this tab after selection for faster performance",
+    )
+    
+    previous_hdri_path: StringProperty(
+        name="Previous HDRI Path",
+        description="Path to the previously loaded HDRI",
+        default=""
+    )
+
+    previous_proxy_resolution: EnumProperty(
+        name="Previous Proxy Resolution",
+        description="Previously used proxy resolution",
+        items=[
+            ('ORIGINAL', 'Original', 'Use original resolution'),
+            ('1K', '1K', 'Use 1K resolution'),
+            ('2K', '2K', 'Use 2K resolution'),
+            ('4K', '4K', 'Use 4K resolution'),
+        ],
+        default='ORIGINAL'
     )
     
     
@@ -2659,7 +2727,94 @@ class HDRI_OT_next_hdri(Operator):
         elif current_index == len(enum_items) - 1:  # If at last HDRI, wrap to first
             hdri_settings.hdri_preview = enum_items[1][0]  # Skip 'None' item
             
-        return {'FINISHED'}      
+        return {'FINISHED'}   
+class HDRI_OT_reset_hdri(Operator):
+    bl_idname = "world.reset_hdri"
+    bl_label = "Reset HDRI"
+    bl_description = "Reset to previously selected HDRI"
+    
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+        world = context.scene.world
+        
+        # Check if we have a previous HDRI to restore
+        if not hdri_settings.previous_hdri_path:
+            self.report({'WARNING'}, "No previous HDRI to restore")
+            return {'CANCELLED'}
+            
+        # Verify the file still exists
+        if not os.path.exists(hdri_settings.previous_hdri_path):
+            self.report({'ERROR'}, "Previous HDRI file could not be found")
+            return {'CANCELLED'}
+        
+        try:
+            # Store current HDRI before resetting
+            current_path = None
+            current_image = None
+            if world and world.use_nodes:
+                for node in world.node_tree.nodes:
+                    if node.type == 'TEX_ENVIRONMENT' and node.image:
+                        current_image = node.image
+                        current_path = original_paths.get(current_image.name, node.image.filepath)
+                        break
+            
+            # Set up nodes
+            mapping, env_tex, background = ensure_world_nodes()
+            
+            # Store the path we're resetting to
+            reset_to_path = original_paths.get(os.path.basename(hdri_settings.previous_hdri_path), 
+                                             hdri_settings.previous_hdri_path)
+            
+            # Load the appropriate version (proxy or original)
+            if hdri_settings.proxy_resolution != 'ORIGINAL':
+                # Create and load proxy
+                proxy_path = create_hdri_proxy(reset_to_path, hdri_settings.proxy_resolution)
+                if proxy_path:
+                    # Clear existing image
+                    if env_tex.image:
+                        old_image = env_tex.image
+                        env_tex.image = None
+                        if old_image.users == 0:
+                            bpy.data.images.remove(old_image)
+                    
+                    # Load proxy
+                    img = bpy.data.images.load(proxy_path, check_existing=True)
+                    original_paths[img.name] = reset_to_path  # Store original path
+                    env_tex.image = img
+                else:
+                    # If proxy creation fails, load original
+                    img = bpy.data.images.load(reset_to_path, check_existing=True)
+                    env_tex.image = img
+            else:
+                # Load original
+                img = bpy.data.images.load(reset_to_path, check_existing=True)
+                env_tex.image = img
+            
+            # Update the preview selection
+            enum_items = generate_previews(self, context)
+            for item in enum_items:
+                if item[0] == reset_to_path:
+                    hdri_settings.hdri_preview = item[0]
+                    break
+            
+            # Update previous HDRI path to the one we just replaced
+            if current_path:
+                hdri_settings.previous_hdri_path = current_path
+                # Ensure we maintain the original path in our tracking
+                if current_image and current_image.name in original_paths:
+                    original_paths[os.path.basename(current_path)] = original_paths[current_image.name]
+            
+            # Force redraw of viewport
+            for area in context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area.tag_redraw()
+            
+            self.report({'INFO'}, "HDRI reset successful")
+            return {'FINISHED'}
+            
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to reset HDRI: {str(e)}")
+            return {'CANCELLED'}     
 class HDRI_OT_generate_previews(Operator):
     bl_idname = "world.generate_hdri_previews"
     bl_label = "Generate HDRI Previews"
@@ -3212,9 +3367,20 @@ class HDRI_PT_controls(Panel):
                 text="Browse",
                 icon='FILE_FOLDER')
             op.directory = preferences.hdri_directory
-            # Set the property to update when directory is selected
             op.property_name = "hdri_directory"
             op.property_owner = "preferences"
+
+            # Add footer
+            main_column.separator(factor=1.0 * preferences.spacing_scale)
+            footer = main_column.row(align=True)
+            footer.scale_y = 0.8
+            footer.operator(
+                "preferences.addon_show",
+                text="",
+                icon='PREFERENCES',
+                emboss=False
+            ).module = __name__
+            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
             
         world = context.scene.world
@@ -3227,6 +3393,18 @@ class HDRI_PT_controls(Panel):
                 col.operator("world.setup_hdri_nodes", 
                     text="Initialize HDRI System",
                     icon='WORLD_DATA')
+
+            # Add footer
+            main_column.separator(factor=1.0 * preferences.spacing_scale)
+            footer = main_column.row(align=True)
+            footer.scale_y = 0.8
+            footer.operator(
+                "preferences.addon_show",
+                text="",
+                icon='PREFERENCES',
+                emboss=False
+            ).module = __name__
+            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
         # Get node references
         mapping = None
@@ -3362,7 +3540,7 @@ class HDRI_PT_controls(Panel):
                         emboss=True
                     )
                     
-                    # HDRI name in center
+                    # HDRI name
                     name_row = nav_row.row(align=True)
                     name_row.alignment = 'CENTER'
                     name_row.scale_x = 2.0
@@ -3377,6 +3555,18 @@ class HDRI_PT_controls(Panel):
                         icon='TRIA_RIGHT',
                         emboss=True
                     )
+                    
+                    nav_row.separator(factor=1.0)
+                    
+                    # Reset to previous HDRI
+                    if hdri_settings.previous_hdri_path and os.path.exists(hdri_settings.previous_hdri_path):
+                        reset_sub = nav_row.row(align=True)
+                        reset_sub.scale_x = 1.2
+                        reset_sub.operator(
+                            "world.reset_hdri",
+                            text="",
+                            icon='LOOP_BACK'
+                        )
                     
                     nav_row.separator(factor=1.0)                  
 
@@ -3666,6 +3856,7 @@ classes = (
     HDRI_OT_clear_proxy_stats,
     HDRI_OT_full_batch_previews,
     HDRI_OT_full_batch_proxies,
+    HDRI_OT_reset_hdri,
 )
 def register():
     extract_addon_zips()

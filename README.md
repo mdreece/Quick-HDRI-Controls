@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.6.1 for Blender
+# Quick HDRI Controls v2.6.2 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.6.1-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.6.2-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -95,9 +95,12 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
 
-![image](https://github.com/user-attachments/assets/8054b0e6-3a2c-4f36-9833-974d80fe42a6)
+![image](https://github.com/user-attachments/assets/ce01fbf7-f213-4ed6-9435-91eec58584bc)
 
 2. Click it and then 'Initialize HDRI System'
+ - Quick access to addon preferences
+ - Version number display
+     
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
 
@@ -112,6 +115,10 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 - Click the box to see thumbnails of your HDRIs
 - Click on the desired HDRI to load it to use it
 - Once loaded, use navigation arrows to cycle through HDRs in the present folder.
+
+![image](https://github.com/user-attachments/assets/f10988b1-7721-446e-a1e2-e079e0e2fb8a)
+  
+- Once more than one HDRI has been selected, a reset button will appear to reset to the previously selected HDRI
 
 5. 'Settings' will appear once an HDRI has been loaded.
 

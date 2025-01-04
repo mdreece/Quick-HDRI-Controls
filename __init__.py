@@ -9,6 +9,7 @@ import subprocess
 import re
 import os
 import sys
+import glob
 from bpy.types import (Panel, Operator, AddonPreferences, PropertyGroup)
 from bpy.props import (FloatProperty, StringProperty, EnumProperty, 
                       CollectionProperty, PointerProperty, IntProperty, 
@@ -18,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 0),
+    "version": (2, 6, 1),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -199,6 +200,15 @@ def update_background_strength(self, context):
         for node in context.scene.world.node_tree.nodes:
             if node.type == 'BACKGROUND':
                 node.inputs['Strength'].default_value = self.background_strength
+def backup_current_version():
+    addon_dir = os.path.dirname(__file__)
+    init_file = os.path.join(addon_dir, "__init__.py")
+    
+    if os.path.exists(init_file):
+        version = ".".join(str(x) for x in bl_info['version'])
+        backup_file = os.path.join(addon_dir, f"__init__.{version}.bak")
+        shutil.copyfile(init_file, backup_file)
+        print(f"Backed up current version to {backup_file}")
 def check_for_update_on_startup():
     """Check for updates on Blender startup if enabled in preferences."""
     preferences = bpy.context.preferences.addons[__name__].preferences
@@ -1000,6 +1010,9 @@ class HDRI_OT_download_update(Operator):
             addon_path = os.path.dirname(os.path.realpath(__file__))
             addon_name = os.path.basename(addon_path)
             
+            # Backup the current version before updating
+            self.backup_current_version(addon_path)
+            
             update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/main.zip"
             req = urllib.request.Request(
                 update_url,
@@ -1054,7 +1067,15 @@ class HDRI_OT_download_update(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
             return {'CANCELLED'}
-            
+    
+    def backup_current_version(self, addon_path):
+        init_file = os.path.join(addon_path, "__init__.py")
+        
+        if os.path.exists(init_file):
+            version = ".".join(str(x) for x in bl_info['version'])
+            backup_file = os.path.join(addon_path, f"__init__.{version}.bak")
+            shutil.copyfile(init_file, backup_file)
+            print(f"Backed up current version to {backup_file}")                      
             
 class HDRI_OT_restart_prompt(Operator):
     bl_idname = "world.restart_prompt"
@@ -1069,6 +1090,35 @@ class HDRI_OT_restart_prompt(Operator):
         layout = self.layout
         layout.label(text="Update installed! Please save your work.")
         layout.label(text="Blender needs to restart to apply changes.")
+        
+class HDRI_OT_revert_version(Operator):
+    bl_idname = "world.revert_hdri_version"
+    bl_label = "⚠️THIS PROCESS CANNOT BE UNDONE!⚠️"
+    bl_description = "Revert to the previously backed-up version of the add-on"
+
+    def execute(self, context):
+        addon_dir = os.path.dirname(__file__)
+        init_file = os.path.join(addon_dir, "__init__.py")
+
+        # Find the latest backup file
+        backup_files = glob.glob(os.path.join(addon_dir, "__init__.*.bak"))
+        if backup_files:
+            latest_backup = max(backup_files, key=os.path.getctime)
+            shutil.copyfile(latest_backup, init_file)
+            self.report({'INFO'}, f"Loaded version: {os.path.basename(latest_backup)} - Restart Blender")
+        else:
+            self.report({'WARNING'}, "No backup found")
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Are you sure you want to revert to the previous version?")
+        layout.label(text="This action cannot be undone.")
+        
 class HDRI_OT_change_folder(Operator):
     bl_idname = "world.change_hdri_folder"
     bl_label = "Change Folder"
@@ -1230,7 +1280,7 @@ class HDRI_OT_setup_nodes(Operator):
         enum_items = generate_previews(self, context)
         
         # If we have HDRIs, set the preview to the first one
-        if len(enum_items) > 1:  # Skip 'None' item
+        if len(enum_items) > 1: 
             hdri_settings.hdri_preview = enum_items[1][0]
             
         # Force redraw of UI
@@ -1314,7 +1364,6 @@ def find_keymap_conflicts(self, context):
                        kmi.oskey == (current_ctrl if is_mac else False) and \
                        kmi.active:  # Only check active shortcuts
                         
-                        # Don't report our own shortcut as a conflict
                         if kmi.idname != HDRI_OT_popup_controls.bl_idname:
                             conflicts.append({
                                 'config': config_name,
@@ -2096,6 +2145,9 @@ class QuickHDRIPreferences(AddonPreferences):
                 alert_row.operator("world.download_hdri_update", 
                                  text="Download Update",
                                  icon='IMPORT')
+                                 
+            row = update_box.row()
+            row.operator("world.revert_hdri_version", text="Revert to Previous Version")
             
             # Documentation section
             docs_box = box.box()
@@ -3623,6 +3675,7 @@ def register():
     bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
     bpy.app.handlers.load_post.append(cleanup_hdri_proxies)
+    bpy.utils.register_class(HDRI_OT_revert_version)
     
     if reload_original_for_render not in bpy.app.handlers.render_init:
         bpy.app.handlers.render_init.append(reload_original_for_render)
@@ -3662,6 +3715,7 @@ def unregister():
     bpy.app.handlers.render_init.remove(reload_original_for_render)
     bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
     bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
+    bpy.utils.unregister_class(HDRI_OT_revert_version)
     
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)

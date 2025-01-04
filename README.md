@@ -164,7 +164,7 @@ Options:
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
 Add the .png thumbnails to the same directory as the hdr.
 
-![image](https://github.com/user-attachments/assets/43a57a59-6e5c-4dcf-a3cc-8a4c3debdfd1)
+![ScreenRecording_01-03-2025 15-02-29_1](https://github.com/user-attachments/assets/201deee0-8f6b-42ec-b305-22ac5b367381)
 
 ### Processing Type:
 
@@ -208,12 +208,10 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 
 ### Batch Proxy Generation
 
-![image](https://github.com/user-attachments/assets/eb8e6318-e447-436e-910f-e80386a561df)
+![ScreenRecording_01-03-2025 15-02-29_1 2](https://github.com/user-attachments/assets/3610f84b-43c0-4e66-bfa6-7edeb711c1b2)
 
- - Select your desired batch proxy resolution and processing device and click 'Generate Proxies'.
- - A directory does not need to be selected if running batch process.
- - This process will do the same as when a single image is selected in the panel.
- - The proxies will all be in the same location and if one already exists the addon will use it vs creating a new instance.
+ - Generate Proxies: This process will create proxies for the chosen folder directory
+ - Full Batch Process: This will create proxies for all folders and subfolders within the set main HDRI directory
 
 
 

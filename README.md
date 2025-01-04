@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.5.8 for Blender
+# Quick HDRI Controls v2.5.9 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.5.8-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.5.9-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -13,7 +13,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 # Table of Contents
 
-- [Quick HDRI Controls v2.5.8 for Blender](#quick-hdri-controls-v255-for-blender)
+- [Quick HDRI Controls v2.5.9 for Blender](#quick-hdri-controls-v255-for-blender)
   - [Features](#features)
   - [Installation](#installation)
   - [Quick Start Guide](#quick-start-guide)
@@ -156,19 +156,17 @@ Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
 ## Preview Thumbnail Generation
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
 Add the .png thumbnails to the same directory as the hdr.
-  
-![image](https://github.com/user-attachments/assets/abc869b0-f8d4-4285-a3d9-6b72a336f965)
 
-![image](https://github.com/user-attachments/assets/281e96a0-8e96-4b45-a005-64ccddcaaec7)
+![image](https://github.com/user-attachments/assets/43a57a59-6e5c-4dcf-a3cc-8a4c3debdfd1)
 
 ### Processing Type:
 
- Single File: Select a single .hdr or .exr file from you file browser and create a _thumb.png for it.
+ - Single File: Select a single .hdr or .exr file from you file browser and create a _thumb.png for it.
+ - Batch Process: Select a folder with .hdr and/or .exr files and create _thumb.png for each.
+ - Full Batch: Creates _thumb.png for all .hdr and .exr files in the main HDRI directory.
+   (For both the _thumb.png is in the same folder location as the chosen .hdr or .exr)
 
- Batch Process: Select a folder with .hdr and/or .exr files and create _thumb.png for each.
- (For both the _thumb.png is in the same folder location as the chosen .hdr or .exr)
-
- User Source selection to choose you HDR or folder of HDRs
+ User Source selection to choose you HDRI, folder of HDRIs, or batch process all.
  - Choose you desired resolution %
  - Choose number of samples
  - Choose Render Device
@@ -189,8 +187,8 @@ Default Resolution: The desired default resolution for proxies (if set to ORIGIN
 
 Default Application: Options are 'Viewport Only' (default) and 'Both'
 
-    - Viewport Only: The selected HDRI proxy will be used for viewport rendering. When a render begins (single frame or animation) the full resolution HDRI will be loaded in. Once completed the proxy will be    reloaded for viewport rendering.
-    - Both: The selected HDRI proxy will be used for both viewport and final rendering.
+- Viewport Only: The selected HDRI proxy will be used for viewport rendering. When a render begins (single frame or animation) the full resolution HDRI will be loaded in. Once completed the proxy will be    reloaded for viewport rendering.
+- Both: The selected HDRI proxy will be used for both viewport and final rendering.
    
 ### Cache Settings
 
@@ -203,9 +201,10 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 
 ### Batch Proxy Generation
 
-![image](https://github.com/user-attachments/assets/665141b1-c137-490d-898f-402fcd90fc12)
+![image](https://github.com/user-attachments/assets/eb8e6318-e447-436e-910f-e80386a561df)
 
 Select your desired batch proxy resolution and processing device and click 'Generate Proxies'.
+A directory does not need to be selected if running batch process.
 This process will do the same as when a single image is selected in the panel.
 The proxies will all be in the same location and if one already exists the addon will use it vs creating a new instance.
 

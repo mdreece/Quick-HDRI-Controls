@@ -280,7 +280,7 @@ Stay up to date:
 
 2. Click on 'Check Now'
  - If there are updates a message will prompt to update
- - Click on 'Revert to Previous version' to do what the button says (If not backup a message will prompt. Backup happens before updates install)
+ - Click on 'Revert to Previous version' to do what the button says (If no backup a message will prompt. Backup happens before updates install)
    
 ![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)
 

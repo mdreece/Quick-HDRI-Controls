@@ -13,42 +13,36 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 # Table of Contents
 
-- [Quick HDRI Controls v2.6.0 for Blender](#quick-hdri-controls-v255-for-blender)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Quick Start Guide](#quick-start-guide)
-    - [First Time Setup](#first-time-setup)
-  - [Using the Addon](#using-the-addon)
-  - [Full Dropdown Panel](#full-dropdown-panel)
-  - [Preview Thumbnail Generation](#preview-thumbnail-generation)
-    - [Processing Type](#processing-type)
-  - [Proxy Settings](#proxy-settings)
-    - [Cache Settings](#cache-settings)
-    - [Advanced Settings](#advanced-settings)
-  - [Keyboard Shortcut](#keyboard-shortcut)
-  - [Interface Settings](#interface-settings)
-    - [HDRI Settings](#hdri-settings)
-  - [Updates](#updates)
-  - [Tips & Tricks](#tips--tricks)
-    - [For Best Results](#for-best-results)
-    - [Quick Workflow](#quick-workflow)
-    - [Pro Tips](#pro-tips)
-  - [Troubleshooting](#troubleshooting)
-    - [Common Issues](#common-issues)
-  - [Requirements](#requirements)
-  - [Support](#support)
-  - [Credits](#credits)
+- [Installation](#installation)
+- [Quick Start Guide](#quick-start-guide)
+  - [First Time Setup](#first-time-setup)
+- [Using the Addon](#using-the-addon)
+  - [Proxies](#proxies-more-info-below-close-tab-for-better-performance)
+  - [HDRI Metadata](#hdri-metadata)
+- [Full Dropdown Panel](#full-dropdown-panel)
+- [Preview Thumbnail Generation](#preview-thumbnail-generation)
+  - [Processing Type](#processing-type)
+- [Proxy Settings](#proxy-settings)
+  - [Cache Settings](#cache-settings)
+  - [Advanced Settings](#advanced-settings)
+  - [Batch Proxy Generation](#batch-proxy-generation)
+- [Keyboard Shortcut](#keyboard-shortcut)
+  - [Keyboard Shortcut Conflicts](#keyboard-shortcut-conflicts)
+- [Interface Settings](#interface-settings)
+  - [HDRI Settings](#hdri-settings)
+- [Updates](#updates)
+- [Tips & Tricks](#tips--tricks)
+  - [For Best Results](#for-best-results)
+  - [Quick Workflow](#quick-workflow)
+  - [Pro Tips](#pro-tips)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+- [Requirements](#requirements)
+- [Support](#support)
+- [Credits](#credits)
 
 
-## Features
-
-- 🖼️ Preview and switch HDRIs directly in the viewport
-- 🔄 Quick rotation controls for environment lighting
-- 💡 Easy strength adjustment for background lighting
-- 📁 Built-in file browser for your HDRI collection
-- 🎯 One-click loading of environments
-- ⚡ Streamlined workflow with minimal UI and automatic updates
-
+##
 ## Installation
 
 1. Download the latest release zip file

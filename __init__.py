@@ -456,7 +456,7 @@ def get_hdri_metadata(image):
 class HDRI_OT_generate_proxies(Operator):
     bl_idname = "world.generate_hdri_proxies"
     bl_label = "Generate HDRI Proxies"
-    bl_description = "Generate proxies for HDRI files"
+    bl_description = "Generate proxies for selected folder"
     
     def cancel(self, context):
         if self._timer:
@@ -1772,10 +1772,12 @@ class QuickHDRIPreferences(AddonPreferences):
         description="",
         items=[
             ('SINGLE', 'Single HDRI', 'Generate preview for a single HDRI'),
-            ('MULTIPLE', 'Multiple HDRIs', 'Generate previews for all HDRIs in a folder')
+            ('MULTIPLE', 'Multiple HDRIs', 'Generate previews for all HDRIs in a folder'),
+            ('FULL_BATCH', 'Full Batch', 'Process all HDRIs in directory structure')
         ],
         default='SINGLE'
     )
+
     preview_single_file: StringProperty(
         name="HDRI File",
         description="Single HDRI file to generate preview for",
@@ -2131,106 +2133,124 @@ class QuickHDRIPreferences(AddonPreferences):
                   icon_only=True, emboss=False)
         header_split = header.split(factor=0.7)
         header_split.label(text="Preview Generation", icon='IMAGE_DATA')
+
         # Status indicator
         status_row = header_split.row(align=True)
         status_row.alignment = 'RIGHT'
         if self.is_generating:
-           status_row.alert = True
-           status_row.label(text="Processing", icon='TIME')
+            status_row.alert = True
+            status_row.label(text="Processing", icon='TIME')
         else:
-           status_row.label(text="Ready", icon='CHECKMARK')
+            status_row.label(text="Ready", icon='CHECKMARK')
+
         if self.show_preview_generation:
-           main_col = box.column(align=True)
-           main_col.separator()
-           if self.is_generating:
-               # Only show status during generation
-               status_box = main_col.box()
-               status_box.alert = True
-               status_box.label(text="Generating Previews...", icon='TIME')
-               
-               status_row = status_box.row(align=True)
-               status_row.label(text="Current File:")
-               status_row.label(text=self.preview_stats_current_file)
-               
-               progress_row = status_box.row(align=True)
-               progress_row.label(text="Progress:")
-               progress_row.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
-               
-               time_row = status_box.row(align=True)
-               time_row.label(text="Elapsed Time:")
-               time_row.label(text=f"{self.preview_stats_time:.2f} seconds")
-           else:
-               # Show full UI when not generating
-               # Processing Type Selection
-               type_box = main_col.box()
-               type_box.label(text="Processing Mode", icon='MODIFIER')
-               type_row = type_box.row(align=True)
-               type_row.scale_y = 1.2
-               type_row.prop_enum(self, "preview_generation_type", 'SINGLE', text="Single File", icon='IMAGE_DATA')
-               type_row.prop_enum(self, "preview_generation_type", 'MULTIPLE', text="Batch Process", icon='FILE_FOLDER')
-               type_row.operator("world.full_batch_hdri_previews", text="Full Batch", icon='FILE_REFRESH')
-               # Source Selection
-               source_box = main_col.box()
-               source_box.label(text="Source", icon='FILEBROWSER')
-               source_row = source_box.row(align=True)
-               if self.preview_generation_type == 'SINGLE':
-                   source_row.prop(self, "preview_single_file", text="")
-               else:
-                   source_row.prop(self, "preview_multiple_folder", text="")
-               # Quality Settings
-               quality_box = main_col.box()
-               quality_box.label(text="Quality Settings", icon='SETTINGS')
-               
-               # Create two columns
-               quality_row = quality_box.row()
-               left_col = quality_row.column()
-               right_col = quality_row.column()
-               # Left column
-               left_col.label(text="Resolution Scale:")
-               left_col.prop(self, "preview_resolution", text="%")
-               left_col.label(text="Render Device:")
-               left_col.prop(self, "preview_render_device", text="")
-               # Right column
-               right_col.label(text="Render Samples:")
-               right_col.prop(self, "preview_samples", text="")
-               right_col.label(text="Scene Type:")
-               right_col.prop(self, "preview_scene_type", text="")
-               # Output Resolution Info
-               res_box = quality_box.box()
-               res_box.scale_y = 0.9
-               actual_x = int(1024 * (self.preview_resolution / 100))
-               actual_y = int(768 * (self.preview_resolution / 100))
-               res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
-               # Generation Status (only show if there are completed stats)
-               if self.preview_stats_total > 0 and self.show_generation_stats:
-                   status_box = main_col.box()
-                   status_box.label(text="Generation Complete", icon='CHECKMARK')
-                   
-                   if self.preview_stats_current_file:
-                       status_row = status_box.row(align=True)
-                       status_row.label(text="Last File:")
-                       status_row.label(text=self.preview_stats_current_file)
-                   
-                   progress_row = status_box.row(align=True)
-                   progress_row.label(text="Completed:")
-                   progress_row.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
-                   
-                   time_row = status_box.row(align=True)
-                   time_row.label(text="Total Time:")
-                   time_row.label(text=f"{self.preview_stats_time:.2f} seconds")
-                   
-                   clear_row = status_box.row()
-                   clear_row.operator("world.clear_preview_stats", text="Clear Results", icon='X')
-               # Action Buttons
-               main_col.separator()
-               action_box = main_col.box()
-               button_row = action_box.row(align=True)
-               button_row.scale_y = 1.5
-               button_row.operator(
-                   "world.generate_hdri_previews",
-                   text="Generate Preview" if self.preview_generation_type == 'SINGLE' else "Start Batch Process",
-                   icon='RENDER_STILL'
-               )
+            main_col = box.column(align=True)
+            main_col.separator()
+            if self.is_generating:
+                # Only show status during generation
+                status_box = main_col.box()
+                status_box.alert = True
+                status_box.label(text="Generating Previews...", icon='TIME')
+                
+                status_row = status_box.row(align=True)
+                status_row.label(text="Current File:")
+                status_row.label(text=self.preview_stats_current_file)
+                
+                progress_row = status_box.row(align=True)
+                progress_row.label(text="Progress:")
+                progress_row.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
+                
+                time_row = status_box.row(align=True)
+                time_row.label(text="Elapsed Time:")
+                time_row.label(text=f"{self.preview_stats_time:.2f} seconds")
+            else:
+                # Show full UI when not generating
+                # Processing Type Selection
+                type_box = main_col.box()
+                type_box.label(text="Processing Mode", icon='MODIFIER')
+                type_row = type_box.row(align=True)
+                type_row.scale_y = 1.2
+                type_row.prop_enum(self, "preview_generation_type", 'SINGLE', text="Single File", icon='IMAGE_DATA')
+                type_row.prop_enum(self, "preview_generation_type", 'MULTIPLE', text="Batch Process", icon='FILE_FOLDER')
+                type_row.prop_enum(self, "preview_generation_type", 'FULL_BATCH', text="Full Batch", icon='FILE_REFRESH')
+
+                # Source Selection - Only show if not in FULL_BATCH mode
+                if self.preview_generation_type != 'FULL_BATCH':
+                    source_box = main_col.box()
+                    source_box.label(text="Source", icon='FILEBROWSER')
+                    source_row = source_box.row(align=True)
+                    if self.preview_generation_type == 'SINGLE':
+                        source_row.prop(self, "preview_single_file", text="")
+                    else:
+                        source_row.prop(self, "preview_multiple_folder", text="")
+
+                # Quality Settings
+                quality_box = main_col.box()
+                quality_box.label(text="Quality Settings", icon='SETTINGS')
+                
+                # Create two columns
+                quality_row = quality_box.row()
+                left_col = quality_row.column()
+                right_col = quality_row.column()
+
+                # Left column
+                left_col.label(text="Resolution Scale:")
+                left_col.prop(self, "preview_resolution", text="%")
+                left_col.label(text="Render Device:")
+                left_col.prop(self, "preview_render_device", text="")
+
+                # Right column
+                right_col.label(text="Render Samples:")
+                right_col.prop(self, "preview_samples", text="")
+                right_col.label(text="Scene Type:")
+                right_col.prop(self, "preview_scene_type", text="")
+
+                # Output Resolution Info
+                res_box = quality_box.box()
+                res_box.scale_y = 0.9
+                actual_x = int(1024 * (self.preview_resolution / 100))
+                actual_y = int(768 * (self.preview_resolution / 100))
+                res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
+
+                # Generation Status
+                if self.preview_stats_total > 0 and self.show_generation_stats:
+                    status_box = main_col.box()
+                    status_box.label(text="Generation Complete", icon='CHECKMARK')
+                    
+                    if self.preview_stats_current_file:
+                        status_row = status_box.row(align=True)
+                        status_row.label(text="Last File:")
+                        status_row.label(text=self.preview_stats_current_file)
+                    
+                    progress_row = status_box.row(align=True)
+                    progress_row.label(text="Completed:")
+                    progress_row.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
+                    
+                    time_row = status_box.row(align=True)
+                    time_row.label(text="Total Time:")
+                    time_row.label(text=f"{self.preview_stats_time:.2f} seconds")
+                    
+                    clear_row = status_box.row()
+                    clear_row.operator("world.clear_preview_stats", text="Clear Results", icon='X')
+
+                # Action Buttons
+                main_col.separator()
+                action_box = main_col.box()
+                button_row = action_box.row(align=True)
+                button_row.scale_y = 1.5
+                button_row.scale_x = 2.0
+
+                button_text = {
+                    'SINGLE': 'Generate Preview',
+                    'MULTIPLE': 'Generate Previews',
+                    'FULL_BATCH': 'Generate All Previews'
+                }.get(self.preview_generation_type)
+
+                button_row.operator(
+                    "world.generate_hdri_previews",
+                    text=button_text,
+                    icon='RENDER_STILL'
+                )
  
                 
         # Proxy Section
@@ -2757,6 +2777,9 @@ class HDRI_OT_generate_previews(Operator):
         return {'RUNNING_MODAL'}
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
+        
+        if preferences.preview_generation_type == 'FULL_BATCH':
+            return bpy.ops.world.full_batch_hdri_previews('INVOKE_DEFAULT')
         
         # Input validation
         if preferences.preview_generation_type == 'SINGLE':

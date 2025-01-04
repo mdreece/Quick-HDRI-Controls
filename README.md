@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.5.9 for Blender
+# Quick HDRI Controls v2.6.0 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.5.9-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.6.0-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -9,11 +9,11 @@ v2.5.3 Video Demonstration: [https://youtu.be/YFAPNMnai0U](https://youtu.be/tIpI
 
 Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
 
-![image](https://github.com/user-attachments/assets/bfb0a8bc-b3ad-4bba-b622-d16943a6a3d1)
+![image](https://github.com/user-attachments/assets/8109e2df-ac55-4bb5-86e1-f16ae3a30be8)
 
 # Table of Contents
 
-- [Quick HDRI Controls v2.5.9 for Blender](#quick-hdri-controls-v255-for-blender)
+- [Quick HDRI Controls v2.6.0 for Blender](#quick-hdri-controls-v255-for-blender)
   - [Features](#features)
   - [Installation](#installation)
   - [Quick Start Guide](#quick-start-guide)
@@ -107,7 +107,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
 
-![image](https://github.com/user-attachments/assets/bb644a5b-dee0-4516-941a-b9b0b1a63e4f)
+![image](https://github.com/user-attachments/assets/bbeffafe-53d4-4874-a080-33e9ecef4569)
 
 4. Once a folder has been selected, 'HDRI Select' appears.
 
@@ -122,7 +122,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 5. 'Settings' will appear once an HDRI has been loaded.
 
-![image](https://github.com/user-attachments/assets/025a3773-b03e-45eb-95c7-64e86edd76b1)
+![image](https://github.com/user-attachments/assets/254e00b4-30d6-4faa-adf0-a535bb13745a)
 
 Buttons:
 - Keep Rotation lock (keeps rotation changes between HDRI switching)
@@ -139,16 +139,24 @@ Options:
 
 ### Proxies (more info below: close tab for better performance)
 
-![image](https://github.com/user-attachments/assets/e154145c-75f7-4e69-ba14-7eb0e16ae32d)
+![image](https://github.com/user-attachments/assets/38062ade-0af4-47db-8a11-e0b9c3a24962)
 
-Proxy Resolution Selection: Choose the desired resolution for your proxy of the selected HDRI
-Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
+ - Proxy Resolution Selection: Choose the desired resolution for your proxy of the selected HDRI
+ - Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
+
+### HDRI Metadata
+
+![image](https://github.com/user-attachments/assets/f5c2c1f1-abd4-49d8-994e-ad951a6b3f6f)
+
+ - Shows metadata related to the currently selected HDRI file (proxies included)
+
+
 
 
 ##
 ## Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/761878ed-ffcd-486d-abd2-5ba298ba361b)
+![image](https://github.com/user-attachments/assets/985aefa6-7a91-45ab-a011-13c5c1d808d7)
 
 
 
@@ -233,7 +241,7 @@ MacOS (Intel, Apple Silicon has not been tested)
  - BE SURE TO APPLY CHANGES IN PREFERENCES UI
  - When the key combination is pressed, the HDRI panel will appear where the cursor is
 
-![image](https://github.com/user-attachments/assets/ee5479f0-7324-48c9-9127-5225903c8cd7)
+![image](https://github.com/user-attachments/assets/da92f557-1df0-4666-934e-17af4907438c)
 
 Keyboard Shortcut Conflicts
 

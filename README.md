@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.6.0 for Blender
+# Quick HDRI Controls v2.6.1 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.6.0-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.6.1-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -276,10 +276,11 @@ To access these options:
 Stay up to date:
 1. Open addon preferences
    
-![image](https://github.com/user-attachments/assets/582a0099-5be8-4f99-bc92-d6df699a9751)
+![image](https://github.com/user-attachments/assets/7ae68016-e83e-4b31-a48b-1a75ffc5f73d)
 
 2. Click on 'Check Now'
  - If there are updates a message will prompt to update
+ - Click on 'Revert to Previous version' to do what the button says (If not backup a message will prompt. Backup happens before updates install)
    
 ![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)
 

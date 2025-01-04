@@ -1125,13 +1125,20 @@ class HDRI_OT_restart_prompt(Operator):
         
 class HDRI_OT_revert_version(Operator):
     bl_idname = "world.revert_hdri_version"
-    bl_label = "Revert to Previous Version"
+    bl_label = "Version Reset"
     bl_description = "Revert to the previously backed up version of the add-on"
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(
+            self,
+            event,
+            message="Are you sure you want to revert to the previous version?"
+        )
     
     def execute(self, context):
         addon_dir = os.path.dirname(__file__)
         init_file = os.path.join(addon_dir, "__init__.py")
-        backups_dir = os.path.join(addon_dir, "backups")  # Changed from backup to backups
+        backups_dir = os.path.join(addon_dir, "backups")
         
         if not os.path.exists(backups_dir):
             self.report({'WARNING'}, "No backups directory found")

@@ -164,7 +164,7 @@ Options:
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
 Add the .png thumbnails to the same directory as the hdr.
 
-![ScreenRecording_01-03-2025 15-02-29_1](https://github.com/user-attachments/assets/201deee0-8f6b-42ec-b305-22ac5b367381)
+![ScreenRecording_01-03-2025 15-02-29_1](https://github.com/user-attachments/assets/86ecacc2-b239-4169-8d9a-32d2cb359b58)
 
 ### Processing Type:
 
@@ -208,7 +208,7 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 
 ### Batch Proxy Generation
 
-![ScreenRecording_01-03-2025 15-02-29_1 2](https://github.com/user-attachments/assets/3610f84b-43c0-4e66-bfa6-7edeb711c1b2)
+![ScreenRecording_01-03-2025 15-02-29_1 2](https://github.com/user-attachments/assets/c262cce4-6b77-48f4-8ec7-08a037f4579b)
 
  - Generate Proxies: This process will create proxies for the chosen folder directory
  - Full Batch Process: This will create proxies for all folders and subfolders within the set main HDRI directory

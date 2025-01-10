@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.6.2 for Blender
+# Quick HDRI Controls v2.6.3 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.6.2-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.6.3-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

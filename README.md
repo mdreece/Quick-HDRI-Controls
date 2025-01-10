@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.6.2 for Blender
+# Quick HDRI Controls v2.6.4 for Blender
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.6.2-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.6.4-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -179,6 +179,11 @@ Add the .png thumbnails to the same directory as the hdr.
  - Choose Render Device
  - Select scene type: Orbs (orbs preview), Monk (suzanne), Cube (the default twins)
  - GENERATE
+
+### Scene Type Examples: Cube, Monk, Orbs
+
+![image](https://github.com/user-attachments/assets/20096457-902f-49b2-9b2b-339e02a55508)
+
 
 Example of original and _thumb.png instance:
 

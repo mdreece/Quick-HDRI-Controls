@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 3),
+    "version": (2, 6, 2),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1303,38 +1303,24 @@ class HDRI_OT_setup_nodes(Operator):
     bl_label = "Setup HDRI Nodes"
     bl_description = "Create and setup the required nodes for HDRI control"
     
-    def invoke(self, context, event):
-        # render engine check
-        if context.scene.render.engine != 'CYCLES':
-            return context.window_manager.invoke_props_dialog(self)
-        
-        # cycles = continue
-        return self.execute(context)
-    
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="Quick HDRI Controls requires Cycles Render Engine", icon='ERROR')
-        layout.label(text="Would you like to switch to Cycles?")
-    
     def execute(self, context):
-        if context.scene.render.engine != 'CYCLES':
-            context.scene.render.engine = 'CYCLES'
-        
         preferences = context.preferences.addons[__name__].preferences
         hdri_settings = context.scene.hdri_settings
         
+        # Verify HDRI directory exists and is accessible
         if not preferences.hdri_directory or not os.path.exists(preferences.hdri_directory):
             self.report({'ERROR'}, "HDRI directory not found. Please select a valid directory in preferences.")
             bpy.ops.preferences.addon_show(module=__name__)
             return {'CANCELLED'}
             
+        # If current folder is not set or doesn't exist, reset to HDRI directory
         if not hdri_settings.current_folder or not os.path.exists(hdri_settings.current_folder):
             hdri_settings.current_folder = preferences.hdri_directory
             
         # Setup nodes
         mapping, env_tex, background = ensure_world_nodes()
         
-        # Check if there are any HDRIs
+        # Check if there are any HDRIs in the current directory
         if not has_hdri_files(context):
             self.report({'WARNING'}, "No supported HDRI files found in the current directory.")
             return {'FINISHED'}
@@ -1342,6 +1328,7 @@ class HDRI_OT_setup_nodes(Operator):
         # Generate previews for the current directory
         enum_items = generate_previews(self, context)
         
+        # If we have HDRIs, set the preview to the first one
         if len(enum_items) > 1: 
             hdri_settings.hdri_preview = enum_items[1][0]
             

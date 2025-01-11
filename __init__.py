@@ -2397,19 +2397,7 @@ class QuickHDRIPreferences(AddonPreferences):
                 cache_box = settings_col.box()
                 cache_col = cache_box.column(align=True)
                 cache_col.prop(self, "proxy_cache_limit", text="Cache Size Limit (MB)")
-                cache_col.operator("world.cleanup_hdri_proxies", text="Clear Proxy Cache", icon='TRASH')
-            
-            adv_header = settings_col.row()
-            adv_header.prop(self, "show_advanced_settings", 
-                            icon='TRIA_DOWN' if getattr(self, 'show_advanced_settings', True) else 'TRIA_RIGHT',
-                            icon_only=True, emboss=False)
-            adv_header.label(text="Advanced Settings", icon='SETTINGS')
-            
-            if getattr(self, 'show_advanced_settings', True):
-                adv_box = settings_col.box()
-                adv_col = adv_box.column(align=True)
-                adv_col.prop(self, "proxy_format", text="Proxy Format")
-                adv_col.prop(self, "proxy_compression", text="Compression")
+                cache_col.operator("world.cleanup_hdri_proxies", text="Clear Proxy Cache", icon='TRASH')          
             
             # Proxy Generation
             gen_header = settings_col.row()

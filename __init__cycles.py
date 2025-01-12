@@ -2246,37 +2246,31 @@ class QuickHDRIPreferences(AddonPreferences):
         try:
             # If switching to Octane
             if self.render_engine == 'OCTANE':
-                # If Octane script doesn't exist, it means we're in Cycles
+                # Ensure Octane script exists
                 if not os.path.exists(octane_script):
-                    # Remove any existing __init__octane.py
-                    if os.path.exists(octane_script):
-                        os.remove(octane_script)
-                    
-                    # Rename current __init__.py to __init__cycles.py
-                    shutil.copy2(current_script, cycles_script)
-                    os.remove(current_script)
-                    
-                    # Rename __init__octane.py to __init__.py
-                    shutil.copy2(octane_script, current_script)
-                    os.remove(octane_script)
+                    raise FileNotFoundError("Octane script (__init__octane.py) is missing")
                 
+                # Copy current __init__.py to __init__cycles.py (if it doesn't already exist)
+                if not os.path.exists(cycles_script):
+                    shutil.copy2(current_script, cycles_script)
+                
+                # Replace __init__.py with Octane script
+                shutil.copy2(octane_script, current_script)
+            
             # If switching back to Cycles
             elif self.render_engine == 'CYCLES':
-                # If Cycles script doesn't exist, it means we're in Octane
+                # Ensure Cycles script exists
                 if not os.path.exists(cycles_script):
-                    # Remove any existing __init__cycles.py
-                    if os.path.exists(cycles_script):
-                        os.remove(cycles_script)
-                    
-                    # Rename current __init__.py to __init__octane.py
+                    raise FileNotFoundError("Cycles script (__init__cycles.py) is missing")
+                
+                # Copy current __init__.py to __init__octane.py (if it doesn't already exist)
+                if not os.path.exists(octane_script):
                     shutil.copy2(current_script, octane_script)
-                    os.remove(current_script)
-                    
-                    # Rename __init__cycles.py to __init__.py
-                    shutil.copy2(cycles_script, current_script)
-                    os.remove(cycles_script)
+                
+                # Replace __init__.py with Cycles script
+                shutil.copy2(cycles_script, current_script)
             
-            # Attempt to show a restart prompt - this handles the report method issue
+            # Prompt for restart using window manager
             def draw_restart_popup(self, context):
                 layout = self.layout
                 layout.label(text="Blender needs to restart to apply changes.", icon='INFO')
@@ -2290,14 +2284,14 @@ class QuickHDRIPreferences(AddonPreferences):
             # Print error for debugging
             print(f"Error switching render engine: {str(e)}")
             
-            # Show error in the UI
+            # Show error using window manager popup
             def draw_error_popup(self, context):
                 layout = self.layout
                 layout.label(text=f"Could not switch render engine: {str(e)}", icon='ERROR')
             
             context.window_manager.popup_menu(draw_error_popup, title="Error", icon='ERROR')
             
-            return {'CANCELLED'}           
+            return {'CANCELLED'}
             
     def draw(self, context):
         layout = self.layout   

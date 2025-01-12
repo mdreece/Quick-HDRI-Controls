@@ -20,17 +20,17 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
   - [Proxies](#proxies-more-info-below-close-tab-for-better-performance)
   - [HDRI Metadata](#hdri-metadata)
 - [Full Dropdown Panel](#full-dropdown-panel)
+- [Updates](#updates)
 - [Preview Thumbnail Generation](#preview-thumbnail-generation)
   - [Processing Type](#processing-type)
 - [Proxy Settings](#proxy-settings)
+- [Render Engine](render-engine) 
   - [Cache Settings](#cache-settings)
   - [Advanced Settings](#advanced-settings)
   - [Batch Proxy Generation](#batch-proxy-generation)
 - [Keyboard Shortcut](#keyboard-shortcut)
   - [Keyboard Shortcut Conflicts](#keyboard-shortcut-conflicts)
-- [Interface Settings](#interface-settings)
-  - [HDRI Settings](#hdri-settings)
-- [Updates](#updates)
+- [HDRI Settings](#hdri-settings)
 - [Tips & Tricks](#tips--tricks)
   - [For Best Results](#for-best-results)
   - [Quick Workflow](#quick-workflow)
@@ -100,6 +100,13 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 2. Click it and then 'Initialize HDRI System'
  - Quick access to addon preferences
  - Version number display
+
+![image](https://github.com/user-attachments/assets/1a92446a-c281-4533-b238-f31b812d0111)
+![image](https://github.com/user-attachments/assets/db67dd2f-3401-40ef-863c-a9bd956e6830)
+
+Depending on the your set render engine (both in blender and in addon preferences) you will be prompted to switch to the set Render Engine if you are not already.
+
+
      
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
@@ -150,12 +157,38 @@ Options:
  - Shows metadata related to the currently selected HDRI file (proxies included)
 
 
-
-
 ##
 ## Full Dropdown Panel
 
 ![image](https://github.com/user-attachments/assets/985aefa6-7a91-45ab-a011-13c5c1d808d7)
+
+
+
+##
+## Updates
+
+Stay up to date:
+1. Open addon preferences
+   
+![image](https://github.com/user-attachments/assets/7ae68016-e83e-4b31-a48b-1a75ffc5f73d)
+
+2. Click on 'Check Now'
+ - If there are updates a message will prompt to update
+ - Click on 'Revert to Previous version' to do what the button says (If no backup a message will prompt. Backup happens before updates install)
+   
+![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)
+
+ - If no updates are available, the following message will prompt
+   
+![Update to date](https://github.com/user-attachments/assets/663565f0-a41a-436b-b05a-d9fb7e9a1ed3)
+
+3. Auto-Check Updates can be enabled
+
+ (This feature checks for updates on startup of Blender)
+
+ - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls if there is a pending update
+   
+![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
 
 
 
@@ -190,6 +223,7 @@ Example of original and _thumb.png instance:
 ![image](https://github.com/user-attachments/assets/5e0789da-7f73-4ad3-aed4-f6e905646c28)
 
 
+
 ##
 ## Proxy Settings
 
@@ -218,6 +252,17 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
  - Generate Proxies: This process will create proxies for the chosen folder directory
  - Full Batch Process: This will create proxies for all folders and subfolders within the set main HDRI directory
 
+
+
+##
+##Render Engine
+Select your render engine for compatibility (cycles is set by default)
+
+![image](https://github.com/user-attachments/assets/3d7ca2dd-61b2-4817-bf66-08b591968962)
+
+ - Select desired engine
+ - Click 'Apply Render Engine'
+ - Restart Blender
 
 
 ##
@@ -253,24 +298,8 @@ Keyboard Shortcut Conflicts
  - Even if there is a conflict, from time to time it can work since we are in the 3dviewport.
 
 
-
 ##
-## Interface Settings
-You can customize:
-- Preview size
-- Button scale
-- Spacing scale
-- Show Strength Slider
-- Show Rotation Values
-
-To access these options:
-1. Go to Edit > Preferences > Add-ons
-2. Find Quick HDRI Controls
-3. Expand the preferences section
-
-![image](https://github.com/user-attachments/assets/d0e42dc4-97bc-4b84-97ec-f8f39b3c4687)
-
-### HDRI Settings
+## HDRI Settings
 
 ![image](https://github.com/user-attachments/assets/50a5d22b-4346-4525-a88e-241b4c7b1d24)
 
@@ -278,33 +307,6 @@ To access these options:
  - Maximum Strength value for lighting in scenes
  - Rotations step degree for when rotating HDRIs in increments
  - Supported File Types" explained above
-
-
-##
-## Updates
-
-Stay up to date:
-1. Open addon preferences
-   
-![image](https://github.com/user-attachments/assets/7ae68016-e83e-4b31-a48b-1a75ffc5f73d)
-
-2. Click on 'Check Now'
- - If there are updates a message will prompt to update
- - Click on 'Revert to Previous version' to do what the button says (If no backup a message will prompt. Backup happens before updates install)
-   
-![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)
-
- - If no updates are available, the following message will prompt
-   
-![Update to date](https://github.com/user-attachments/assets/663565f0-a41a-436b-b05a-d9fb7e9a1ed3)
-
-3. Auto-Check Updates can be enabled
-
- (This feature checks for updates on startup of Blender)
-
- - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls if there is a pending update
-   
-![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
 
 
 ##
@@ -351,7 +353,7 @@ Stay up to date:
 ## Requirements
 
 - Blender 4.3.0 (could work on previous versions)
-- Works with Cycles Render Engine only
+- Works with Cycles and Octane Render Engines only
 - Windows 10, Windows 11, MacOS Sequoia(ignore error on installation), Linux
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures

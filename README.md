@@ -28,7 +28,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
    - [Cache Settings](#cache-settings)  
    - [Advanced Settings](#advanced-settings)  
    - [Batch Proxy Generation](#batch-proxy-generation)  
-8. [Render Engine](#render-engine)  
+8. [Render Engine](#render-engine)  (if wanting to use Octane)
 9. [Keyboard Shortcut](#keyboard-shortcut)  
    - [Keyboard Shortcut Conflicts](#keyboard-shortcut-conflicts)  
 10. [HDRI Settings](#hdri-settings)  
@@ -265,6 +265,8 @@ Select your render engine for compatibility (cycles is set by default)
  - Select desired engine
  - Click 'Apply Render Engine'
  - Restart Blender
+    - Cycles
+    - Octane
 
 
 ##

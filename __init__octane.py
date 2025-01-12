@@ -4026,7 +4026,7 @@ class HDRI_PT_controls(Panel):
 
                 sub.operator("world.toggle_hdri_visibility",
                     text="",
-                    icon='HIDE_OFF' if is_visible else 'HIDE_ON',
+                    icon='HIDE_ON' if is_visible else 'HIDE_OFF',
                     depress=is_visible)
                
                 # Layout based on compact mode

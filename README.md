@@ -263,10 +263,11 @@ Select your render engine for compatibility (cycles is set by default)
 ![image](https://github.com/user-attachments/assets/3d7ca2dd-61b2-4817-bf66-08b591968962)
 
  - Select desired engine
- - Click 'Apply Render Engine'
- - Restart Blender
     - Cycles
     - Octane
+ - Click 'Apply Render Engine'
+ - Restart Blender
+
 
 
 ##

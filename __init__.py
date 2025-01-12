@@ -2235,6 +2235,7 @@ class QuickHDRIPreferences(AddonPreferences):
     def switch_render_engine(self, context):
         """Switch between Cycles and Octane render engine"""
         import os
+        import shutil
         import bpy
 
         current_script_path = os.path.dirname(os.path.realpath(__file__))
@@ -2242,20 +2243,40 @@ class QuickHDRIPreferences(AddonPreferences):
         octane_script = os.path.join(current_script_path, "__init__octane.py")
         current_script = os.path.join(current_script_path, "__init__.py")
 
-        # Backup current __init__.py based on current render engine
         try:
+            # If switching to Octane
             if self.render_engine == 'OCTANE':
-                # Rename current cycles __init__.py to __init__cycles.py
-                os.rename(current_script, cycles_script)
-                # Rename __init__octane.py to __init__.py
-                os.rename(octane_script, current_script)
+                # If Octane script doesn't exist, it means we're in Cycles
+                if not os.path.exists(octane_script):
+                    # Remove any existing __init__octane.py
+                    if os.path.exists(octane_script):
+                        os.remove(octane_script)
+                    
+                    # Rename current __init__.py to __init__cycles.py
+                    shutil.copy2(current_script, cycles_script)
+                    os.remove(current_script)
+                    
+                    # Rename __init__octane.py to __init__.py
+                    shutil.copy2(octane_script, current_script)
+                    os.remove(octane_script)
+                
+            # If switching back to Cycles
             elif self.render_engine == 'CYCLES':
-                # Rename current octane __init__.py to __init__octane.py
-                os.rename(current_script, octane_script)
-                # Rename __init__cycles.py to __init__.py
-                os.rename(cycles_script, current_script)
-
-            # Use a popup to prompt restart
+                # If Cycles script doesn't exist, it means we're in Octane
+                if not os.path.exists(cycles_script):
+                    # Remove any existing __init__cycles.py
+                    if os.path.exists(cycles_script):
+                        os.remove(cycles_script)
+                    
+                    # Rename current __init__.py to __init__octane.py
+                    shutil.copy2(current_script, octane_script)
+                    os.remove(current_script)
+                    
+                    # Rename __init__cycles.py to __init__.py
+                    shutil.copy2(cycles_script, current_script)
+                    os.remove(cycles_script)
+            
+            # Attempt to show a restart prompt - this handles the report method issue
             def draw_restart_popup(self, context):
                 layout = self.layout
                 layout.label(text="Blender needs to restart to apply changes.", icon='INFO')
@@ -2263,12 +2284,20 @@ class QuickHDRIPreferences(AddonPreferences):
             
             context.window_manager.popup_menu(draw_restart_popup, title="Restart Required", icon='QUESTION')
             
+            return {'FINISHED'}
+            
         except Exception as e:
-            # Handle potential errors (e.g., files already exist)
-            self.report({'ERROR'}, f"Could not switch render engine: {str(e)}")
-            return {'CANCELLED'}
-        
-        return {'FINISHED'}            
+            # Print error for debugging
+            print(f"Error switching render engine: {str(e)}")
+            
+            # Show error in the UI
+            def draw_error_popup(self, context):
+                layout = self.layout
+                layout.label(text=f"Could not switch render engine: {str(e)}", icon='ERROR')
+            
+            context.window_manager.popup_menu(draw_error_popup, title="Error", icon='ERROR')
+            
+            return {'CANCELLED'}           
             
     def draw(self, context):
         layout = self.layout   

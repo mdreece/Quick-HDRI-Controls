@@ -2433,39 +2433,6 @@ class QuickHDRIPreferences(AddonPreferences):
         import shutil
         import bpy
 
-        # Check if Octane is installed when trying to switch to Octane
-        if self.render_engine == 'OCTANE':
-            try:
-                # Attempt to access Octane render engine
-                if 'OCTANE' not in bpy.context.preferences.addons:
-                    # Show a popup that Octane is not installed
-                    def draw_octane_not_installed(self, context):
-                        layout = self.layout
-                        layout.label(text="Octane Render is not installed.", icon='ERROR')
-                        layout.label(text="Please install Octane before switching.", icon='QUESTION')
-                    
-                    context.window_manager.popup_menu(draw_octane_not_installed, 
-                                                       title="Render Engine Not Found", 
-                                                       icon='ERROR')
-                    
-                    # Reset to Cycles
-                    self.render_engine = 'CYCLES'
-                    return {'CANCELLED'}
-            except Exception as e:
-                # Fallback error handling
-                def draw_error_popup(self, context):
-                    layout = self.layout
-                    layout.label(text="Error checking Octane installation.", icon='ERROR')
-                    layout.label(text=str(e), icon='QUESTION')
-                
-                context.window_manager.popup_menu(draw_error_popup, 
-                                                   title="Error", 
-                                                   icon='ERROR')
-                
-                # Reset to Cycles
-                self.render_engine = 'CYCLES'
-                return {'CANCELLED'}
-
         current_script_path = os.path.dirname(os.path.realpath(__file__))
         cycles_script = os.path.join(current_script_path, "__init__cycles.py")
         octane_script = os.path.join(current_script_path, "__init__octane.py")
@@ -2519,7 +2486,8 @@ class QuickHDRIPreferences(AddonPreferences):
             
             context.window_manager.popup_menu(draw_error_popup, title="Error", icon='ERROR')
             
-            return {'CANCELLED'}          
+            return {'CANCELLED'}
+         
     def draw(self, context):
         layout = self.layout
         

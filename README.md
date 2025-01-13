@@ -9,7 +9,7 @@ v2.5.3 Video Demonstration: [https://youtu.be/YFAPNMnai0U](https://youtu.be/tIpI
 
 Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
 
-![image](https://github.com/user-attachments/assets/8109e2df-ac55-4bb5-86e1-f16ae3a30be8)
+![image](https://github.com/user-attachments/assets/2d3e23a9-5032-4835-9cf6-0ffefba74393)
 
 # Table of Contents
 
@@ -169,11 +169,10 @@ Options:
 ## Updates
 
 Stay up to date:
-1. Open addon preferences
    
-![image](https://github.com/user-attachments/assets/7ae68016-e83e-4b31-a48b-1a75ffc5f73d)
+![image](https://github.com/user-attachments/assets/f97eae56-54d3-43d9-bb2b-d8f2df973485)
 
-2. Click on 'Check Now'
+Click on 'Check Now' to see if there are any pending updates.
  - If there are updates a message will prompt to update
  - Click on 'Revert to Previous version' to do what the button says (If no backup a message will prompt. Backup happens before updates install)
    
@@ -190,6 +189,13 @@ Stay up to date:
  - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls if there is a pending update
    
 ![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
+
+### BAckup Settings
+
+![image](https://github.com/user-attachments/assets/6663eed7-8654-44dc-900d-6d0074ed3694)
+
+Enable backups for when updating to new versions
+ - Max Backup Files: Maximum number of saved previous addon versions
 
 
 

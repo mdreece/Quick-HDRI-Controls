@@ -28,6 +28,13 @@ bl_info = {
 }
 addon_keymaps = []
 original_paths = {}
+
+def get_icons():
+    """Get or create the icons collection"""
+    if not hasattr(get_icons, "icon_collection"):
+        pcoll = bpy.utils.previews.new()
+        get_icons.icon_collection = pcoll
+    return get_icons.icon_collection
 def get_hdri_previews():
     """Get or create the preview collection"""
     if not hasattr(get_hdri_previews, "preview_collection"):
@@ -1009,6 +1016,55 @@ class HDRI_OT_check_updates(Operator):
             
         context.window_manager.popup_menu(draw_popup, title="Update Available", icon='INFO')
         return {'FINISHED'}
+        
+def switch_to_preferred_render_engine(addon_path):
+    """Switch to the user's preferred render engine after update"""
+    import os
+    import shutil
+    
+    try:
+        # Read the preferences to determine the render engine
+        preferences_path = os.path.join(addon_path, "preferences.json")
+        
+        # If preferences file exists, read the render engine
+        if os.path.exists(preferences_path):
+            import json
+            with open(preferences_path, 'r') as f:
+                preferences = json.load(f)
+                render_engine = preferences.get('render_engine', 'CYCLES')
+        else:
+            # Default to Cycles if no preferences found
+            render_engine = 'CYCLES'
+        
+        # Paths for different engine scripts
+        cycles_script = os.path.join(addon_path, "__init__cycles.py")
+        octane_script = os.path.join(addon_path, "__init__octane.py")
+        current_script = os.path.join(addon_path, "__init__.py")
+        
+        # Ensure both engine scripts exist
+        if not os.path.exists(cycles_script) or not os.path.exists(octane_script):
+            return  # Can't switch if scripts are missing
+        
+        # Switch based on preferred render engine
+        if render_engine == 'OCTANE':
+            # Backup current script as Cycles script if not exists
+            if not os.path.exists(cycles_script):
+                shutil.copy2(current_script, cycles_script)
+            
+            # Replace current script with Octane script
+            shutil.copy2(octane_script, current_script)
+            
+        else:  # Default to Cycles
+            # Backup current script as Octane script if not exists
+            if not os.path.exists(octane_script):
+                shutil.copy2(current_script, octane_script)
+            
+            # Replace current script with Cycles script
+            shutil.copy2(cycles_script, current_script)
+        
+    except Exception as e:
+        print(f"Error switching render engine: {str(e)}")
+        
 class HDRI_OT_download_update(Operator):
     bl_idname = "world.download_hdri_update"
     bl_label = "Download Update"
@@ -1074,11 +1130,26 @@ class HDRI_OT_download_update(Operator):
         try:
             addon_path = os.path.dirname(os.path.realpath(__file__))
             
+            # Backup current render engine preference
+            preferences = context.preferences.addons[__name__].preferences
+            
+            # Save current render engine preference
+            preferences_path = os.path.join(addon_path, "preferences.json")
+            try:
+                import json
+                with open(preferences_path, 'w') as f:
+                    json.dump({
+                        'render_engine': preferences.render_engine
+                    }, f)
+            except Exception as e:
+                print(f"Could not save render engine preference: {str(e)}")
+            
             # Backup the current version before updating
             if not self.backup_current_version(addon_path):
                 self.report({'ERROR'}, "Failed to create backup before update")
                 return {'CANCELLED'}
             
+            # Rest of the existing update code...
             update_url = "https://github.com/mdreece/Quick-HDRI-Controls/archive/main.zip"
             req = urllib.request.Request(
                 update_url,
@@ -1123,6 +1194,9 @@ class HDRI_OT_download_update(Operator):
             except Exception as e:
                 self.report({'WARNING'}, f"Failed to clean up temporary files: {str(e)}")
             
+            # Switch to the preferred render engine
+            switch_to_preferred_render_engine(addon_path)
+            
             self.report({'INFO'}, "Update complete! Please restart Blender to apply changes.")
             
             # Delay the operator invocation until all classes are registered
@@ -1133,7 +1207,7 @@ class HDRI_OT_download_update(Operator):
             
         except Exception as e:
             self.report({'ERROR'}, f"Update failed: {str(e)}")
-            return {'CANCELLED'}                     
+            return {'CANCELLED'}                    
             
 class HDRI_OT_restart_prompt(Operator):
     bl_idname = "world.restart_prompt"
@@ -2294,7 +2368,11 @@ class QuickHDRIPreferences(AddonPreferences):
             return {'CANCELLED'}
             
     def draw(self, context):
-        layout = self.layout   
+        layout = self.layout
+        
+        # Get custom icon
+        custom_icon = get_icons().get("cycles_icon")
+        icon_id = custom_icon.icon_id if custom_icon else 'BLENDER'       
         
         # HDRI Directory (Always visible as it's critical!!!!!!)
         main_box = layout.box()
@@ -2313,11 +2391,11 @@ class QuickHDRIPreferences(AddonPreferences):
                    icon_only=True, emboss=False)
                    
         # Add version info to header
-        header_text = header.split(factor=0.7)
+        header_text = header.split(factor=0.5)
         header_text.label(text="Updates & Information", icon='FILE_REFRESH')
         version_text = header_text.row()
         version_text.alignment = 'RIGHT'
-        version_text.label(text=f"Current Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+        version_text.label(text=f"Cycles Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
         
         if getattr(self, 'show_updates', True):
             update_box = box.box()
@@ -3454,9 +3532,13 @@ class HDRI_PT_controls(Panel):
         
         main_column = layout.column(align=True)
         
+        # Get custom icon
+        custom_icon = get_icons().get("cycles_icon")
+        icon_id = custom_icon.icon_id if custom_icon else 'BLENDER'
+        
         # engine header
         header_row = main_column.row(align=True)
-        header_row.label(text="Cycles Build", icon='BLENDER')
+        header_row.label(text="Cycles Build", icon_value=icon_id)
         header_row.scale_y = 0.6
         main_column.separator(factor=0.5 * preferences.spacing_scale)
         
@@ -4018,6 +4100,17 @@ def register():
     if reset_proxy_after_render_complete not in bpy.app.handlers.render_complete:
         bpy.app.handlers.render_complete.append(reset_proxy_after_render_complete)
     
+    # Load custom icons
+    icons = get_icons()
+    icons_dir = os.path.join(os.path.dirname(__file__), "misc", "icons")
+    if not os.path.exists(icons_dir):
+        os.makedirs(icons_dir)
+    
+    # Load the cycles icon
+    icon_path = os.path.join(icons_dir, "cycles_icon.png")
+    if os.path.exists(icon_path):
+        icons.load("cycles_icon", icon_path, 'IMAGE')
+    
     # Add keymap entry
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
@@ -4055,6 +4148,10 @@ def unregister():
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
     bpy.types.VIEW3D_HT_header.remove(draw_hdri_menu)
+    
+    # Remove icon collection
+    if hasattr(get_icons, "icon_collection"):
+        bpy.utils.previews.remove(get_icons.icon_collection)
     
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

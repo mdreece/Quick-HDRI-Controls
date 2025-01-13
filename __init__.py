@@ -2470,7 +2470,7 @@ class QuickHDRIPreferences(AddonPreferences):
             if update_box:
                 backup_box = update_box.box()
                 backup_col = backup_box.column(align=True)
-                backup_col.label(text="Backup Settings", icon='SAVE_COPY')
+                backup_col.label(text="Backup Settings", icon='FILE_BACKUP')
                 
                 # Backup toggle
                 backup_col.prop(self, "enable_backups", text="Enable Backup Before Update")

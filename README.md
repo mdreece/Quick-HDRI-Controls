@@ -161,7 +161,7 @@ Options:
 ##
 ## Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/985aefa6-7a91-45ab-a011-13c5c1d808d7)
+![image](https://github.com/user-attachments/assets/662023f7-51d8-41f2-a574-f625706f7f3d)
 
 
 
@@ -269,8 +269,10 @@ Select your render engine for compatibility (cycles is set by default)
 ![image](https://github.com/user-attachments/assets/3d7ca2dd-61b2-4817-bf66-08b591968962)
 
  - Select desired engine
-    - Cycles
-    - Octane
+    - Cycles: ![image](https://github.com/user-attachments/assets/924e7ef0-121f-48c6-a8d0-946b64a3ed24)
+
+    - Octane: ![image](https://github.com/user-attachments/assets/adf19051-eb2a-4d48-bd31-99ec0dd6afc4)
+
  - Click 'Apply Render Engine'
  - Restart Blender
 

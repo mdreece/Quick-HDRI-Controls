@@ -1140,6 +1140,37 @@ def switch_to_preferred_render_engine(addon_path):
     except Exception as e:
         print(f"Error switching render engine: {str(e)}")
         
+class HDRI_OT_cleanup_backups(Operator):
+    bl_idname = "world.cleanup_hdri_backups"
+    bl_label = "Clean Backup Files"
+    bl_description = "Remove all backup files for the addon"
+    
+    def execute(self, context):
+        preferences = context.preferences.addons[__name__].preferences
+        addon_dir = os.path.dirname(__file__)
+        backups_dir = os.path.join(addon_dir, "backups")
+        
+        try:
+            if os.path.exists(backups_dir):
+                # Remove all files in the backups directory
+                for filename in os.listdir(backups_dir):
+                    file_path = os.path.join(backups_dir, filename)
+                    try:
+                        if os.path.isfile(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                    except Exception as e:
+                        self.report({'WARNING'}, f"Could not remove {filename}: {str(e)}")
+                
+                self.report({'INFO'}, "All backup files have been deleted")
+            else:
+                self.report({'INFO'}, "No backup directory found")
+            
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to clean backups: {str(e)}")
+            return {'CANCELLED'}        
         
 class HDRI_OT_download_update(Operator):
     bl_idname = "world.download_hdri_update"
@@ -1147,14 +1178,34 @@ class HDRI_OT_download_update(Operator):
     bl_description = "Download and install the latest version"
     
     def backup_current_version(self, addon_path):
-        """Create a backup of the current addon version, excluding __pycache__ directories"""
+        """Create a backup of the current addon version, with configurable settings"""
+        preferences = bpy.context.preferences.addons[__name__].preferences
+        
+        # Check if backups are enabled
+        if not preferences.enable_backups:
+            print("Backups are disabled. Skipping backup.")
+            return True
+        
         import os
         import zipfile
         import time
+        import glob
+
         backups_dir = os.path.join(addon_path, "backups")
         
         # Create backups directory if it doesn't exist
         os.makedirs(backups_dir, exist_ok=True)
+        
+        # Cleanup old backups if max backup count is exceeded
+        backup_files = glob.glob(os.path.join(backups_dir, "quick_hdri_controls_v*_*.zip"))
+        backup_files.sort(key=os.path.getctime)
+        
+        while len(backup_files) >= preferences.max_backup_files and backup_files:
+            oldest_backup = backup_files.pop(0)
+            try:
+                os.unlink(oldest_backup)
+            except Exception as e:
+                print(f"Could not remove old backup {oldest_backup}: {str(e)}")
         
         # Generate backup filename with version and timestamp
         version = ".".join(str(x) for x in bl_info['version'])
@@ -1165,41 +1216,23 @@ class HDRI_OT_download_update(Operator):
         try:
             # Create a zip file with improved performance settings
             with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED, compresslevel=5) as zipf:
-                # Explicitly list files to include, avoiding recursive walk
-                files_to_backup = [
-                    '__init__.py',
-                    '__init__cycles.py',
-                    '__init__octane.py',
-                    'Preview.blend'
-                ]
-                
-                # Add explicitly listed files
-                for filename in files_to_backup:
-                    file_path = os.path.join(addon_path, filename)
-                    if os.path.exists(file_path):
-                        zipf.write(file_path, arcname=filename)
-                
-                # Add any other files in the main directory (excluding __pycache__)
-                for item in os.listdir(addon_path):
-                    item_path = os.path.join(addon_path, item)
+                # Walk through all files and directories in the addon folder
+                for root, dirs, files in os.walk(addon_path):
+                    # Skip __pycache__ and backups directories
+                    dirs[:] = [d for d in dirs if d not in ['__pycache__', 'backups']]
                     
-                    # Skip directories and already added files
-                    if os.path.isdir(item_path) or item in files_to_backup:
-                        continue
-                    
-                    # Ignore pycache and other system files
-                    if item.startswith('.') or item == 'backups':
-                        continue
-                    
-                    # Add the file
-                    zipf.write(item_path, arcname=item)
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        # Calculate relative path to preserve directory structure
+                        relative_path = os.path.relpath(file_path, addon_path)
+                        zipf.write(file_path, arcname=relative_path)
             
             print(f"Backed up current version to {backup_path}")
-            return backup_path
+            return True
         
         except Exception as e:
             print(f"Failed to create backup: {str(e)}")
-            return None
+            return False
     
     def execute(self, context):
         try:
@@ -2369,6 +2402,19 @@ class QuickHDRIPreferences(AddonPreferences):
         default='CYCLES'
     )
     
+    enable_backups: BoolProperty(
+        name="Enable Backups",
+        description="Create a backup before performing updates",
+        default=True
+    )
+    
+    max_backup_files: IntProperty(
+        name="Maximum Backup Files",
+        description="Maximum number of backup files to keep",
+        default=5,
+        min=1,
+        max=50
+    )   
         
     # Preview display with image loading
     def get_preview_icon(self, context=None):
@@ -2605,9 +2651,30 @@ class QuickHDRIPreferences(AddonPreferences):
                 alert_row.operator("world.download_hdri_update", 
                                  text="Download Update",
                                  icon='IMPORT')
+            #Backups                     
+            update_box = box.box() if getattr(self, 'show_updates', True) else None
+            if update_box:
+                backup_box = update_box.box()
+                backup_col = backup_box.column(align=True)
+                backup_col.label(text="Backup Settings", icon='FILE_BACKUP')
+                
+                # Backup toggle
+                backup_col.prop(self, "enable_backups", text="Enable Backup Before Update")
+                
+                # Max backup files
+                if self.enable_backups:
+                    max_row = backup_col.row(align=True)
+                    max_row.prop(self, "max_backup_files", text="Max Backup Files")
+                    
+                    # Cleanup button
+                    cleanup_row = backup_col.row(align=True)
+                    cleanup_row.operator("world.cleanup_hdri_backups", 
+                                         text="Delete All Backup Files", 
+                                         icon='TRASH')
                                  
             row = update_box.row()
             row.operator("world.revert_hdri_version", text="Revert to Previous Version")
+                       
             
             # Documentation section
             docs_box = box.box()
@@ -4285,6 +4352,7 @@ classes = (
     HDRI_PT_controls,
     HDRI_OT_check_updates,
     HDRI_OT_download_update,
+    HDRI_OT_cleanup_backups,
     HDRI_OT_popup_controls,
     HDRI_OT_update_shortcut,
     HDRI_OT_quick_rotate,

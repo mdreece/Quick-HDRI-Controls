@@ -2541,10 +2541,31 @@ class QuickHDRIPreferences(AddonPreferences):
         import os
         import shutil
         import bpy
+
+        # Check if Octane is installed when attempting to switch to Octane
+        if self.render_engine == 'OCTANE':
+            try:
+                # Attempt to check Octane's availability
+                import _octane
+            except ImportError:
+                # Octane is not installed
+                def draw_octane_error(self, context):
+                    layout = self.layout
+                    layout.label(text="Octane Render is not installed!", icon='ERROR')
+                    layout.label(text="Please install the Octane Render plugin first.")
+                
+                context.window_manager.popup_menu(draw_octane_error, title="Render Engine Error", icon='ERROR')
+                
+                # Revert back to Cycles
+                self.render_engine = 'CYCLES'
+                return {'CANCELLED'}
+
+        # Rest of the existing switch_render_engine method remains the same
         current_script_path = os.path.dirname(os.path.realpath(__file__))
         cycles_script = os.path.join(current_script_path, "__init__cycles.py")
         octane_script = os.path.join(current_script_path, "__init__octane.py")
         current_script = os.path.join(current_script_path, "__init__.py")
+
         try:
             # If switching to Octane
             if self.render_engine == 'OCTANE':
@@ -2552,11 +2573,11 @@ class QuickHDRIPreferences(AddonPreferences):
                 if not os.path.exists(octane_script):
                     raise FileNotFoundError("Octane script (__init__octane.py) is missing")
                 
-                # Copy current __init__.py to __init__cycles.py (if it doesn't already exist)
+                # Backup current script as Cycles script if not exists
                 if not os.path.exists(cycles_script):
                     shutil.copy2(current_script, cycles_script)
                 
-                # Replace __init__.py with Octane script
+                # Replace current script with Octane script
                 shutil.copy2(octane_script, current_script)
             
             # If switching back to Cycles
@@ -2565,20 +2586,24 @@ class QuickHDRIPreferences(AddonPreferences):
                 if not os.path.exists(cycles_script):
                     raise FileNotFoundError("Cycles script (__init__cycles.py) is missing")
                 
-                # Copy current __init__.py to __init__octane.py (if it doesn't already exist)
+                # Backup current script as Octane script if not exists
                 if not os.path.exists(octane_script):
                     shutil.copy2(current_script, octane_script)
                 
-                # Replace __init__.py with Cycles script
+                # Replace current script with Cycles script
                 shutil.copy2(cycles_script, current_script)
             
             # Prompt for restart using window manager
-            def draw_restart_popup(self, context):
-                layout = self.layout
-                layout.label(text="Blender needs to restart to apply changes.", icon='INFO')
-                layout.label(text="Please save your work and restart.", icon='ERROR')
+            def invoke_restart_prompt():
+                bpy.ops.world.restart_prompt('INVOKE_DEFAULT')
             
-            context.window_manager.popup_menu(draw_restart_popup, title="Restart Required", icon='QUESTION')
+            context.window_manager.popup_menu(
+                lambda self, context: self.layout.label(text="Blender needs to restart to apply changes."), 
+                title="Restart Required", 
+                icon='QUESTION'
+            )
+            
+            bpy.app.timers.register(invoke_restart_prompt)
             
             return {'FINISHED'}
             
@@ -2587,11 +2612,11 @@ class QuickHDRIPreferences(AddonPreferences):
             print(f"Error switching render engine: {str(e)}")
             
             # Show error using window manager popup
-            def draw_error_popup(self, context):
-                layout = self.layout
-                layout.label(text=f"Could not switch render engine: {str(e)}", icon='ERROR')
-            
-            context.window_manager.popup_menu(draw_error_popup, title="Error", icon='ERROR')
+            context.window_manager.popup_menu(
+                lambda self, context: self.layout.label(text=f"Could not switch render engine: {str(e)}"), 
+                title="Error", 
+                icon='ERROR'
+            )
             
             return {'CANCELLED'}
          

@@ -107,14 +107,14 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 Depending on the your set render engine (both in blender and in addon preferences) you will be prompted to switch to the set Render Engine if you are not already.
  - IF set to Cycles, the View Transform changes to AgX
- - IF set to OCtane, the View Transform changes to  Raw
+ - IF set to Octane, the View Transform changes to  Raw
 
 
      
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
 
-![image](https://github.com/user-attachments/assets/bbeffafe-53d4-4874-a080-33e9ecef4569)
+![image](https://github.com/user-attachments/assets/bf89338f-39f9-44d8-9028-3e256c37c8ba)
 
 4. Once a folder has been selected, 'HDRI Select' appears.
 

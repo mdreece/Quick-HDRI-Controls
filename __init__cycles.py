@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 5),
+    "version": (2, 6, 6),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -28,7 +28,6 @@ bl_info = {
 }
 addon_keymaps = []
 original_paths = {}
-
 def get_icons():
     """Get or create the icons collection"""
     if not hasattr(get_icons, "icon_collection"):
@@ -207,7 +206,6 @@ def update_background_strength(self, context):
         for node in context.scene.world.node_tree.nodes:
             if node.type == 'BACKGROUND':
                 node.inputs['Strength'].default_value = self.background_strength
-
 def check_for_update_on_startup():
     """Check for updates on Blender startup if enabled in preferences."""
     preferences = bpy.context.preferences.addons[__name__].preferences
@@ -1075,7 +1073,6 @@ class HDRI_OT_download_update(Operator):
         import os
         import zipfile
         import time
-
         backups_dir = os.path.join(addon_path, "backups")
         
         # Create backups directory if it doesn't exist
@@ -2311,12 +2308,10 @@ class QuickHDRIPreferences(AddonPreferences):
         import os
         import shutil
         import bpy
-
         current_script_path = os.path.dirname(os.path.realpath(__file__))
         cycles_script = os.path.join(current_script_path, "__init__cycles.py")
         octane_script = os.path.join(current_script_path, "__init__octane.py")
         current_script = os.path.join(current_script_path, "__init__.py")
-
         try:
             # If switching to Octane
             if self.render_engine == 'OCTANE':
@@ -2678,7 +2673,6 @@ class QuickHDRIPreferences(AddonPreferences):
                    icon='TRIA_DOWN' if getattr(self, 'show_render_engine', True) else 'TRIA_RIGHT',
                    icon_only=True, emboss=False)
         header.label(text="Render Engine", icon='RENDER_RESULT')
-
         if getattr(self, 'show_render_engine', True):
             render_col = render_box.column(align=True)
             render_col.prop(self, "render_engine", text="Engine")
@@ -3610,7 +3604,9 @@ class HDRI_PT_controls(Panel):
                 col.separator()
                 explanation_row = col.row(align=True)
                 explanation_row.alignment = 'CENTER'
-                explanation_row.label(text="Cycles Engine Required", icon='RENDER_RESULT')             
+                explanation_row.label(text="Cycles Engine Required", icon='RENDER_RESULT')      
+
+                col.separator()                
                 
                 # Initialize button
                 if preferences.hdri_directory:
@@ -3831,7 +3827,6 @@ class HDRI_PT_controls(Panel):
             icon='TRIA_DOWN' if hdri_settings.show_color_management else 'TRIA_RIGHT',
             icon_only=True,
             emboss=False)
-
         if hdri_settings.show_color_management:
             color_mgmt_box = main_column.box()
             color_mgmt_col = color_mgmt_box.column(align=True)
@@ -3954,7 +3949,6 @@ class HDRI_PT_controls(Panel):
                         sub.scale_x = 1.0
                         sub.scale_y = 1.0
                         sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')
-
                 # Metadata at bottom
                 meta_row = rotation_box.row(align=True)
                 meta_row.label(text="Metadata", icon='INFO')

@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 5),
+    "version": (2, 6, 6),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -207,14 +207,12 @@ def update_background_strength(self, context):
         world = context.scene.world
         nodes = world.node_tree.nodes
         links = world.node_tree.links
-
         # First find World Output node
         world_output = None
         for node in nodes:
             if node.bl_idname == 'OctaneEditorWorldOutputNode':
                 world_output = node
                 break
-
         # Find the primary Texture Environment node
         if world_output:
             for link in links:
@@ -235,7 +233,6 @@ def update_background_strength(self, context):
                             if area.type == 'VIEW_3D':
                                 area.tag_redraw()
                         break
-
 def check_for_update_on_startup():
     """Check for updates on Blender startup if enabled in preferences."""
     preferences = bpy.context.preferences.addons[__name__].preferences
@@ -807,7 +804,6 @@ def reload_original_for_render(dummy):
                 # Force updates
                 rgb_node.update()
                 context.scene.world.node_tree.update_tag()
-
 @persistent
 def reset_proxy_after_render(dummy):
     """Handler to reset proxy image after render cancellation"""
@@ -847,7 +843,6 @@ def reset_proxy_after_render(dummy):
                     # Force updates
                     rgb_node.update()
                     context.scene.world.node_tree.update_tag()
-
 @persistent
 def reset_proxy_after_render_complete(dummy):
     """Handler to reset proxy image after rendering completes"""
@@ -926,7 +921,6 @@ def update_hdri_proxy(self, context):
     # Finally use current filepath
     else:
         original_path = rgb_node.a_filename if rgb_node.a_filename else (current_image.filepath if current_image else None)
-
     if not original_path:
         return
         
@@ -1157,7 +1151,6 @@ class HDRI_OT_download_update(Operator):
         import os
         import zipfile
         import time
-
         backups_dir = os.path.join(addon_path, "backups")
         
         # Create backups directory if it doesn't exist
@@ -1569,7 +1562,6 @@ class HDRI_OT_setup_nodes(Operator):
             
         self.report({'INFO'}, "HDRI system initialized successfully")
         return {'FINISHED'}
-
 def cleanup_unused_images():
     """Remove unused HDRI images from memory"""
     # Get all RGB Image nodes in use
@@ -1584,7 +1576,6 @@ def cleanup_unused_images():
     for img in bpy.data.images:
         if img.users == 0 and img not in active_images:
             bpy.data.images.remove(img)
-
 def has_active_hdri(context):
     """Check if there is an active HDRI loaded"""
     if context.scene.world and context.scene.world.use_nodes:
@@ -1593,7 +1584,6 @@ def has_active_hdri(context):
             if node.bl_idname == 'OctaneRGBImage':
                 return bool(node.image or node.a_filename)
     return False
-
 def get_hdri_metadata(node):
     """Extract metadata from HDRI image"""
     if not node or not node.image:
@@ -1982,7 +1972,6 @@ class HDRISettings(PropertyGroup):
         description="Path to the previously loaded HDRI",
         default=""
     )
-
     previous_proxy_resolution: EnumProperty(
         name="Previous Proxy Resolution",
         description="Previously used proxy resolution",
@@ -2223,7 +2212,6 @@ class QuickHDRIPreferences(AddonPreferences):
         ],
         default='SINGLE'
     )
-
     preview_single_file: StringProperty(
         name="HDRI File",
         description="Single HDRI file to generate preview for",
@@ -2507,12 +2495,10 @@ class QuickHDRIPreferences(AddonPreferences):
         import os
         import shutil
         import bpy
-
         current_script_path = os.path.dirname(os.path.realpath(__file__))
         cycles_script = os.path.join(current_script_path, "__init__cycles.py")
         octane_script = os.path.join(current_script_path, "__init__octane.py")
         current_script = os.path.join(current_script_path, "__init__.py")
-
         try:
             # If switching to Octane
             if self.render_engine == 'OCTANE':
@@ -2658,7 +2644,6 @@ class QuickHDRIPreferences(AddonPreferences):
                   icon_only=True, emboss=False)
         header_split = header.split(factor=0.7)
         header_split.label(text="Preview Generation", icon='IMAGE_DATA')
-
         # Status indicator
         status_row = header_split.row(align=True)
         status_row.alignment = 'RIGHT'
@@ -2667,7 +2652,6 @@ class QuickHDRIPreferences(AddonPreferences):
             status_row.label(text="Processing", icon='TIME')
         else:
             status_row.label(text="Ready", icon='CHECKMARK')
-
         if self.show_preview_generation:
             main_col = box.column(align=True)
             main_col.separator()
@@ -2698,7 +2682,6 @@ class QuickHDRIPreferences(AddonPreferences):
                 type_row.prop_enum(self, "preview_generation_type", 'SINGLE', text="Single File", icon='IMAGE_DATA')
                 type_row.prop_enum(self, "preview_generation_type", 'MULTIPLE', text="Batch Process", icon='FILE_FOLDER')
                 type_row.prop_enum(self, "preview_generation_type", 'FULL_BATCH', text="Full Batch", icon='FILE_REFRESH')
-
                 # Source Selection - Only show if not in FULL_BATCH mode
                 if self.preview_generation_type != 'FULL_BATCH':
                     source_box = main_col.box()
@@ -2708,7 +2691,6 @@ class QuickHDRIPreferences(AddonPreferences):
                         source_row.prop(self, "preview_single_file", text="")
                     else:
                         source_row.prop(self, "preview_multiple_folder", text="")
-
                 # Quality Settings
                 quality_box = main_col.box()
                 quality_box.label(text="Quality Settings", icon='SETTINGS')
@@ -2717,26 +2699,22 @@ class QuickHDRIPreferences(AddonPreferences):
                 quality_row = quality_box.row()
                 left_col = quality_row.column()
                 right_col = quality_row.column()
-
                 # Left column
                 left_col.label(text="Resolution Scale:")
                 left_col.prop(self, "preview_resolution", text="%")
                 left_col.label(text="Render Device:")
                 left_col.prop(self, "preview_render_device", text="")
-
                 # Right column
                 right_col.label(text="Render Samples:")
                 right_col.prop(self, "preview_samples", text="")
                 right_col.label(text="Scene Type:")
                 right_col.prop(self, "preview_scene_type", text="")
-
                 # Output Resolution Info
                 res_box = quality_box.box()
                 res_box.scale_y = 0.9
                 actual_x = int(1024 * (self.preview_resolution / 100))
                 actual_y = int(768 * (self.preview_resolution / 100))
                 res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
-
                 # Generation Status
                 if self.preview_stats_total > 0 and self.show_generation_stats:
                     status_box = main_col.box()
@@ -2757,20 +2735,17 @@ class QuickHDRIPreferences(AddonPreferences):
                     
                     clear_row = status_box.row()
                     clear_row.operator("world.clear_preview_stats", text="Clear Results", icon='X')
-
                 # Action Buttons
                 main_col.separator()
                 action_box = main_col.box()
                 button_row = action_box.row(align=True)
                 button_row.scale_y = 1.5
                 button_row.scale_x = 2.0
-
                 button_text = {
                     'SINGLE': 'Generate Preview',
                     'MULTIPLE': 'Generate Previews',
                     'FULL_BATCH': 'Generate All Previews'
                 }.get(self.preview_generation_type)
-
                 button_row.operator(
                     "world.generate_hdri_previews",
                     text=button_text,
@@ -2886,7 +2861,6 @@ class QuickHDRIPreferences(AddonPreferences):
                    icon='TRIA_DOWN' if getattr(self, 'show_render_engine', True) else 'TRIA_RIGHT',
                    icon_only=True, emboss=False)
         header.label(text="Render Engine", icon='RENDER_RESULT')
-
         if getattr(self, 'show_render_engine', True):
             render_col = render_box.column(align=True)
             render_col.prop(self, "render_engine", text="Engine")
@@ -3815,7 +3789,6 @@ class HDRI_PT_controls(Panel):
             op.directory = preferences.hdri_directory
             op.property_name = "hdri_directory"
             op.property_owner = "preferences"
-
             # Add footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)
@@ -3847,11 +3820,10 @@ class HDRI_PT_controls(Panel):
                 col.separator()
                 explanation_row = col.row(align=True)
                 explanation_row.alignment = 'CENTER'
-                explanation_row.label(text="Octane is Required", icon='RENDER_RESULT')
+                explanation_row.label(text="Octane Engine Required", icon='RENDER_RESULT')
                              
                 col.separator()
                 
-
                 # Initialize button
                 if preferences.hdri_directory:
                     button_row = col.row(align=True)
@@ -3867,7 +3839,6 @@ class HDRI_PT_controls(Panel):
                     col.operator("world.setup_hdri_nodes", 
                         text="Initialize HDRI System",
                         icon='WORLD_DATA')
-
             # Add footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)
@@ -3880,7 +3851,6 @@ class HDRI_PT_controls(Panel):
             ).module = __name__
             footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
-
         # Main UI
         # Folder Browser Section
         browser_box = main_column.box()
@@ -4030,7 +4000,6 @@ class HDRI_PT_controls(Panel):
                         icon='TRIA_RIGHT',
                         emboss=True
                     )
-
         # Proxy dropdown
         proxy_row = main_column.row(align=True)
         proxy_row.label(text="Proxies", icon='RENDER_RESULT')
@@ -4039,7 +4008,6 @@ class HDRI_PT_controls(Panel):
             icon='TRIA_DOWN' if hdri_settings.show_proxy_settings else 'TRIA_RIGHT',
             icon_only=True,
             emboss=False)
-
         if hdri_settings.show_proxy_settings:
             proxy_box = main_column.box()
             proxy_col = proxy_box.column(align=True)
@@ -4064,7 +4032,6 @@ class HDRI_PT_controls(Panel):
             icon='TRIA_DOWN' if hdri_settings.show_color_management else 'TRIA_RIGHT',
             icon_only=True,
             emboss=False)
-
         if hdri_settings.show_color_management:
             color_mgmt_box = main_column.box()
             color_mgmt_col = color_mgmt_box.column(align=True)
@@ -4077,7 +4044,6 @@ class HDRI_PT_controls(Panel):
             
             look_col = split.column()
             look_col.prop(context.scene.view_settings, "look", text="Look")
-
         main_column.separator(factor=0.5 * preferences.spacing_scale)
                            
         # HDRI Settings Section
@@ -4107,7 +4073,6 @@ class HDRI_PT_controls(Panel):
                         if any(link.to_socket.name == 'Visible Environment' for link in node.outputs[0].links):
                             is_visible = node.inputs['Backplate'].default_value
                             break
-
                 sub.operator("world.toggle_hdri_visibility",
                     text="",
                     icon='HIDE_ON' if is_visible else 'HIDE_OFF',
@@ -4181,7 +4146,6 @@ class HDRI_PT_controls(Panel):
                         op.axis = 1
                         op.direction = -99
                         
-
                     
                     # Strength column
                     if preferences.show_strength_slider:
@@ -4206,7 +4170,6 @@ class HDRI_PT_controls(Panel):
                         reset_row.alignment = 'RIGHT'
                         reset_row.scale_x = 0.9
                         reset_row.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')     
-
                 # Metadata section
                 meta_row = rotation_box.row(align=True)
                 meta_row.label(text="Metadata", icon='INFO')
@@ -4409,14 +4372,12 @@ def unregister():
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
-
     bpy.types.VIEW3D_HT_header.remove(draw_hdri_menu)
     
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
         
     del bpy.types.Scene.hdri_settings   
-
     if hasattr(get_hdri_previews, "preview_collection"):
         try:
             preview_collection = get_hdri_previews.preview_collection

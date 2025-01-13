@@ -21,7 +21,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
    - [HDRI Metadata](#hdri-metadata)  
 4. [Full Dropdown Panel](#full-dropdown-panel)  
 5. [Updates](#updates)  
-   - [Backup-Settings](#backup_settings)
+   - [Backup Settings](#backup_settings)
 6. [Preview Thumbnail Generation](#preview-thumbnail-generation)  
    - [Processing Type](#processing-type)  
    - [Scene Type Examples](#scene-type-examples-cube-monk-orbs)  

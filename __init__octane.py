@@ -4397,6 +4397,7 @@ classes = (
     HDRI_OT_full_batch_proxies,
     HDRI_OT_reset_hdri,
     HDRI_OT_apply_render_engine,
+    HDRI_OT_cleanup_backups,
 )
 def register():
     extract_addon_zips()

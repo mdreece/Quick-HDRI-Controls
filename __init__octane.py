@@ -2625,7 +2625,7 @@ class QuickHDRIPreferences(AddonPreferences):
         
         # Get custom icon
         custom_icon = get_icons().get("octane_icon")
-        icon_id = custom_icon.icon_id if custom_icon else 'BLENDER'
+        icon_id = custom_icon.icon_id if custom_icon else 0
         
         
         # HDRI Directory (Always visible as it's critical!!!!!!)
@@ -4397,7 +4397,6 @@ classes = (
     HDRI_OT_full_batch_proxies,
     HDRI_OT_reset_hdri,
     HDRI_OT_apply_render_engine,
-    HDRI_OT_cleanup_backups,
 )
 def register():
     extract_addon_zips()

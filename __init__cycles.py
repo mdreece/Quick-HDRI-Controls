@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 7),
+    "version": (2, 6, 8),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1690,7 +1690,7 @@ class HDRISettings(PropertyGroup):
                         bpy.data.images.remove(current_image)
                     # Load proxy and store original path
                     img = bpy.data.images.load(proxy_path, check_existing=True)
-                    original_paths[img.name] = filepath  # Store original path in dictionary
+                    original_paths[img.name] = filepath  # Store original path
                     env_tex.image = img
 
             # Restore visibility state

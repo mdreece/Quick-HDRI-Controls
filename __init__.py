@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 7),
+    "version": (2, 6, 8),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1640,6 +1640,9 @@ class HDRISettings(PropertyGroup):
         # Store current state as previous
         world = context.scene.world
         if world and world.use_nodes:
+            # Store current visibility state before making changes
+            current_visibility = world.cycles_visibility.camera
+
             for node in world.node_tree.nodes:
                 if node.type == 'TEX_ENVIRONMENT' and node.image:
                     self.previous_hdri_path = node.image.filepath
@@ -1648,47 +1651,50 @@ class HDRISettings(PropertyGroup):
                     self.previous_rotation = node.inputs['Rotation'].default_value.copy()
                 elif node.type == 'BACKGROUND':
                     self.previous_strength = node.inputs['Strength'].default_value
-                    
-        preferences = context.preferences.addons[__name__].preferences
-        
-        # Store current rotation if keep_rotation is enabled
-        current_rotation = None
-        if preferences.keep_rotation:
-            for node in context.scene.world.node_tree.nodes:
-                if node.type == 'MAPPING':
-                    current_rotation = node.inputs['Rotation'].default_value.copy()
-                    break
-                    
-        # Set up nodes
-        mapping, env_tex, node_background = ensure_world_nodes()
-        
-        # Load the new image
-        try:
-            img = bpy.data.images.load(filepath, check_existing=True)
-            env_tex.image = img
-        except Exception as e:
-            print(f"Failed to load HDRI: {str(e)}")
-            return
+                        
+            preferences = context.preferences.addons[__name__].preferences
             
-        # Apply rotation based on keep_rotation setting
-        if preferences.keep_rotation and current_rotation is not None:
-            mapping.inputs['Rotation'].default_value = current_rotation
-        else:
-            mapping.inputs['Rotation'].default_value = (0, 0, 0)
+            # Store current rotation if keep_rotation is enabled
+            current_rotation = None
+            if preferences.keep_rotation:
+                for node in context.scene.world.node_tree.nodes:
+                    if node.type == 'MAPPING':
+                        current_rotation = node.inputs['Rotation'].default_value.copy()
+                        break
+                        
+            # Set up nodes
+            mapping, env_tex, background = ensure_world_nodes()
             
-        # Create a proxy if the user has a proxy resolution set
-        if self.proxy_resolution != 'ORIGINAL':
-            proxy_path = create_hdri_proxy(filepath, self.proxy_resolution)
-            if proxy_path and proxy_path != env_tex.image.filepath:
-                # Clear existing image
-                current_image = env_tex.image
-                env_tex.image = None
-                if current_image.users == 0:
-                    bpy.data.images.remove(current_image)
-                # Load proxy and store original path
-                img = bpy.data.images.load(proxy_path, check_existing=True)
-                original_paths[img.name] = filepath  # Store original path in dictionary
+            # Load the new image
+            try:
+                img = bpy.data.images.load(filepath, check_existing=True)
                 env_tex.image = img
+            except Exception as e:
+                print(f"Failed to load HDRI: {str(e)}")
+                return
+                
+            # Apply rotation based on keep_rotation setting
+            if preferences.keep_rotation and current_rotation is not None:
+                mapping.inputs['Rotation'].default_value = current_rotation
+            else:
+                mapping.inputs['Rotation'].default_value = (0, 0, 0)
+
+            # Create a proxy if the user has a proxy resolution set
+            if self.proxy_resolution != 'ORIGINAL':
+                proxy_path = create_hdri_proxy(filepath, self.proxy_resolution)
+                if proxy_path and proxy_path != env_tex.image.filepath:
+                    # Clear existing image
+                    current_image = env_tex.image
+                    env_tex.image = None
+                    if current_image.users == 0:
+                        bpy.data.images.remove(current_image)
+                    # Load proxy and store original path
+                    img = bpy.data.images.load(proxy_path, check_existing=True)
+                    original_paths[img.name] = filepath  # Store original path
+                    env_tex.image = img
+
+            # Restore visibility state
+            world.cycles_visibility.camera = current_visibility
     # Properties
     hdri_preview: EnumProperty(
         items=generate_previews,
@@ -3016,9 +3022,10 @@ class HDRI_OT_reset_hdri(Operator):
             return {'CANCELLED'}
         
         try:
-            # Store current HDRI before resetting
+            # Store current state before making changes
             current_path = None
             current_image = None
+            current_visibility = world.cycles_visibility.camera
             if world and world.use_nodes:
                 for node in world.node_tree.nodes:
                     if node.type == 'TEX_ENVIRONMENT' and node.image:
@@ -3092,6 +3099,9 @@ class HDRI_OT_reset_hdri(Operator):
             get_hdri_previews.cached_dir = None
             get_hdri_previews.cached_items = []
             
+            # Restore visibility state
+            world.cycles_visibility.camera = current_visibility
+            
             # Force redraw of viewport
             for area in context.screen.areas:
                 if area.type == 'VIEW_3D':
@@ -3102,7 +3112,7 @@ class HDRI_OT_reset_hdri(Operator):
             
         except Exception as e:
             self.report({'ERROR'}, f"Failed to reset HDRI: {str(e)}")
-            return {'CANCELLED'}   
+            return {'CANCELLED'}  
 class HDRI_OT_generate_previews(Operator):
     bl_idname = "world.generate_hdri_previews"
     bl_label = "Generate HDRI Previews"

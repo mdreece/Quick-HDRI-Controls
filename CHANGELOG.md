@@ -97,10 +97,6 @@
 ## 24-11-2024: V2.4.1
 		- Reverting back to v2.4.1 to rework animation options.
 
-## 22-11-2024: V2.5
-		- Key frame options added in panel for rotation as well as strength.
-		- There is a bug when changing HDRIs that will prompt with an error and clear keyframes.
-
 ## 1-11-2024: V2.4.1
 		- Fixed bug (really I accidentally cleared it) where 'keep rotation' option was not applying when selected.
 		

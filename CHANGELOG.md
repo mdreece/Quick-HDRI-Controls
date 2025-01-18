@@ -1,4 +1,4 @@
-##-QUICK HDRI CONTROLS CHANGELOG-##
+### QUICK HDRI CONTROLS CHANGELOG
 
 # 15-1-2025: V2.6.8
 		- Updated both Cycles and Octane instances to respect the HDRI visibility option when changing and resetting.

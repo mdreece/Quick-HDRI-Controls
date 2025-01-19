@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 9),
+    "version": (2, 6, 8),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -235,41 +235,12 @@ def check_for_update_on_startup():
             preferences.update_available = False
     except Exception as e:
         print(f"Startup update check error: {str(e)}")
-def get_current_changelog_entry():
-    """Extract changelog entry for current version from CHANGELOG.md"""
-    addon_dir = os.path.dirname(os.path.realpath(__file__))
-    changelog_path = os.path.join(addon_dir, "CHANGELOG.md")
-    
-    if not os.path.exists(changelog_path):
-        return None
-        
-    current_version = f"V{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}"
-    
-    try:
-        with open(changelog_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            
-        # Split into entries
-        entries = content.split('\n## ')
-        
-        for entry in entries:
-            if current_version in entry:
-                # Return the complete entry
-                return f"## {entry.strip()}"
-                
-    except Exception as e:
-        print(f"Error reading changelog: {str(e)}")
-        return None
-
 def extract_addon_zips():
     """Extract any ZIP files found in the addon directory and clean up."""
     addon_dir = os.path.dirname(os.path.realpath(__file__))
     
     # Find all zip files in the addon directory
     zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
-    
-    if not zip_files:
-        return
     
     for zip_file in zip_files:
         zip_path = os.path.join(addon_dir, zip_file)
@@ -309,16 +280,6 @@ def extract_addon_zips():
             
         except Exception as e:
             print(f"Error processing {zip_file}: {str(e)}")
-            
-    # After successful extraction, store changelog entry
-    changelog_entry = get_current_changelog_entry()
-    if changelog_entry:
-        temp_changelog = os.path.join(addon_dir, ".recent_update")
-        try:
-            with open(temp_changelog, 'w', encoding='utf-8') as f:
-                f.write(changelog_entry)
-        except Exception as e:
-            print(f"Error saving changelog entry: {str(e)}")
 @persistent
 def load_handler(dummy):
     """Ensure keyboard shortcuts are properly set after file load"""
@@ -929,136 +890,7 @@ def update_hdri_proxy(self, context):
     for area in context.screen.areas:
         if area.type == 'VIEW_3D':
             area.tag_redraw()
- 
-class HDRI_OT_show_changelog(Operator):
-    bl_idname = "world.show_changelog"
-    bl_label = "Quick HDRI Controls: Cycles Update"
-    bl_description = "Show recent update changes"
-    
-    def wrap_text(self, text, width=60):
-        """Wrap text at word boundaries"""
-        words = text.split()
-        lines = []
-        current_line = []
-        current_length = 0
-        
-        for word in words:
-            if current_length + len(word) + 1 <= width:
-                current_line.append(word)
-                current_length += len(word) + 1
-            else:
-                if current_line:
-                    lines.append(' '.join(current_line))
-                current_line = [word]
-                current_length = len(word)
-        
-        if current_line:
-            lines.append(' '.join(current_line))
-        return lines
-    
-    def draw(self, context):
-        layout = self.layout
-        lines = self.__class__.changelog_content.split('\n')
-        
-        # Create main container
-        main_box = layout.box()
-        main_col = main_box.column(align=True)
-        
-        # Draw version header with icon
-        if lines:
-            header_line = lines[0]
-            if header_line.startswith('## '):
-                header_line = header_line[3:]
             
-            header_row = main_col.row()
-            header_row.scale_y = 1.2
-            header_row.label(text=header_line, icon='RIGHTARROW_THIN')
-        
-        # Add separator after header
-        main_col.separator(factor=0.5)
-        
-        # Content box with slightly different background
-        content_box = main_col.box()
-        content_box.scale_y = 0.9
-        
-        # Create scrollable content area
-        content_col = content_box.column(align=True)
-        
-        # Process and display each line
-        for line in lines[1:]:
-            if line.strip():
-                # Handle bullet points
-                if line.lstrip().startswith('-'):
-                    # Get indentation level
-                    indent = len(line) - len(line.lstrip())
-                    text = line.lstrip('- ').strip()
-                    
-                    # Wrap the text
-                    wrapped_lines = self.wrap_text(text)
-                    
-                    # First line with bullet point
-                    row = content_col.row(align=True)
-                    if indent > 0:
-                        row.separator(factor=0.4 * indent)
-                    bullet_col = row.column(align=True)
-                    bullet_col.scale_x = 0.05
-                    bullet_col.label(text="•")
-                    text_col = row.column(align=True)
-                    text_col.scale_x = 0.95
-                    text_col.label(text=wrapped_lines[0])
-                    
-                    # Subsequent wrapped lines
-                    for wrapped_line in wrapped_lines[1:]:
-                        wrap_row = content_col.row(align=True)
-                        if indent > 0:
-                            wrap_row.separator(factor=0.4 * indent)
-                        wrap_row.separator(factor=0.7)
-                        wrap_row.label(text=wrapped_line)
-                    
-                    # Add small space after each bullet point
-                    content_col.separator(factor=0.3)
-                else:
-                    # Handle non-bullet text
-                    wrapped_lines = self.wrap_text(line)
-                    for wrapped_line in wrapped_lines:
-                        content_col.label(text=wrapped_line)
-            else:
-                # Add spacing between sections
-                content_col.separator(factor=0.5)
-    
-    def execute(self, context):
-        return {'FINISHED'}
-    
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
-
-@persistent
-def check_recent_update(dummy):
-    """Check for and show recent update changelog"""
-    addon_dir = os.path.dirname(os.path.realpath(__file__))
-    temp_changelog = os.path.join(addon_dir, ".recent_update")
-    
-    if os.path.exists(temp_changelog):
-        try:
-            with open(temp_changelog, 'r', encoding='utf-8') as f:
-                changelog_content = f.read()
-            
-            # Store content in operator class
-            HDRI_OT_show_changelog.changelog_content = changelog_content
-            
-            # Remove the temporary file
-            os.remove(temp_changelog)
-            
-            # Show the changelog dialog
-            def show_changelog():
-                bpy.ops.world.show_changelog('INVOKE_DEFAULT')
-            
-            # Use timer to ensure UI is ready
-            bpy.app.timers.register(show_changelog, first_interval=1.0)
-            
-        except Exception as e:
-            print(f"Error showing changelog: {str(e)}")
- 
 class HDRI_OT_clear_proxy_stats(Operator):
     bl_idname = "world.clear_proxy_stats"
     bl_label = "Clear Proxy Generation Stats"
@@ -4348,7 +4180,6 @@ classes = (
     HDRI_OT_reset_hdri,
     HDRI_OT_apply_render_engine,
     HDRI_OT_cleanup_backups,
-    HDRI_OT_show_changelog,
 )
 def register():
     extract_addon_zips()
@@ -4358,7 +4189,6 @@ def register():
     bpy.types.Scene.hdri_settings = PointerProperty(type=HDRISettings)
     bpy.types.VIEW3D_HT_header.append(draw_hdri_menu)
     bpy.app.handlers.load_post.append(cleanup_hdri_proxies)
-    bpy.app.handlers.load_post.append(check_recent_update)
     bpy.utils.register_class(HDRI_OT_revert_version)
     
     if reload_original_for_render not in bpy.app.handlers.render_init:
@@ -4405,7 +4235,6 @@ def register():
     check_for_update_on_startup()
     
 def unregister():
-    bpy.app.handlers.load_post.remove(check_recent_update)
     bpy.app.handlers.load_post.remove(load_handler)    
     bpy.app.handlers.load_post.remove(cleanup_hdri_proxies)
     bpy.app.handlers.render_init.remove(reload_original_for_render)

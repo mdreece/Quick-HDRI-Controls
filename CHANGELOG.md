@@ -1,8 +1,5 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
-## 19-1-2025: v2.6.9
-		- New features/bug fixes from changelog will show in blender when restarting after update.
-
 ## 15-1-2025: V2.6.8
 		- Updated both Cycles and Octane instances to respect the HDRI visibility option when changing and resetting.
 

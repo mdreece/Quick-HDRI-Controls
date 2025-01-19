@@ -1,4 +1,4 @@
-# Quick HDRI Controls v2.6.9 for Blender (Cycles & Octane)
+# Quick HDRI Controls v2.6.8 for Blender (Cycles & Octane)
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
 ![Version](https://img.shields.io/badge/Version-2.6.9-blue.svg)

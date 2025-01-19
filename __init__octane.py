@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 8),
+    "version": (2, 6, 7),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -28,6 +28,80 @@ bl_info = {
 }
 addon_keymaps = []
 original_paths = {}
+
+def parse_changelog(changelog_path, current_version):
+    """Parse CHANGELOG.md and return the entry for the current version"""
+    try:
+        with open(changelog_path, 'r') as f:
+            content = f.read()
+            
+        # Convert version tuple to string format
+        version_str = f"V{'.'.join(map(str, current_version))}"
+        
+        # Split content into version blocks
+        version_blocks = content.split('\n## ')
+        
+        for block in version_blocks:
+            # Skip empty blocks
+            if not block.strip():
+                continue
+                
+            # Check if this block matches our version
+            if version_str in block:
+                # Return the entire block, removing any trailing whitespace
+                return block.strip()
+                
+        return None
+    except Exception as e:
+        print(f"Error reading changelog: {str(e)}")
+        return None
+
+class HDRI_OT_show_changelog(Operator):
+    bl_idname = "world.show_hdri_changelog"
+    bl_label = "HDRI Controls Update"
+    bl_description = "Show changelog for the latest update"
+    
+    def draw(self, context):
+        layout = self.layout
+        changes = context.window_manager.hdri_changelog
+        
+        if changes:
+            # Split the changes into lines and display each
+            for line in changes.split('\n'):
+                if line.strip():
+                    layout.label(text=line)
+        else:
+            layout.label(text="No changelog information available")
+    
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=600)
+
+def show_changelog_dialog():
+    """Show the changelog dialog if an update was just installed"""
+    try:
+        addon_dir = os.path.dirname(os.path.realpath(__file__))
+        changelog_path = os.path.join(addon_dir, "CHANGELOG.md")
+        
+        if os.path.exists(changelog_path):
+            # Get current version from bl_info
+            current_version = bl_info['version']
+            
+            # Parse changelog for current version
+            changes = parse_changelog(changelog_path, current_version)
+            
+            if changes:
+                # Store changes in window manager property
+                bpy.context.window_manager.hdri_changelog = changes
+                
+                # Show dialog
+                bpy.ops.world.show_hdri_changelog('INVOKE_DEFAULT')
+                
+    except Exception as e:
+        print(f"Error showing changelog: {str(e)}")
+
 def get_icons():
     """Get or create the icons collection"""
     if not hasattr(get_icons, "icon_collection"):
@@ -269,6 +343,9 @@ def extract_addon_zips():
     # Find all zip files in the addon directory
     zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
     
+    # Flag to track if we actually extracted any updates
+    update_installed = False
+    
     for zip_file in zip_files:
         zip_path = os.path.join(addon_dir, zip_file)
         try:
@@ -303,10 +380,16 @@ def extract_addon_zips():
             
             # Remove the ZIP file
             os.remove(zip_path)
+            update_installed = True
             print(f"Successfully extracted and cleaned up {zip_file}")
             
         except Exception as e:
             print(f"Error processing {zip_file}: {str(e)}")
+    
+    # If we installed any updates, show the changelog
+    if update_installed:
+        # Use timer to ensure Blender UI is ready
+        bpy.app.timers.register(show_changelog_dialog, first_interval=1.0)
 @persistent
 def load_handler(dummy):
     """Ensure keyboard shortcuts are properly set after file load"""
@@ -4397,9 +4480,16 @@ classes = (
     HDRI_OT_full_batch_proxies,
     HDRI_OT_reset_hdri,
     HDRI_OT_apply_render_engine,
+    HDRI_OT_show_changelog,
 )
 def register():
+    bpy.types.WindowManager.hdri_changelog = StringProperty(
+        name="Changelog",
+        description="Stores current changelog entry",
+        default=""
+    )
     extract_addon_zips()
+    
     
     for cls in classes:
         bpy.utils.register_class(cls)
@@ -4451,6 +4541,7 @@ def register():
     check_for_update_on_startup()
     
 def unregister():
+    del bpy.types.WindowManager.hdri_changelog
     bpy.app.handlers.load_post.remove(load_handler)    
     bpy.app.handlers.load_post.remove(cleanup_hdri_proxies)
     bpy.app.handlers.render_init.remove(reload_original_for_render)

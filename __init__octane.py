@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 8),
+    "version": (2, 6, 9),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",

@@ -9,28 +9,83 @@
 
 ### Known Issues ⚠️:
 • None
-	
+##
 
 ## 19-1-2025: V2.6.9
-	Upon opening blender post update, the changelog entry for the update will display.
+### New Features:
+• Upon opening blender post update, the changelog entry for the update will display.
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
 
 ## 15-1-2025: V2.6.8
-	Updated both Cycles and Octane instances to respect the HDRI visibility option when changing and resetting.
+### New Features:
+• None
+
+### Fixes 🛠️:
+• Updated both Cycles and Octane instances to respect the HDRI visibility option when changing and resetting.
+
+### Known Issues ⚠️:
+• None
+##
+
 
 ## 14-1-2025: V2.6.7
-	Big fix for Octane build. issue relating to \addons\Quick-HDRI-Controls-main\init.py", line 2652, in draw version_text.label(text=f"Octane Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
+### New Features:
+• None
+
+### Fixes 🛠️:
+Big fix for Octane build. issue relating to \addons\Quick-HDRI-Controls-main\init.py", line 2652, in draw version_text.label(text=f"Octane Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
+
+### Known Issues ⚠️:
+• None
+##
+
 
 ## 13-1-2025: V2.6.6
-	Fixed bug where if set to 'Octane' as 'Render Engine' and update is installed,  it would revert back to cycles. The user chosen engine is saved in a preferences file.
-	Added custom UI icons for blender/cycles and octane to panel and preferences UI.
+### New Features:
+• Added custom UI icons for blender/cycles and octane to panel and preferences UI.
+
+### Fixes 🛠️:
+• Fixed bug where if set to 'Octane' as 'Render Engine' and update is installed,  it would revert back to cycles. The user chosen engine is saved in a preferences file.
+
+### Known Issues ⚠️:
+• None
+##
+
+
 
 ## 11-1/2025: 2.6.5
-	Added support for OctaneRenderer
+### New Features:
+• Added support for OctaneRenderer
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
+
 
 ## 10-1-2025: V2.6.3
-	Thumbnails now update correctly when resetting.
-	Folder location of HDRI is respected
-	Prompt to enable Cycles as this is only written to work with Cycles.
+### New Features:
+• Prompt to enable Cycles as this is only written to work with Cycles.
+
+### Fixes 🛠️:
+• Thumbnails now update correctly when resetting.
+• Folder location of HDRI is respected
+
+### Known Issues ⚠️:
+• None
+##
+
+
 
 ## 4-1-2025: V2.6.2
 	Had to rework the reset options to account for using proxies (somehow I forgot to do this)

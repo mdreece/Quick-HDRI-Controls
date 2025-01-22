@@ -58,26 +58,105 @@ def parse_changelog(changelog_path, current_version):
 
 class HDRI_OT_show_changelog(Operator):
     bl_idname = "world.show_hdri_changelog"
-    bl_label = "HDRI Controls Update"
+    bl_label = "Quick HDRI Controls Update"
     bl_description = "Show changelog for the latest update"
+    
+    def draw_header(self, layout):
+        """Draw the changelog header with version info"""
+        header_box = layout.box()
+        header_row = header_box.row()
+        header_row.label(text="🎉 What's New", icon='FILE_TICK')
+        
+        # Version info on the right
+        version_row = header_row.row()
+        version_row.alignment = 'RIGHT'
+        version = ".".join(map(str, bl_info['version']))
+        version_row.label(text=f"Version {version}")
+        
+    def draw_section(self, layout, title, content_lines):
+        """Draw a section of the changelog with title and content"""
+        section = layout.box()
+        row = section.row()
+        row.label(text=title)
+        
+        # Content with proper wrapping
+        for line in content_lines:
+            if line.strip():
+                # Handle different line types
+                if line.startswith('•'):
+                    # Bullet points
+                    row = section.row()
+                    row.scale_x = 0.05
+                    row.label(text="•")
+                    text_row = row.row()
+                    text_row.scale_x = 20  # Scale back to normal
+                    text_row.label(text=line[1:].strip())
+                elif line.startswith('##'):
+                    # Subheadings
+                    section.label(text=line[2:].strip(), icon='RIGHTARROW')
+                elif line.startswith('#'):
+                    # Main headings
+                    section.label(text=line[1:].strip(), icon='DISK_DRIVE')
+                else:
+                    # Regular text with wrapping
+                    words = line.split()
+                    line_parts = []
+                    current_line = []
+                    
+                    for word in words:
+                        current_line.append(word)
+                        if len(" ".join(current_line)) > 50:  # character limit per line
+                            line_parts.append(" ".join(current_line[:-1]))
+                            current_line = [word]
+                    
+                    if current_line:
+                        line_parts.append(" ".join(current_line))
+                    
+                    for part in line_parts:
+                        row = section.row()
+                        row.scale_y = 0.85
+                        row.label(text=part)
     
     def draw(self, context):
         layout = self.layout
         changes = context.window_manager.hdri_changelog
         
-        if changes:
-            # Split the changes into lines and display each
-            for line in changes.split('\n'):
-                if line.strip():
-                    layout.label(text=line)
-        else:
+        if not changes:
             layout.label(text="No changelog information available")
+            return
+            
+        # Draw header
+        self.draw_header(layout)
+        
+        # Parse sections
+        current_section = []
+        current_title = "Updates"
+        
+        for line in changes.split('\n'):
+            if line.strip():
+                if line.startswith('###'):  # New section
+                    if current_section:
+                        self.draw_section(layout, current_title, current_section)
+                        current_section = []
+                    current_title = line[3:].strip()
+                else:
+                    current_section.append(line)
+        
+        # Draw final section
+        if current_section:
+            self.draw_section(layout, current_title, current_section)
+            
+        # Draw footer
+        footer = layout.box()
+        footer_row = footer.row()
+        footer_row.alignment = 'CENTER'
+        footer_row.label(text="Thank you for using Quick HDRI Controls!")
     
     def execute(self, context):
         return {'FINISHED'}
     
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=600)
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
 def show_changelog_dialog():
     """Show the changelog dialog if an update was just installed"""

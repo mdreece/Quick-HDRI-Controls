@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 6, 9),
+    "version": (2, 7, 0),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -2373,11 +2373,11 @@ class QuickHDRIPreferences(AddonPreferences):
         name="Scene Type",
         description="Objects to include in the preview scene",
         items=[
-            ('ORBS', 'Orbs', 'Use the Orbs collection'),
-            ('MONK', 'Monk', 'Use the Monk collection'),
-            ('CUBE', 'Cube', 'Use the Cube collection')
+            ('ORBS_4', 'Orbs - 4', 'Use the four orbs collection'),
+            ('ORBS_3', 'Orbs - 3', 'Use the three orbs collection'),
+            ('TEAPOT', 'Teapot', 'Use the teapot collection')
         ],
-        default='ORBS'
+        default='ORBS_4'
     )
     
     default_proxy_resolution: EnumProperty(
@@ -3640,61 +3640,52 @@ class HDRI_OT_generate_previews(Operator):
             
             # Set collection visibility based on scene type preference
             for collection in preview_scene.collection.children:
-                if collection.name == 'Orbs':
-                    collection.hide_render = preferences.preview_scene_type != 'ORBS'
-                    collection.hide_viewport = preferences.preview_scene_type != 'ORBS'
-                elif collection.name == 'Monk':
-                    collection.hide_render = preferences.preview_scene_type != 'MONK'
-                    collection.hide_viewport = preferences.preview_scene_type != 'MONK'
-                elif collection.name == 'Cube':
-                    collection.hide_render = preferences.preview_scene_type != 'CUBE'
-                    collection.hide_viewport = preferences.preview_scene_type != 'CUBE'
+                if collection.name == 'Orbs - 4':
+                    collection.hide_render = preferences.preview_scene_type != 'ORBS_4'
+                    collection.hide_viewport = preferences.preview_scene_type != 'ORBS_4'
+                elif collection.name == 'Orbs - 3':
+                    collection.hide_render = preferences.preview_scene_type != 'ORBS_3'
+                    collection.hide_viewport = preferences.preview_scene_type != 'ORBS_3'
+                elif collection.name == 'Teapot':
+                    collection.hide_render = preferences.preview_scene_type != 'TEAPOT'
+                    collection.hide_viewport = preferences.preview_scene_type != 'TEAPOT'
+
             # Additional object visibility handling for specific objects
             for obj in preview_scene.objects:
-                if preferences.preview_scene_type == 'ORBS':
-                    # For Orbs scene, hide Monk and Cube-specific objects
-                    if obj.name in ['HDRI_PLANE_MONK']:
-                        obj.hide_render = True
-                        obj.hide_viewport = True
-                    
-                    # Show GROUND_PLANE for Orbs scene
-                    if obj.name == 'GROUND_PLANE':
+                if preferences.preview_scene_type == 'ORBS_4':
+                    # Show GROUND_PLANE and HDRI_PLANE_ORBS for Orbs-4
+                    if obj.name in ['GROUND_PLANE', 'HDRI_PLANE_ORBS']:
                         obj.hide_render = False
                         obj.hide_viewport = False
-                    
+                        
                     # Ensure HDRI is applied to HDRI_PLANE_ORBS
                     if obj.name == 'HDRI_PLANE_ORBS' and hdri_image:
                         for material in obj.data.materials:
                             for node in material.node_tree.nodes:
                                 if node.type == 'TEX_IMAGE':
                                     node.image = hdri_image
-                
-                elif preferences.preview_scene_type == 'MONK':
-                    # For Monk scene, hide Orbs and Cube-specific objects
+
+                elif preferences.preview_scene_type == 'ORBS_3':
+                    # Show GROUND_PLANE and HDRI_PLANE_ORBS for Orbs-3
                     if obj.name in ['GROUND_PLANE', 'HDRI_PLANE_ORBS']:
-                        obj.hide_render = True
-                        obj.hide_viewport = True
-                    
-                    # Ensure HDRI is applied to HDRI_PLANE_MONK
-                    if obj.name == 'HDRI_PLANE_MONK' and hdri_image:
+                        obj.hide_render = False
+                        obj.hide_viewport = False
+                        
+                    # Ensure HDRI is applied to HDRI_PLANE_ORBS
+                    if obj.name == 'HDRI_PLANE_ORBS' and hdri_image:
                         for material in obj.data.materials:
                             for node in material.node_tree.nodes:
                                 if node.type == 'TEX_IMAGE':
                                     node.image = hdri_image
-                
-                elif preferences.preview_scene_type == 'CUBE':
-                    # For Cube scene, hide Orbs and Monk-specific objects
-                    if obj.name in ['HDRI_PLANE_MONK']:
-                        obj.hide_render = True
-                        obj.hide_viewport = True
-                    
-                    # Show GROUND_PLANE for Cube scene
-                    if obj.name == 'GROUND_PLANE':
+
+                elif preferences.preview_scene_type == 'TEAPOT':
+                    # Show GROUND_PLANE and HDRI_PLANE_ORBS for Teapot
+                    if obj.name in ['GROUND_PLANE', 'HDRI_PLANE_ORBS']:
                         obj.hide_render = False
                         obj.hide_viewport = False
-                    
-                    # Ensure HDRI is applied to both HDRI_PLANE_ORBS
-                    if obj.name in ['HDRI_PLANE_ORBS'] and hdri_image:
+                        
+                    # Ensure HDRI is applied to HDRI_PLANE_ORBS
+                    if obj.name == 'HDRI_PLANE_ORBS' and hdri_image:
                         for material in obj.data.materials:
                             for node in material.node_tree.nodes:
                                 if node.type == 'TEX_IMAGE':

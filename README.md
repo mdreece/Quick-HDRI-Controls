@@ -192,6 +192,11 @@ Click on 'Check Now' to see if there are any pending updates.
    
 ![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
 
+ - Upon Blender restart, the changelog entry will show NewFeatures, Fixes and Known Issues
+
+![image](https://github.com/user-attachments/assets/35f4b808-c425-4089-a7e1-6219da4a852b)
+
+
 ### Backup Settings:
 
 ![image](https://github.com/user-attachments/assets/6663eed7-8654-44dc-900d-6d0074ed3694)

@@ -11,6 +11,8 @@
 • None
 ##
 
+
+
 ## 19-1-2025: V2.6.9
 ### New Features:
 • Upon opening blender post update, the changelog entry for the update will display.
@@ -21,6 +23,7 @@
 ### Known Issues ⚠️:
 • None
 ##
+
 
 
 ## 15-1-2025: V2.6.8
@@ -35,16 +38,18 @@
 ##
 
 
+
 ## 14-1-2025: V2.6.7
 ### New Features:
 • None
 
 ### Fixes 🛠️:
-Big fix for Octane build. issue relating to \addons\Quick-HDRI-Controls-main\init.py", line 2652, in draw version_text.label(text=f"Octane Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
+• Bug fix for Octane build. issue relating to \addons\Quick-HDRI-Controls-main\init.py", line 2652, in draw version_text.label(text=f"Octane Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
 
 ### Known Issues ⚠️:
 • None
 ##
+
 
 
 ## 13-1-2025: V2.6.6

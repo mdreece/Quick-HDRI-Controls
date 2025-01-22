@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.6.9 for Blender (Cycles & Octane)
+# Quick HDRI Controls v2.7.0 for Blender (Cycles & Octane)
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.6.9-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.7.0-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -222,9 +222,9 @@ Add the .png thumbnails to the same directory as the hdr.
  - Select scene type: Orbs (orbs preview), Monk (suzanne), Cube (the default twins)
  - GENERATE
 
-### Scene Type Examples: Cube, Monk, Orbs
+### Scene Type Examples: Orbs-3, Orbs-4, Teapot
 
-![image](https://github.com/user-attachments/assets/20096457-902f-49b2-9b2b-339e02a55508)
+![image](https://github.com/user-attachments/assets/3670e94d-598a-47d7-990b-1004c41cd3a9)
 
 
 Example of original and _thumb.png instance:

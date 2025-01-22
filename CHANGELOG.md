@@ -1,8 +1,15 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 ## 21-1-2025: V2.7.0
-	Fixed registration formatting (would error when enabling and disabling more than once)
-	Changed Preview 'Scene Type' options. Removed 'Monk' and 'Cube' options. Adjusted 'Orbs' to 'Orbs-4'. Added 'Orbs-3' and 'Teapot'.
+### Features:
+• Changed Preview 'Scene Type' options. Removed 'Monk' and 'Cube' options. Adjusted 'Orbs' to 'Orbs-4'. Added 'Orbs-3' and 'Teapot'.
+
+### Fixes:
+• Fixed registration formatting (would error when enabling and disabling more than once)
+
+### Known Issues:
+• None
+	
 
 ## 19-1-2025: V2.6.9
 	Upon opening blender post update, the changelog entry for the update will display.

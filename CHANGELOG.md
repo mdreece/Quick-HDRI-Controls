@@ -1,59 +1,59 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 ## 21-1-2025: V2.7.0
-	- Fixed registration formatting (would error when enabling and disabling more than once)
-  	- Changed Preview 'Scene Type' options. Removed 'Monk' and 'Cube' options. Adjusted 'Orbs' to 'Orbs-4'. Added 'Orbs-3' and 'Teapot'.
+	Fixed registration formatting (would error when enabling and disabling more than once)
+	Changed Preview 'Scene Type' options. Removed 'Monk' and 'Cube' options. Adjusted 'Orbs' to 'Orbs-4'. Added 'Orbs-3' and 'Teapot'.
 
 ## 19-1-2025: V2.6.9
-	- Upon opening blender post update, the changelog entry for the update will display.
+	Upon opening blender post update, the changelog entry for the update will display.
 
 ## 15-1-2025: V2.6.8
-	- Updated both Cycles and Octane instances to respect the HDRI visibility option when changing and resetting.
+	Updated both Cycles and Octane instances to respect the HDRI visibility option when changing and resetting.
 
 ## 14-1-2025: V2.6.7
-	- Big fix for Octane build. issue relating to \addons\Quick-HDRI-Controls-main\init.py", line 2652, in draw version_text.label(text=f"Octane Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
+	Big fix for Octane build. issue relating to \addons\Quick-HDRI-Controls-main\init.py", line 2652, in draw version_text.label(text=f"Octane Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
 
 ## 13-1-2025: V2.6.6
-	- Fixed bug where if set to 'Octane' as 'Render Engine' and update is installed,  it would revert back to cycles. The user chosen engine is saved in a preferences file.
-	- Added custom UI icons for blender/cycles and octane to panel and preferences UI.
+	Fixed bug where if set to 'Octane' as 'Render Engine' and update is installed,  it would revert back to cycles. The user chosen engine is saved in a preferences file.
+	Added custom UI icons for blender/cycles and octane to panel and preferences UI.
 
 ## 11-1/2025: 2.6.5
-	- Added support for OctaneRenderer
+	Added support for OctaneRenderer
 
 ## 10-1-2025: V2.6.3
-	- Thumbnails now update correctly when resetting.
-	- Folder location of HDRI is respected
-	- Prompt to enable Cycles as this is only written to work with Cycles.
+	Thumbnails now update correctly when resetting.
+	Folder location of HDRI is respected
+	Prompt to enable Cycles as this is only written to work with Cycles.
 
 ## 4-1-2025: V2.6.2
-	- Had to rework the reset options to account for using proxies (somehow I forgot to do this)
-	- Added version and preferences access to not initialized panel for quick access. no longer need to initialize to access preferences.
+	Had to rework the reset options to account for using proxies (somehow I forgot to do this)
+	Added version and preferences access to not initialized panel for quick access. no longer need to initialize to access preferences.
 
 ## 3-1-2025: V2.5.9
-	- Updated UI for preview generation. 'Full Batch' now doesnt automatically run when clicked. Quality settings can be chosen before generation.
+	Updated UI for preview generation. 'Full Batch' now doesnt automatically run when clicked. Quality settings can be chosen before generation.
 
 ## 2-1-2025: V2.5.7
-	- Added batch proxy generation for directories in preferences
+	Added batch proxy generation for directories in preferences
 
 ## 1-1-2025: V2.5.5
-	- Bug fixes with preview generation/changed error handling for generation file selection
+	Bug fixes with preview generation/changed error handling for generation file selection
 
 ## 1-1-2025: V2.5.4
-	- Proxy options added for HDRIs
-	- Options to have set for 'Viewport Only' or 'Both
+	Proxy options added for HDRIs
+	Options to have set for 'Viewport Only' or 'Both
 		 - Viewport Only: When a proxy image is used for the HDRI, when a render is begun it will reset to the full resolution HDRI and will reset back to proxy when completed.
 		 - Both: When a proxy image is selected and a render is begun, the same proxy will be used for rendering.
-	- 'Proxies' folders will generate in each HDRI subfolder.
-	- Once a proxy is created, it will be referenced/used when a proxy is set instead of a new instance being created
-	- Proxies can all be cleared from within preferences.
-	- Compression method can be adjusted (there isn't a clear advantage to either. ZIP has been more consistent on both Windows and MacOS, but wanted to keep options open)
+	'Proxies' folders will generate in each HDRI subfolder.
+	Once a proxy is created, it will be referenced/used when a proxy is set instead of a new instance being created
+	Proxies can all be cleared from within preferences.
+	Compression method can be adjusted (there isn't a clear advantage to either. ZIP has been more consistent on both Windows and MacOS, but wanted to keep options open)
 
 ## 15-12-2024: V2.5.2
-	- Preview generation tool in preferences. Use this function to create .png thumbnails of HDRIs to ease resource usage (Support creating for .hdr and .exr)
-	- Single File: Use this function to create a thumbnail of a specific HDRI file (output file will be in same directory as selected HDRI)
-	- Batch Process: Use this function to create thumbnails for a folder fill of .hdr and .exr files. The more files the longer the process will take (also depends on user selected render settings)
-	- Quick HDRI Controls will detect these new preview files upon next use.
-	- Update function to allow extraction of .zip update files. Included is the 'Preview'blend' in the addon directory that drives the main HDRI preview scene. Background processes run the rendering.
+	Preview generation tool in preferences. Use this function to create .png thumbnails of HDRIs to ease resource usage (Support creating for .hdr and .exr)
+	Single File: Use this function to create a thumbnail of a specific HDRI file (output file will be in same directory as selected HDRI)
+	Batch Process: Use this function to create thumbnails for a folder fill of .hdr and .exr files. The more files the longer the process will take (also depends on user selected render settings)
+	Quick HDRI Controls will detect these new preview files upon next use.
+	Update function to allow extraction of .zip update files. Included is the 'Preview'blend' in the addon directory that drives the main HDRI preview scene. Background processes run the rendering.
 
 ## 14-12-2024: V2.5.1
 	- Added the obvious function that once the HDRI is selected in the preview popup, it is loaded

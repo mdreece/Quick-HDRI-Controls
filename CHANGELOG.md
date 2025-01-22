@@ -1,13 +1,13 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 ## 21-1-2025: V2.7.0
-### Features:
+### Features 🆕:
 • Changed Preview 'Scene Type' options. Removed 'Monk' and 'Cube' options. Adjusted 'Orbs' to 'Orbs-4'. Added 'Orbs-3' and 'Teapot'.
 
-### Fixes:
+### Fixes 🛠️:
 • Fixed registration formatting (would error when enabling and disabling more than once)
 
-### Known Issues:
+### Known Issues ⚠️:
 • None
 	
 

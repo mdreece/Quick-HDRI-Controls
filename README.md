@@ -368,6 +368,9 @@ Keyboard Shortcut Conflicts
 - Click "Initialize HDRI System" button
 - If issues persist, click "Repair HDRI System"
 
+**Errors Post Update**
+ - Use the 'Revert to Previous' option in the updates section of preferences to reload the previous version of the addon.
+
 ##
 ## Requirements
 

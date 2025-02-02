@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 0),
+    "version": (2, 7, 1),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -189,7 +189,6 @@ def get_hdri_previews():
     return get_hdri_previews.preview_collection
 def generate_previews(self, context):
     """Generate preview items for HDRIs in current folder, using cache when possible"""
-    # Early exit if no settings
     if not hasattr(context.scene, "hdri_settings"):
         return []
         
@@ -198,13 +197,57 @@ def generate_previews(self, context):
     current_dir = context.scene.hdri_settings.current_folder or base_dir
     current_dir = os.path.normpath(os.path.abspath(current_dir))
     
-    # Check if using the cached directory
+    # Get search query and normalize it
+    search_query = context.scene.hdri_settings.search_query.lower().strip()
+    
+    # Clear cache if search query is empty and we were previously searching
+    if not search_query and hasattr(get_hdri_previews, "last_search_query") and get_hdri_previews.last_search_query:
+        get_hdri_previews.cached_dir = None
+        get_hdri_previews.cached_items = []
+        pcoll = get_hdri_previews()
+        pcoll.clear()
+    
+    # Store current search query for next time
+    get_hdri_previews.last_search_query = search_query
+    
+    search_terms = search_query.replace('_', ' ').replace('-', ' ').split()
+    
+    # If search query is present, search entire base directory
+    search_dir = base_dir if search_query else current_dir
+    
+    # Check cache with search consideration
     if (hasattr(get_hdri_previews, "cached_dir") and 
-        get_hdri_previews.cached_dir == current_dir and 
+        get_hdri_previews.cached_dir == search_dir and 
         get_hdri_previews.cached_items):
+        
+        if search_query:
+            filtered_items = []
+            for item in get_hdri_previews.cached_items:
+                if item[0] == '':  # Keep 'None' option
+                    continue
+                    
+                # Get full path and filename for searching
+                filepath = item[0]
+                filename = os.path.basename(filepath)
+                rel_path = os.path.relpath(filepath, base_dir)
+                
+                # Create searchable text that includes path and filename
+                searchable_text = f"{rel_path} {filename}".lower()
+                searchable_text = searchable_text.replace('_', ' ').replace('-', ' ')
+                
+                # Check if all search terms are found
+                if all(term in searchable_text for term in search_terms):
+                    filtered_items.append(item)
+            
+            # Add 'None' option at the beginning if we found matches
+            if filtered_items:
+                filtered_items.insert(0, get_hdri_previews.cached_items[0])
+                
+            return filtered_items
+        
         return get_hdri_previews.cached_items
     
-    # If here, generate new previews
+    # Generate new previews
     enum_items = []
     pcoll = get_hdri_previews()
     
@@ -220,30 +263,46 @@ def generate_previews(self, context):
     enum_items.append(('', 'None', '', 0, 0))
     
     try:
-        files = os.listdir(current_dir)
-        
-        # Collect HDR files
+        # Recursively find HDRI files
         hdri_files = []
-        for filename in files:
-            lower_name = filename.lower()
-            if any(lower_name.endswith(ext) for ext in extensions):
-                full_path = os.path.join(current_dir, filename)
-                hdri_files.append((filename, full_path))
+        for root, dirs, files in os.walk(search_dir):
+            # Skip proxy folders
+            if 'proxies' in dirs:
+                dirs.remove('proxies')
+            
+            for filename in files:
+                lower_name = filename.lower()
+                if any(lower_name.endswith(ext) for ext in extensions):
+                    full_path = os.path.join(root, filename)
+                    rel_path = os.path.relpath(full_path, base_dir)
+                    hdri_files.append((filename, full_path, rel_path))
         
-        # Collect thumbnails
-        thumbnails = {}
-        for filename in files:
-            if filename.lower().endswith('_thumb.png'):
-                base_name = os.path.splitext(filename)[0][:-6]
-                thumbnails[base_name] = os.path.join(current_dir, filename)
+        # Apply search filtering
+        if search_query:
+            filtered_files = []
+            for filename, full_path, rel_path in hdri_files:
+                # Create searchable text that includes path and filename
+                searchable_text = f"{rel_path} {filename}".lower()
+                searchable_text = searchable_text.replace('_', ' ').replace('-', ' ')
+                
+                # Check if all search terms are found
+                if all(term in searchable_text for term in search_terms):
+                    filtered_files.append((filename, full_path, rel_path))
+            
+            hdri_files = filtered_files
+        
+        # Sort files by name while preserving directory structure
+        hdri_files.sort(key=lambda x: (os.path.dirname(x[2]), x[0]))
         
         # Process each HDR file
-        for idx, (filename, hdri_path) in enumerate(sorted(hdri_files), 1):
+        for idx, (filename, hdri_path, _) in enumerate(hdri_files, 1):
             try:
                 base_name = os.path.splitext(filename)[0]
-                base_name = base_name.rsplit('_', 1)[0] 
+                base_name = base_name.rsplit('_', 1)[0]
                 
-                preview_path = thumbnails.get(base_name, hdri_path)
+                # Look for thumbnail in the same directory
+                thumb_path = os.path.join(os.path.dirname(hdri_path), f"{base_name}_thumb.png")
+                preview_path = thumb_path if os.path.exists(thumb_path) else hdri_path
                 
                 if hdri_path not in pcoll:
                     thumb = pcoll.load(hdri_path, preview_path, 'IMAGE')
@@ -257,10 +316,17 @@ def generate_previews(self, context):
                     thumb = pcoll[hdri_path]
                 
                 if thumb and thumb.icon_id:
+                    # Include relative path in the display name when searching
+                    display_name = base_name
+                    if search_query:
+                        parent_dir = os.path.basename(os.path.dirname(hdri_path))
+                        if parent_dir:
+                            display_name = f"{parent_dir}/{display_name}"
+                    
                     enum_items.append((
                         hdri_path,
-                        base_name,
-                        "Using thumbnail preview" if base_name in thumbnails else "",
+                        display_name,
+                        "Using thumbnail preview" if preview_path != hdri_path else "",
                         thumb.icon_id,
                         idx
                     ))
@@ -273,7 +339,7 @@ def generate_previews(self, context):
         print(f"Error scanning directory: {str(e)}")
     
     # Cache the results
-    get_hdri_previews.cached_dir = current_dir
+    get_hdri_previews.cached_dir = search_dir
     get_hdri_previews.cached_items = enum_items
     
     return enum_items
@@ -2176,6 +2242,11 @@ class HDRISettings(PropertyGroup):
         default=False
     )
     
+    search_query: StringProperty(
+        name="Search HDRIs",
+        description="Search HDRIs by filename",
+        default=""
+    )
     
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
@@ -3383,7 +3454,7 @@ class HDRI_OT_reset_hdri(Operator):
                 if not current_path:
                     current_path = rgb_node.a_filename
             
-            # Store the directory we're switching from
+            # Store the path we're switching from
             previous_dir = os.path.dirname(hdri_settings.previous_hdri_path)
             
             # Determine target path (original or proxy)
@@ -3417,20 +3488,18 @@ class HDRI_OT_reset_hdri(Operator):
                 original_paths[img.name] = hdri_settings.previous_hdri_path
                 original_paths[os.path.basename(target_path)] = hdri_settings.previous_hdri_path
             
-            # Update current folder to the directory of the previous HDRI
-            base_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
-            try:
-                rel_path = os.path.relpath(previous_dir, base_dir)
-                if not rel_path.startswith('..'):
-                    hdri_settings.current_folder = previous_dir
-                else:
+            # Only update current folder if there's no active search
+            if not hdri_settings.search_query:
+                # Update current folder to the directory of the previous HDRI
+                base_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
+                try:
+                    rel_path = os.path.relpath(previous_dir, base_dir)
+                    if not rel_path.startswith('..'):
+                        hdri_settings.current_folder = previous_dir
+                    else:
+                        hdri_settings.current_folder = base_dir
+                except ValueError:
                     hdri_settings.current_folder = base_dir
-            except ValueError:
-                hdri_settings.current_folder = base_dir
-            
-            # Force preview cache refresh
-            get_hdri_previews.cached_dir = None
-            get_hdri_previews.cached_items = []
             
             # Update preview selection
             enum_items = generate_previews(self, context)
@@ -3959,6 +4028,35 @@ class HDRI_OT_full_batch_proxies(Operator):
     modal = HDRI_OT_generate_proxies.modal
     finish_proxy_generation = HDRI_OT_generate_proxies.finish_proxy_generation
     generate_single_proxy = HDRI_OT_generate_proxies.generate_single_proxy
+
+
+class HDRI_OT_clear_hdri_search(Operator):
+    bl_idname = "world.clear_hdri_search"
+    bl_label = "Clear HDRI Search"
+    bl_description = "Clear the current HDRI search query"
+    
+    def execute(self, context):
+        # Clear the search query
+        context.scene.hdri_settings.search_query = ""
+        
+        # Clear preview cache
+        if hasattr(get_hdri_previews, "cached_dir"):
+            get_hdri_previews.cached_dir = None
+        if hasattr(get_hdri_previews, "cached_items"):
+            get_hdri_previews.cached_items = []
+        if hasattr(get_hdri_previews, "last_search_query"):
+            get_hdri_previews.last_search_query = ""
+            
+        # Clear the preview collection
+        pcoll = get_hdri_previews()
+        pcoll.clear()
+        
+        # Force UI update
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+        
+        return {'FINISHED'}
         
             
 class HDRI_PT_controls(Panel):
@@ -4092,78 +4190,88 @@ class HDRI_PT_controls(Panel):
         browser_box = main_column.box()
         browser_header = browser_box.row(align=True)
         browser_header.prop(hdri_settings, "show_browser", 
-                           icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
-                           icon_only=True)
+                            icon='TRIA_DOWN' if hdri_settings.show_browser else 'TRIA_RIGHT',
+                            icon_only=True)
         header_row = browser_header.row()
         sub = header_row.row(align=True)
         sub.alert = False
         sub.active = hdri_settings.show_browser
         sub.label(text="HDRI Browser", icon='FILE_FOLDER')
+
         if hdri_settings.show_browser:
-            # Get current path information
-            current_folder = context.scene.hdri_settings.current_folder
-            base_dir = preferences.hdri_directory
+            # Search field
+            search_row = browser_box.row(align=True)
+            search_row.prop(hdri_settings, "search_query", text="", icon='VIEWZOOM')
             
-            if current_folder and os.path.exists(current_folder):
-                # Show breadcrumb navigation
-                try:
-                    rel_path = os.path.relpath(current_folder, base_dir)
-                    if rel_path != '.':  # Only show if not in root
-                        bread_box = browser_box.box()
-                        bread_row = bread_box.row(align=True)
-                        bread_row.scale_y = 0.9
-                        
-                        # Start with HDRI root
-                        op = bread_row.operator("world.change_hdri_folder", text="HDRI")
-                        op.folder_path = base_dir
-                        
-                        # Add path components
-                        if rel_path != '.':
-                            path_parts = rel_path.split(os.sep)
-                            current_path = base_dir
-                            for i, part in enumerate(path_parts):
-                                bread_row.label(text="›")
-                                current_path = os.path.join(current_path, part)
-                                if i < len(path_parts) - 1:
-                                    op = bread_row.operator("world.change_hdri_folder", text=part)
-                                    op.folder_path = current_path
-                                else:
-                                    bread_row.label(text=part)
-                except:
-                    pass
+            # Search Clear button
+            clear_btn = search_row.operator("world.clear_hdri_search", text="", icon='X')
+            
+            # Only show folders if there's no active search
+            if not hdri_settings.search_query:
+                # Get current path information
+                current_folder = context.scene.hdri_settings.current_folder
+                base_dir = preferences.hdri_directory
                 
-                # Display folders only if they exist
-                folders = get_folders(context)
-                if folders:
-                    # Calculate grid layout
-                    num_items = len(folders)
-                    num_columns = 2 if num_items > 2 else 1
-                    
-                    # Create grid flow
-                    grid = browser_box.grid_flow(
-                        row_major=True,
-                        columns=num_columns,
-                        even_columns=True,
-                        even_rows=False,
-                        align=True
-                    )
-                    
-                    # Add folders to grid
-                    for folder_path, name, tooltip, icon, _ in folders:
-                        if folder_path != "parent":
-                            row = grid.row(align=True)
-                            row.scale_y = 1.2
-                            row.scale_x = 1.0
+                if current_folder and os.path.exists(current_folder):
+                    # Show breadcrumb navigation
+                    try:
+                        rel_path = os.path.relpath(current_folder, base_dir)
+                        if rel_path != '.':  # Only show if not in root
+                            bread_box = browser_box.box()
+                            bread_row = bread_box.row(align=True)
+                            bread_row.scale_y = 0.9
                             
-                            op = row.operator(
-                                "world.change_hdri_folder",
-                                text=name,
-                                icon='FILE_FOLDER'
-                            )
-                            op.folder_path = folder_path
-        
+                            # Start with HDRI root
+                            op = bread_row.operator("world.change_hdri_folder", text="HDRI")
+                            op.folder_path = base_dir
+                            
+                            # Add path components
+                            if rel_path != '.':
+                                path_parts = rel_path.split(os.sep)
+                                current_path = base_dir
+                                for i, part in enumerate(path_parts):
+                                    bread_row.label(text="›")
+                                    current_path = os.path.join(current_path, part)
+                                    if i < len(path_parts) - 1:
+                                        op = bread_row.operator("world.change_hdri_folder", text=part)
+                                        op.folder_path = current_path
+                                    else:
+                                        bread_row.label(text=part)
+                    except:
+                        pass
+                    
+                    # Display folders only if they exist
+                    folders = get_folders(context)
+                    if folders:
+                        # Calculate grid layout
+                        num_items = len(folders)
+                        num_columns = 2 if num_items > 2 else 1
+                        
+                        # Create grid flow
+                        grid = browser_box.grid_flow(
+                            row_major=True,
+                            columns=num_columns,
+                            even_columns=True,
+                            even_rows=False,
+                            align=True
+                        )
+                        
+                        # Add folders to grid
+                        for folder_path, name, tooltip, icon, _ in folders:
+                            if folder_path != "parent":
+                                row = grid.row(align=True)
+                                row.scale_y = 1.2
+                                row.scale_x = 1.0
+                                
+                                op = row.operator(
+                                    "world.change_hdri_folder",
+                                    text=name,
+                                    icon='FILE_FOLDER'
+                                )
+                                op.folder_path = folder_path
+                                
         # HDRI Preview Section
-        if has_hdri_files(context):
+        if has_hdri_files(context) or hdri_settings.search_query:
             preview_box = main_column.box()
             row = preview_box.row(align=True)
             row.scale_y = preferences.button_scale
@@ -4175,7 +4283,8 @@ class HDRI_PT_controls(Panel):
             sub.active = hdri_settings.show_preview
             sub.label(text="HDRI Select", icon='IMAGE_DATA')
             
-            if hdri_settings.show_preview:
+            # Always show preview content if there's a search query
+            if hdri_settings.show_preview or hdri_settings.search_query:
                 preview_box.scale_y = preferences.button_scale
                 
                 # HDRI preview grid
@@ -4186,7 +4295,7 @@ class HDRI_PT_controls(Panel):
                 )
                 
                 # Navigation controls only if HDRI is active
-                if has_active_hdri(context):
+                if has_active_hdri(context):  # Only show settings if an HDRI is active
                     nav_box = preview_box.box()
                     nav_row = nav_box.row(align=True)
                     
@@ -4542,6 +4651,7 @@ classes = (
     HDRI_OT_reset_hdri,
     HDRI_OT_apply_render_engine,
     HDRI_OT_show_changelog,
+    HDRI_OT_clear_hdri_search,
 )
 def register():
     bpy.types.WindowManager.hdri_changelog = StringProperty(

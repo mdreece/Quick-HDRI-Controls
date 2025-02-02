@@ -1,7 +1,7 @@
-# Quick HDRI Controls v2.7.0 for Blender (Cycles & Octane)
+# Quick HDRI Controls v2.7.1 for Blender (Cycles & Octane)
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
-![Version](https://img.shields.io/badge/Version-2.7.0-blue.svg)
+![Version](https://img.shields.io/badge/Version-2.7.1-blue.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -113,8 +113,9 @@ Depending on the your set render engine (both in blender and in addon preference
      
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
+ - Use the search option to find HDRIs (clear search to access folders again)
 
-![image](https://github.com/user-attachments/assets/bf89338f-39f9-44d8-9028-3e256c37c8ba)
+![image](https://github.com/user-attachments/assets/60d3cb46-7602-4df9-bd99-4d0961582759)
 
 4. Once a folder has been selected, 'HDRI Select' appears.
 
@@ -163,7 +164,7 @@ Options:
 ##
 ## Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/662023f7-51d8-41f2-a574-f625706f7f3d)
+![image](https://github.com/user-attachments/assets/40cb713e-ba0a-4be3-8d64-617cbf71612b)
 
 
 

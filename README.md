@@ -102,7 +102,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
  - Quick access to addon preferences
  - Version number display
    
-![image](https://github.com/user-attachments/assets/768e9735-d1b1-4cb1-bdd7-f80091e87228)
+![image](https://github.com/user-attachments/assets/42f925ac-f443-4ee2-a5fc-6da4808500c1)
 ![image](https://github.com/user-attachments/assets/d170aea9-90eb-4f1a-90d7-4839d185131d)
 
 Depending on the your set render engine (both in blender and in addon preferences) you will be prompted to switch to the set Render Engine if you are not already.

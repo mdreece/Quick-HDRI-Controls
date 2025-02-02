@@ -1,5 +1,20 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+
+
+## 2-2-2025: V2.7.1
+### New Features:
+• Search feature now in 'HDRI Browser' for both Cycles and Octane.
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
+
+
 ## 21-1-2025: V2.7.0
 ### New Features:
 • Changed Preview 'Scene Type' options. Removed 'Monk' and 'Cube' options. Adjusted 'Orbs' to 'Orbs-4'. Added 'Orbs-3' and 'Teapot'.

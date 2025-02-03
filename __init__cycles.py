@@ -19,7 +19,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 1),
+    "version": (2, 7, 2),
     "blender": (4, 3, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1851,10 +1851,16 @@ class HDRISettings(PropertyGroup):
     def update_hdri_preview(self, context):
         """Automatically load HDRI when selected from preview"""
         filepath = self.hdri_preview
-        if not filepath:
-            return
-        if not os.path.exists(filepath):
-            return
+        
+        # If a search query is active, only allow selection from the filtered results
+        if self.search_query and filepath:
+            # Check if the selected filepath is in the current filtered preview items
+            enum_items = generate_previews(None, context)
+            valid_paths = [item[0] for item in enum_items if item[0]]
+            
+            if filepath not in valid_paths:
+                # If the selected filepath is not in the current filtered results, do nothing
+                return
             
         # Store current state as previous
         world = context.scene.world
@@ -2061,13 +2067,48 @@ class HDRISettings(PropertyGroup):
         default=False
     )
     
+    def update_search_query(self, context):
+        # Lock the search when text is entered
+        if self.search_query.strip():
+            self.search_locked = True
+        # Don't unlock when clearing - that should only happen via the clear button
+    
     search_query: StringProperty(
         name="Search HDRIs",
         description="Search HDRIs by filename",
-        default=""
+        default="",
+        update=update_search_query
     )
         
+    def clear_hdri_search(self):
+        """Clear the search query and reset preview cache"""
+        # Clear the search query
+        self.search_query = ""
+        
+        # Clear preview cache
+        if hasattr(get_hdri_previews, "cached_dir"):
+            get_hdri_previews.cached_dir = None
+        if hasattr(get_hdri_previews, "cached_items"):
+            get_hdri_previews.cached_items = []
+        if hasattr(get_hdri_previews, "last_search_query"):
+            get_hdri_previews.last_search_query = ""
+            
+        # Clear the preview collection
+        pcoll = get_hdri_previews()
+        pcoll.clear()
+        
+        # Force UI update
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+                
+    search_locked: BoolProperty(
+        name="Search Locked",
+        description="Whether the search box is locked",
+        default=False
+    )
     
+
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
     # Properties for auto-update and update alert
@@ -3837,8 +3878,9 @@ class HDRI_OT_clear_hdri_search(Operator):
     bl_description = "Clear the current HDRI search query"
     
     def execute(self, context):
-        # Clear the search query
+        # Clear the search query and unlock
         context.scene.hdri_settings.search_query = ""
+        context.scene.hdri_settings.search_locked = False
         
         # Clear preview cache
         if hasattr(get_hdri_previews, "cached_dir"):
@@ -4020,11 +4062,13 @@ class HDRI_PT_controls(Panel):
         sub.label(text="HDRI Browser", icon='FILE_FOLDER')
 
         if hdri_settings.show_browser:
-            # Search field
+            # Search field with lock behavior
             search_row = browser_box.row(align=True)
-            search_row.prop(hdri_settings, "search_query", text="", icon='VIEWZOOM')
-            
-            # Search Clear button
+            search_sub = search_row.row(align=True)
+            search_sub.enabled = not hdri_settings.search_locked
+            search_sub.prop(hdri_settings, "search_query", text="", icon='VIEWZOOM')
+
+            # Clear button - always enabled
             clear_btn = search_row.operator("world.clear_hdri_search", text="", icon='X')
             
             # Only show folders if there's no active search

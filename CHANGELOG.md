@@ -8,6 +8,7 @@
 
 ### Fixes 🛠️:
 • v2.7.1 search option was not locking. Text must be cleared for new search.
+
 • If set to Octane, but Octane is not installed, will prompt to change render engine in preferences.
 
 ### Known Issues ⚠️:

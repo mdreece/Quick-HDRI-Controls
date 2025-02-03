@@ -1777,9 +1777,25 @@ class HDRI_OT_setup_nodes(Operator):
         preferences = context.preferences.addons[__name__].preferences
         hdri_settings = context.scene.hdri_settings
         
+        # Check if Octane is installed and available
+        try:
+            import _octane
+        except ImportError:
+            # Octane is not installed
+            def draw_octane_error(self, context):
+                layout = self.layout
+                layout.label(text="Octane Render is not installed!", icon='ERROR')
+                layout.label(text="Please switch to Cycles engine in preferences.")
+                layout.separator()
+                layout.operator("preferences.addon_show", text="Open Addon Preferences").module = __name__
+            
+            context.window_manager.popup_menu(draw_octane_error, title="Render Engine Error", icon='ERROR')
+            
+            return {'CANCELLED'}
+        
         # Check render engine
         if context.scene.render.engine != 'octane':
-            # Automatically switch to Cycles
+            # Automatically switch to Octane
             context.scene.render.engine = 'octane'
             self.report({'INFO'}, "Render engine switched to Octane")
         
@@ -1792,7 +1808,7 @@ class HDRI_OT_setup_nodes(Operator):
         # If current folder is not set or doesn't exist, reset to HDRI directory
         if not hdri_settings.current_folder or not os.path.exists(hdri_settings.current_folder):
             hdri_settings.current_folder = preferences.hdri_directory
-   
+       
         # Setup nodes
         transform_node, rgb_image_node, tex_env_visible = ensure_world_nodes()
         

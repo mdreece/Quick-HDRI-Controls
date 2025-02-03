@@ -2,6 +2,19 @@
 
 
 
+## 2-3-2025: V2.7.2
+### New Features 🔔:
+• Search feature now in 'HDRI Browser' for both Cycles and Octane.
+
+### Fixes 🛠️:
+• v2.7.1 search option was not locking. Text must be cleared for new search.
+
+### Known Issues ⚠️:
+• None
+##
+
+
+
 ## 2-2-2025: V2.7.1
 ### New Features:
 • Search feature now in 'HDRI Browser' for both Cycles and Octane.

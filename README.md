@@ -111,7 +111,7 @@ Depending on the your set render engine (both in blender and in addon preference
    
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
- - Use the search option to find HDRIs (clear search to access folders again)
+ - Use the search option to find HDRIs (use clear button to enter new search)
 
 ![image](https://github.com/user-attachments/assets/60d3cb46-7602-4df9-bd99-4d0961582759)
 

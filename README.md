@@ -171,11 +171,11 @@ Options:
 
 Stay up to date:
    
-![image](https://github.com/user-attachments/assets/f42b17d7-4e01-4465-8228-822e497ea14c)
+![image](https://github.com/user-attachments/assets/5e441aa5-46bd-4334-9789-b8b7aec3bfc8)
 
 Click on 'Check Now' to see if there are any pending updates.
  - If there are updates a message will prompt to update
- - Click on 'Revert to Previous version' to do what the button says (If no backup a message will prompt. Backup happens before updates install)
+ - Click on 'Revert version' to do what the button says (If no backup a message will prompt. Backup happens before updates install)
    
 ![image](https://github.com/user-attachments/assets/a8a72360-8fe5-4050-adcf-4b694849611f)
 

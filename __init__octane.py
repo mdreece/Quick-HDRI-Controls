@@ -2674,7 +2674,7 @@ class QuickHDRIPreferences(AddonPreferences):
             ('CYCLES', 'Cycles', 'Use Cycles render engine'),
             ('OCTANE', 'Octane', 'Use Octane render engine')
         ],
-        default='CYCLES'
+        default='OCTANE'
     )
     
     enable_backups: BoolProperty(
@@ -2897,20 +2897,28 @@ class QuickHDRIPreferences(AddonPreferences):
          
     def draw(self, context):
         layout = self.layout
-        
         # Get custom icon
         custom_icon = get_icons().get("octane_icon")
         icon_id = custom_icon.icon_id if custom_icon else 0
         
-        
-        # HDRI Directory (Always visible as it's critical!!!!!!)
+        # HDRI Directory and Render Engine
         main_box = layout.box()
         row = main_box.row()
         row.scale_y = 1.2
-        # Make the directory field red
+
+        split = row.split(factor=0.5)
+
+        # HDRI Directory column
+        dir_col = split.column()
         if not self.hdri_directory:
-            row.alert = True
-        row.prop(self, "hdri_directory", text="HDRI Directory")
+            dir_col.alert = True
+        dir_col.prop(self, "hdri_directory", text="Directory")
+
+        # Render Engine column
+        engine_col = split.column()
+        row = engine_col.row(align=True)
+        row.prop(self, "render_engine", text="Engine", icon_value=icon_id)
+        row.operator("world.apply_render_engine", text="", icon='PLUS')
         
         # Updates Section
         box = layout.box()
@@ -2918,31 +2926,27 @@ class QuickHDRIPreferences(AddonPreferences):
         header.prop(self, "show_updates", 
                    icon='TRIA_DOWN' if getattr(self, 'show_updates', True) else 'TRIA_RIGHT',
                    icon_only=True, emboss=False)
-                   
+                       
         # Add version info to header
         header_text = header.split(factor=0.5)
         header_text.label(text="Updates & Information", icon='FILE_REFRESH')
         version_text = header_text.row()
         version_text.alignment = 'RIGHT'
-        version_text.label(text=f"Octane Version: {bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}", icon_value=icon_id)
         
         if getattr(self, 'show_updates', True):
             update_box = box.box()
             
-            # Status and auto-check row
+            # Update Check Row
             status_row = update_box.row()
-            status_sub = status_row.row(align=True)
-            status_sub.prop(self, "enable_auto_update_check", 
+            status_row.prop(self, "enable_auto_update_check", 
                           text="Check for Updates on Startup",
                           icon='TIME')
-            
-            # Check now button
-            check_row = status_sub.row(align=True)
+            check_row = status_row.row(align=True)
             check_row.operator("world.check_hdri_updates", 
                              text="Check Now",
                              icon='FILE_REFRESH')
             
-            # Show update status if available
+            # Update Available Notification
             if self.update_available:
                 alert_box = update_box.box()
                 alert_box.alert = True
@@ -2951,12 +2955,20 @@ class QuickHDRIPreferences(AddonPreferences):
                 alert_row.operator("world.download_hdri_update", 
                                  text="Download Update",
                                  icon='IMPORT')
-            #Backups                     
-            update_box = box.box() if getattr(self, 'show_updates', True) else None
-            if update_box:
+                alert_row.operator("world.revert_hdri_version", 
+                                 text="Revert Version",
+                                 icon='LOOP_BACK')
+            
+            # Backup Settings
+            backup_header = update_box.row()
+            backup_header.prop(self, "show_backup_settings", 
+                               icon='TRIA_DOWN' if getattr(self, 'show_backup_settings', False) else 'TRIA_RIGHT',
+                               icon_only=True, emboss=False)
+            backup_header.label(text="Backup Settings", icon='FILE_BACKUP')
+            
+            if getattr(self, 'show_backup_settings', False):
                 backup_box = update_box.box()
                 backup_col = backup_box.column(align=True)
-                backup_col.label(text="Backup Settings", icon='FILE_BACKUP')
                 
                 # Backup toggle
                 backup_col.prop(self, "enable_backups", text="Enable Backup Before Update")
@@ -2971,37 +2983,35 @@ class QuickHDRIPreferences(AddonPreferences):
                     cleanup_row.operator("world.cleanup_hdri_backups", 
                                          text="Delete All Backup Files", 
                                          icon='TRASH')
-                                 
-            row = update_box.row()
-            row.operator("world.revert_hdri_version", text="Revert to Previous Version")
-                       
             
-            # Documentation section
-            docs_box = box.box()
-            docs_col = docs_box.column(align=True)
+            # Documentation Settings
+            docs_header = update_box.row()
+            docs_header.prop(self, "show_documentation", 
+                             icon='TRIA_DOWN' if getattr(self, 'show_documentation', False) else 'TRIA_RIGHT',
+                             icon_only=True, emboss=False)
+            docs_header.label(text="Documentation & Resources", icon='HELP')
             
-            # Documentation header
-            doc_header = docs_col.row()
-            doc_header.label(text="Documentation & Resources", icon='HELP')
-            
-            # Documentation links
-            links_row = docs_col.row(align=True)
-            links_row.scale_y = 1.2
-            links_row.operator("wm.url_open", 
-                             text="Documentation",
-                             icon='URL').url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
-            links_row.operator("wm.url_open",
-                             text="Report Issue",
-                             icon='ERROR').url = "https://github.com/mdreece/Quick-HDRI-Controls/issues"
-            
-            # Tips section
-            tips_box = box.box()
-            tips_col = tips_box.column(align=True)
-            tips_col.label(text="Quick Tips:", icon='INFO')
-            tips_col.label(text="• Use keyboard shortcut for quick access")
-            tips_col.label(text="• Organize HDRI directory")
-            tips_col.label(text="• Use PNG thumbnails for HDRs to ease resources usage")
-            tips_col.label(text="• Check for updates regularly (make features suggestions")
+            if getattr(self, 'show_documentation', False):
+                docs_box = update_box.box()
+                docs_col = docs_box.column(align=True)
+                
+                # Documentation links
+                links_row = docs_col.row(align=True)
+                links_row.scale_y = 1.2
+                links_row.operator("wm.url_open", 
+                                 text="Documentation",
+                                 icon='URL').url = "https://github.com/mdreece/Quick-HDRI-Controls/tree/main"
+                links_row.operator("wm.url_open",
+                                 text="Report Issue",
+                                 icon='ERROR').url = "https://github.com/mdreece/Quick-HDRI-Controls/issues"
+                
+                # Tips section
+                tips_col = docs_col.column(align=True)
+                tips_col.label(text="Quick Tips:", icon='INFO')
+                tips_col.label(text="• Use keyboard shortcut for quick access")
+                tips_col.label(text="• Organize HDRI directory")
+                tips_col.label(text="• Use PNG thumbnails for HDRs")
+                tips_col.label(text="• Check for updates regularly")
                  
         # Preview Generation Section
         box = layout.box()
@@ -3011,6 +3021,7 @@ class QuickHDRIPreferences(AddonPreferences):
                   icon_only=True, emboss=False)
         header_split = header.split(factor=0.7)
         header_split.label(text="Preview Generation", icon='IMAGE_DATA')
+        
         # Status indicator
         status_row = header_split.row(align=True)
         status_row.alignment = 'RIGHT'
@@ -3019,101 +3030,104 @@ class QuickHDRIPreferences(AddonPreferences):
             status_row.label(text="Processing", icon='TIME')
         else:
             status_row.label(text="Ready", icon='CHECKMARK')
+        
         if self.show_preview_generation:
             main_col = box.column(align=True)
             main_col.separator()
+            
             if self.is_generating:
-                # Only show status during generation
+                # Generating status
                 status_box = main_col.box()
                 status_box.alert = True
-                status_box.label(text="Generating Previews...", icon='TIME')
                 
-                status_row = status_box.row(align=True)
-                status_row.label(text="Current File:")
-                status_row.label(text=self.preview_stats_current_file)
+                grid = status_box.grid_flow(row_major=True, columns=2, even_columns=True)
                 
-                progress_row = status_box.row(align=True)
-                progress_row.label(text="Progress:")
-                progress_row.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
+                grid.label(text="Progress:")
+                grid.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
                 
-                time_row = status_box.row(align=True)
-                time_row.label(text="Elapsed Time:")
-                time_row.label(text=f"{self.preview_stats_time:.2f} seconds")
+                grid.label(text="Current File:")
+                grid.label(text=self.preview_stats_current_file or "N/A")
+                
+                grid.label(text="Time Elapsed:")
+                grid.label(text=f"{self.preview_stats_time:.2f} seconds")
+            
             else:
-                # Show full UI when not generating
-                # Processing Type Selection
-                type_box = main_col.box()
-                type_box.label(text="Processing Mode", icon='MODIFIER')
-                type_row = type_box.row(align=True)
-                type_row.scale_y = 1.2
-                type_row.prop_enum(self, "preview_generation_type", 'SINGLE', text="Single File", icon='IMAGE_DATA')
-                type_row.prop_enum(self, "preview_generation_type", 'MULTIPLE', text="Batch Process", icon='FILE_FOLDER')
-                type_row.prop_enum(self, "preview_generation_type", 'FULL_BATCH', text="Full Batch", icon='FILE_REFRESH')
-                # Source Selection - Only show if not in FULL_BATCH mode
+                # Processing Mode
+                mode_box = main_col.box()
+                mode_row = mode_box.row(align=True)
+                mode_row.label(text="Processing Mode", icon='MODIFIER')
+                mode_row.prop(self, "preview_generation_type", text="", icon='PRESET')
+                
+                # Source Selection
                 if self.preview_generation_type != 'FULL_BATCH':
                     source_box = main_col.box()
-                    source_box.label(text="Source", icon='FILEBROWSER')
                     source_row = source_box.row(align=True)
+                    source_row.label(text="Source", icon='FILEBROWSER')
+                    
                     if self.preview_generation_type == 'SINGLE':
                         source_row.prop(self, "preview_single_file", text="")
                     else:
                         source_row.prop(self, "preview_multiple_folder", text="")
+                
                 # Quality Settings
                 quality_box = main_col.box()
-                quality_box.label(text="Quality Settings", icon='SETTINGS')
+                quality_header = quality_box.row()
+                quality_header.label(text="Quality Settings", icon='SETTINGS')
                 
-                # Create two columns
-                quality_row = quality_box.row()
-                left_col = quality_row.column()
-                right_col = quality_row.column()
+                # Quality settings grid
+                quality_grid = quality_box.grid_flow(row_major=True, columns=2, even_columns=True)
+                
                 # Left column
-                left_col.label(text="Resolution Scale:")
-                left_col.prop(self, "preview_resolution", text="%")
-                left_col.label(text="Render Device:")
-                left_col.prop(self, "preview_render_device", text="")
-                # Right column
-                right_col.label(text="Render Samples:")
-                right_col.prop(self, "preview_samples", text="")
-                right_col.label(text="Scene Type:")
-                right_col.prop(self, "preview_scene_type", text="")
+                quality_grid.label(text="Scene Type:")
+                quality_grid.prop(self, "preview_scene_type", text="")
+                
+                quality_grid.label(text="Render Device:")
+                quality_grid.prop(self, "preview_render_device", text="")
+                
+                quality_grid.label(text="Resolution:")
+                quality_grid.prop(self, "preview_resolution", text="%")               
+                
+                quality_grid.label(text="Render Samples:")
+                quality_grid.prop(self, "preview_samples", text="")
+                
                 # Output Resolution Info
                 res_box = quality_box.box()
                 res_box.scale_y = 0.9
                 actual_x = int(1024 * (self.preview_resolution / 100))
                 actual_y = int(768 * (self.preview_resolution / 100))
                 res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
+                
                 # Generation Status
                 if self.preview_stats_total > 0 and self.show_generation_stats:
                     status_box = main_col.box()
-                    status_box.label(text="Generation Complete", icon='CHECKMARK')
+                    status_header = status_box.row()
+                    status_header.label(text="Generation Complete", icon='CHECKMARK')
                     
-                    if self.preview_stats_current_file:
-                        status_row = status_box.row(align=True)
-                        status_row.label(text="Last File:")
-                        status_row.label(text=self.preview_stats_current_file)
+                    status_grid = status_box.grid_flow(row_major=True, columns=2, even_columns=True)
                     
-                    progress_row = status_box.row(align=True)
-                    progress_row.label(text="Completed:")
-                    progress_row.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
+                    status_grid.label(text="Completed:")
+                    status_grid.label(text=f"{self.preview_stats_completed}/{self.preview_stats_total}")
                     
-                    time_row = status_box.row(align=True)
-                    time_row.label(text="Total Time:")
-                    time_row.label(text=f"{self.preview_stats_time:.2f} seconds")
+                    status_grid.label(text="Total Time:")
+                    status_grid.label(text=f"{self.preview_stats_time:.2f} seconds")
                     
                     clear_row = status_box.row()
                     clear_row.operator("world.clear_preview_stats", text="Clear Results", icon='X')
+                
                 # Action Buttons
                 main_col.separator()
                 action_box = main_col.box()
-                button_row = action_box.row(align=True)
-                button_row.scale_y = 1.5
-                button_row.scale_x = 2.0
+                
+                row = action_box.row(align=True)
+                row.scale_y = 1.5
+                
                 button_text = {
                     'SINGLE': 'Generate Preview',
                     'MULTIPLE': 'Generate Previews',
                     'FULL_BATCH': 'Generate All Previews'
                 }.get(self.preview_generation_type)
-                button_row.operator(
+                
+                row.operator(
                     "world.generate_hdri_previews",
                     text=button_text,
                     icon='RENDER_STILL'
@@ -3220,21 +3234,6 @@ class QuickHDRIPreferences(AddonPreferences):
                     # Clear Results Button
                     clear_row = result_box.row(align=True)
                     clear_row.operator("world.clear_proxy_stats", text="Clear Results", icon='X')
-        
-        # Render Engine Selection Section
-        render_box = layout.box()
-        header = render_box.row()
-        header.prop(self, "show_render_engine", 
-                   icon='TRIA_DOWN' if getattr(self, 'show_render_engine', True) else 'TRIA_RIGHT',
-                   icon_only=True, emboss=False)
-        header.label(text="Render Engine", icon='RENDER_RESULT')
-        if getattr(self, 'show_render_engine', True):
-            render_col = render_box.column(align=True)
-            render_col.prop(self, "render_engine", text="Engine")
-            
-            # Apply button
-            apply_row = render_col.row()
-            apply_row.operator("world.apply_render_engine", text="Apply Render Engine")
         
         # Keyboard Shortcuts Section
         box = layout.box()
@@ -3370,6 +3369,8 @@ class QuickHDRIPreferences(AddonPreferences):
     show_generation_stats: BoolProperty(default=False)
     preview_stats_visible: BoolProperty(default=False)
     show_render_engine: BoolProperty(default=False)
+    show_backup_settings: BoolProperty(default=False)
+    show_documentation: BoolProperty(default=False)
         
 class HDRI_OT_toggle_visibility(Operator):
     bl_idname = "world.toggle_hdri_visibility"
@@ -4655,21 +4656,29 @@ class HDRI_OT_apply_render_engine(Operator):
     bl_label = "Apply Render Engine"
     bl_description = "Switch between Cycles and Octane render engines"
     
+    target_engine: StringProperty(default='')
+    
     @classmethod
     def poll(cls, context):
-        # Disable if no file is currently loaded
         return context.preferences.addons[__name__].preferences is not None
     
     def invoke(self, context, event):
-        # Show confirmation dialog
-        return context.window_manager.invoke_confirm(
-            self, 
-            event, 
-            message="This will restart Blender. Are you sure you want to switch render engines?"
-        )
+        # Show confirmation dialog if target differs from current
+        if self.target_engine and self.target_engine != context.preferences.addons[__name__].preferences.render_engine:
+            return context.window_manager.invoke_confirm(
+                self, 
+                event, 
+                message=f"Switch to {self.target_engine} render engine? This will restart Blender."
+            )
+        return self.execute(context)
     
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
+        
+        # If target_engine is set, update render_engine
+        if self.target_engine:
+            preferences.render_engine = self.target_engine
+        
         return preferences.switch_render_engine(context)
     
 # Registration

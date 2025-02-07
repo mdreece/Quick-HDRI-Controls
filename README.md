@@ -273,23 +273,6 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 
 
 ##
-## Render Engine
-
-Select your render engine for compatibility (cycles is set by default)
-
-![image](https://github.com/user-attachments/assets/3d7ca2dd-61b2-4817-bf66-08b591968962)
-
- - Select desired engine
-    - Cycles: ![image](https://github.com/user-attachments/assets/924e7ef0-121f-48c6-a8d0-946b64a3ed24)
-
-    - Octane: ![image](https://github.com/user-attachments/assets/adf19051-eb2a-4d48-bd31-99ec0dd6afc4)
-
- - Click 'Apply Render Engine'
- - Restart Blender
-
-
-
-##
 ## Keyboard Shortcut
 Keyboard shortcut can be set for quickly pulling up the panel in the 3D viewport
 

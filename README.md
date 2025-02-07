@@ -71,11 +71,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Open the addon preferences (Edit > Preferences > Add-ons > Quick HDRI Controls)
 
-![image](https://github.com/user-attachments/assets/b977a654-6bf7-4ccb-9d6b-1ef5638119f2)
+![image](https://github.com/user-attachments/assets/41958f5e-cdc0-4476-829c-9a1c27f09100)
 
-2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory"
+2. Set your HDRI folder by clicking the folder icon next to "HDRI Directory". Select your desired Render Engine (Cycles by default, but supports Cycles and Octane)
 
-![image](https://github.com/user-attachments/assets/38793fa1-bfd0-4a9a-9d04-3a943ee34582)
+![image](https://github.com/user-attachments/assets/c88d2dd1-8b12-4376-a383-2b3a4651a8f9)
 
  - If this is not done, when attempting to use you will be prompted to set it anyway
    
@@ -171,7 +171,7 @@ Options:
 
 Stay up to date:
    
-![image](https://github.com/user-attachments/assets/f97eae56-54d3-43d9-bb2b-d8f2df973485)
+![image](https://github.com/user-attachments/assets/f42b17d7-4e01-4465-8228-822e497ea14c)
 
 Click on 'Check Now' to see if there are any pending updates.
  - If there are updates a message will prompt to update
@@ -197,10 +197,16 @@ Click on 'Check Now' to see if there are any pending updates.
 
 ### Backup Settings:
 
-![image](https://github.com/user-attachments/assets/6663eed7-8654-44dc-900d-6d0074ed3694)
+![image](https://github.com/user-attachments/assets/e91e404c-6b3a-4620-b739-791d9437cefa)
 
 Enable backups for when updating to new versions
  - Max Backup Files: Maximum number of saved previous addon versions
+
+### Documentation & Resources
+
+![image](https://github.com/user-attachments/assets/ecc827b8-1b24-45bf-a87b-68491e273ca3)
+
+
 
 
 
@@ -209,7 +215,7 @@ Enable backups for when updating to new versions
 You can setup thumbnail previews using a .png that has the same name as the hdr file but ends with _thumb.png
 Add the .png thumbnails to the same directory as the hdr.
 
-![ScreenRecording_01-03-2025 15-02-29_1](https://github.com/user-attachments/assets/86ecacc2-b239-4169-8d9a-32d2cb359b58)
+![image](https://github.com/user-attachments/assets/d3d6e99d-8a0e-456d-aa91-f679561cf843)
 
 ### Processing Type:
 

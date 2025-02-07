@@ -2778,18 +2778,21 @@ class QuickHDRIPreferences(AddonPreferences):
                              text="Check Now",
                              icon='FILE_REFRESH')
             
-            # Update Available Notification
+            # Update Notification
+            alert_box = update_box.box()
+            alert_row = alert_box.row()
+
             if self.update_available:
-                alert_box = update_box.box()
-                alert_box.alert = True
-                alert_row = alert_box.row()
-                alert_row.label(text="New Update Available!", icon='ERROR')
-                alert_row.operator("world.download_hdri_update", 
-                                 text="Download Update",
-                                 icon='IMPORT')
-                alert_row.operator("world.revert_hdri_version", 
-                                 text="Revert Version",
-                                 icon='LOOP_BACK')
+               alert_row.alert = True
+               alert_row.label(text="New Update Available!", icon='ERROR')
+               alert_row.operator("world.download_hdri_update", 
+                                text="Download Update",
+                                icon='IMPORT')
+
+            # Always show Revert Version button
+            alert_row.operator("world.revert_hdri_version", 
+                            text="Revert Version",
+                            icon='LOOP_BACK')
             
             # Backup Settings
             backup_header = update_box.row()

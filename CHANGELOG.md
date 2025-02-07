@@ -1,6 +1,21 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 2-7-2025: V2.7.3
+### New Features 🔔:
+• UI updates to Preferences
+ - Render Engine option now on same line as HDRI Directory
+ - Updates & Information has 'Backup Settings' and 'Documentation' dropdown sections.
+ - Preview Generation are updated to be more coherant. Dropdown menu options and layed out for a top down process.
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
+
 
 ## 2-3-2025: V2.7.2
 ### New Features 🔔:

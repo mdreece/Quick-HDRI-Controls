@@ -281,7 +281,7 @@ Windows/Linux:
 
 ![QHDRIC_Shortcut](https://github.com/user-attachments/assets/2386ee2a-7904-42e4-92fb-05bf0d9c8e85)
 
-MacOS (Intel, Apple Silicon has not been tested)
+MacOS:
 
 <img width="533" alt="Screenshot 2024-10-28 at 6 14 22 PM" src="https://github.com/user-attachments/assets/32e18476-9c7e-46b5-a583-8b34027db7ef">
 
@@ -365,7 +365,7 @@ Keyboard Shortcut Conflicts
 
 - Blender 4.3.0 (could work on previous versions)
 - Works with Cycles and Octane Render Engines only
-- Windows 10, Windows 11, MacOS Sequoia(ignore error on installation), Linux
+- Windows 10, Windows 11, MacOS Sequoia(have not tested M-Series, but I'd imagine it works), Linux
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures
 

@@ -11,6 +11,8 @@
 
 • Preview Generation are updated to be more coherant. Dropdown menu options and layed out for a top down process.
 
+• V-Ray is WIP for those who would use it. Release is TBD.
+
 ### Fixes 🛠️:
 • None
 

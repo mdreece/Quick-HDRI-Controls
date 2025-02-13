@@ -1,5 +1,5 @@
 # Quick HDRI Controls v2.7.3 for Blender (Cycles & Octane)
-
+(V-Ray support WIP)
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
 ![Version](https://img.shields.io/badge/Version-2.7.3-blue.svg)
 

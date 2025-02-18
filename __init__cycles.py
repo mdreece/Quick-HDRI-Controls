@@ -19,8 +19,8 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 3),
-    "blender": (4, 3, 0),
+    "version": (2, 7, 4),
+    "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
     "description": "Quickly adjust world HDRI rotation and selection",
@@ -652,31 +652,6 @@ def cleanup_preview_cache():
         if attr.startswith('preview_cache_'):
             delattr(generate_previews, attr)
             
-def get_hdri_metadata(image):
-    """Extract metadata from HDRI image"""
-    if not image:
-        return None
-        
-    metadata = {
-        'filename': os.path.basename(image.filepath) if image.filepath else image.name,
-        'resolution': f"{image.size[0]}x{image.size[1]}",
-        'color_space': image.colorspace_settings.name,
-        'file_format': image.file_format,
-        'channels': image.channels,
-        'file_size': os.path.getsize(image.filepath) if image.filepath else 0,
-        'filepath': image.filepath,
-    }
-    
-    # Convert file size to human-readable format
-    if metadata['file_size']:
-        size_bytes = metadata['file_size']
-        for unit in ['B', 'KB', 'MB', 'GB']:
-            if size_bytes < 1024:
-                metadata['file_size'] = f"{size_bytes:.1f} {unit}"
-                break
-            size_bytes /= 1024
-            
-    return metadata
     
 class HDRI_OT_generate_proxies(Operator):
     bl_idname = "world.generate_hdri_proxies"
@@ -1256,27 +1231,39 @@ def switch_to_preferred_render_engine(addon_path):
         # Paths for different engine scripts
         cycles_script = os.path.join(addon_path, "__init__cycles.py")
         octane_script = os.path.join(addon_path, "__init__octane.py")
+        vray_script = os.path.join(addon_path, "__init__vray.py")
         current_script = os.path.join(addon_path, "__init__.py")
         
-        # Ensure both engine scripts exist
-        if not os.path.exists(cycles_script) or not os.path.exists(octane_script):
-            return  # Can't switch if scripts are missing
+        # Ensure required engine scripts exist based on target engine
+        if render_engine == 'OCTANE' and not os.path.exists(octane_script):
+            return
+        elif render_engine == 'VRAY_RENDER_RT' and not os.path.exists(vray_script):
+            return
+        elif render_engine == 'CYCLES' and not os.path.exists(cycles_script):
+            return
         
         # Switch based on preferred render engine
         if render_engine == 'OCTANE':
-            # Backup current script as Cycles script if not exists
+            # Backup current script based on current engine
             if not os.path.exists(cycles_script):
                 shutil.copy2(current_script, cycles_script)
-            
-            # Replace current script with Octane script
+            # Replace with Octane script
             shutil.copy2(octane_script, current_script)
             
+        elif render_engine == 'VRAY_RENDER_RT':
+            # Backup current script based on current engine
+            if not os.path.exists(cycles_script):
+                shutil.copy2(current_script, cycles_script)
+            # Replace with V-Ray script
+            shutil.copy2(vray_script, current_script)
+            
         else:  # Default to Cycles
-            # Backup current script as Octane script if not exists
+            # Backup current script as appropriate version
             if not os.path.exists(octane_script):
                 shutil.copy2(current_script, octane_script)
-            
-            # Replace current script with Cycles script
+            if not os.path.exists(vray_script):
+                shutil.copy2(current_script, vray_script)
+            # Replace with Cycles script
             shutil.copy2(cycles_script, current_script)
         
     except Exception as e:
@@ -1964,11 +1951,6 @@ class HDRISettings(PropertyGroup):
         default=True
     )
     
-    show_metadata: BoolProperty(
-        name="Show Metadata",
-        description="Show/Hide HDRI metadata information",
-        default=False
-    )
     
     # Store previous HDRI state
     previous_hdri_path: StringProperty(
@@ -2361,6 +2343,23 @@ class QuickHDRIPreferences(AddonPreferences):
         description="Show preview generation statistics"
     )
     
+    show_preview_thumbnails: BoolProperty(
+        name="Show Preview Thumbnails Settings",
+        description="Show or hide preview thumbnails settings",
+        default=False
+    )
+    show_preview_generation_settings: BoolProperty(
+        name="Show Preview Generation Settings",
+        description="Show or hide preview generation settings",
+        default=False
+    )
+    
+    show_preview_limit_settings: BoolProperty(
+        name="Show Preview Limit Settings",
+        description="Show or hide preview limit settings",
+        default=False
+    )
+    
     preview_render_device: EnumProperty(
         name="Render Device",
         description="Device to use for preview rendering",
@@ -2482,8 +2481,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles', 'Use Cycles render engine'),
-            ('OCTANE', 'Octane', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.7.4', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.0', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.7.4', 'Use Octane render engine')
         ],
         default='CYCLES'
     )
@@ -2626,63 +2626,113 @@ class QuickHDRIPreferences(AddonPreferences):
     def switch_render_engine(self, context):
         import os
         import shutil
-        import bpy
-
-        # Check if Octane is installed when attempting to switch to Octane
-        if self.render_engine == 'OCTANE':
+        
+        # First verify if the target engine is actually available
+        if self.render_engine == 'VRAY_RENDER_RT':
+            # Check if V-Ray is available in render engines
             try:
-                # Attempt to check Octane's availability
+                # Try to temporarily set render engine to V-Ray
+                old_engine = context.scene.render.engine
+                context.scene.render.engine = 'VRAY_RENDER_RT'
+                # If we get here, V-Ray is available
+                # Restore original engine
+                context.scene.render.engine = old_engine
+            except:
+                def draw_vray_error(self, context):
+                    layout = self.layout
+                    layout.label(text="V-Ray is not installed!", icon='ERROR')
+                    layout.label(text="Please install the V-Ray plugin first.")
+                    layout.separator()
+                    layout.operator("preferences.addon_show", text="Open Addon Preferences").module = __name__
+                
+                context.window_manager.popup_menu(draw_vray_error, title="Render Engine Error", icon='ERROR')
+                self.render_engine = 'CYCLES'
+                return {'CANCELLED'}
+        
+        elif self.render_engine == 'OCTANE':
+            # Check for Octane installation
+            try:
                 import _octane
             except ImportError:
-                # Octane is not installed
                 def draw_octane_error(self, context):
                     layout = self.layout
-                    layout.label(text="Octane Render is not installed!", icon='ERROR')
-                    layout.label(text="Please install the Octane Render plugin first.")
+                    layout.label(text="Octane is not installed!", icon='ERROR')
+                    layout.label(text="Please install the Octane plugin first.")
+                    layout.separator()
+                    layout.operator("preferences.addon_show", text="Open Addon Preferences").module = __name__
                 
                 context.window_manager.popup_menu(draw_octane_error, title="Render Engine Error", icon='ERROR')
-                
-                # Revert back to Cycles
+                # Revert preference to Cycles since we know it's always available
                 self.render_engine = 'CYCLES'
                 return {'CANCELLED'}
 
-        # Rest of the existing switch_render_engine method
+        # If we get here, the target engine is available
         current_script_path = os.path.dirname(os.path.realpath(__file__))
         cycles_script = os.path.join(current_script_path, "__init__cycles.py")
+        vray_script = os.path.join(current_script_path, "__init__vray.py")
         octane_script = os.path.join(current_script_path, "__init__octane.py")
         current_script = os.path.join(current_script_path, "__init__.py")
-
+        
         try:
-            # If switching to Octane
-            if self.render_engine == 'OCTANE':
-                # Ensure Octane script exists
-                if not os.path.exists(octane_script):
-                    raise FileNotFoundError("Octane script (__init__octane.py) is missing")
-                
-                # Backup current script as Cycles script if not exists
-                if not os.path.exists(cycles_script):
-                    shutil.copy2(current_script, cycles_script)
-                
-                # Replace current script with Octane script
-                shutil.copy2(octane_script, current_script)
+            # Save current render engine preference
+            preferences_path = os.path.join(current_script_path, "preferences.json")
+            try:
+                import json
+                with open(preferences_path, 'w') as f:
+                    json.dump({
+                        'render_engine': self.render_engine
+                    }, f)
+            except Exception as e:
+                print(f"Could not save render engine preference: {str(e)}")
             
-            # If switching back to Cycles
-            elif self.render_engine == 'CYCLES':
-                # Ensure Cycles script exists
-                if not os.path.exists(cycles_script):
-                    raise FileNotFoundError("Cycles script (__init__cycles.py) is missing")
+            # Verify script files exist before attempting switch
+            if self.render_engine == 'VRAY_RENDER_RT' and not os.path.exists(vray_script):
+                self.report({'ERROR'}, "V-Ray script (__init__vray.py) is missing")
+                self.render_engine = context.scene.render.engine
+                return {'CANCELLED'}
                 
-                # Backup current script as Octane script if not exists
-                if not os.path.exists(octane_script):
+            elif self.render_engine == 'OCTANE' and not os.path.exists(octane_script):
+                self.report({'ERROR'}, "Octane script (__init__octane.py) is missing")
+                self.render_engine = context.scene.render.engine
+                return {'CANCELLED'}
+                
+            elif self.render_engine == 'CYCLES' and not os.path.exists(cycles_script):
+                self.report({'ERROR'}, "Cycles script (__init__cycles.py) is missing")
+                self.render_engine = context.scene.render.engine
+                return {'CANCELLED'}
+            
+            # Perform the switch based on selected engine
+            if self.render_engine == 'VRAY_RENDER_RT':
+                # Backup current script based on current engine
+                if context.scene.render.engine == 'CYCLES' and not os.path.exists(cycles_script):
+                    shutil.copy2(current_script, cycles_script)
+                elif context.scene.render.engine == 'OCTANE' and not os.path.exists(octane_script):
                     shutil.copy2(current_script, octane_script)
                 
-                # Replace current script with Cycles script
+                # Replace with V-Ray script
+                shutil.copy2(vray_script, current_script)
+                
+            elif self.render_engine == 'OCTANE':
+                # Backup current script based on current engine
+                if context.scene.render.engine == 'CYCLES' and not os.path.exists(cycles_script):
+                    shutil.copy2(current_script, cycles_script)
+                elif context.scene.render.engine == 'VRAY_RENDER_RT' and not os.path.exists(vray_script):
+                    shutil.copy2(current_script, vray_script)
+                
+                # Replace with Octane script
+                shutil.copy2(octane_script, current_script)
+                
+            else:  # CYCLES
+                # Backup current script based on current engine
+                if context.scene.render.engine == 'OCTANE' and not os.path.exists(octane_script):
+                    shutil.copy2(current_script, octane_script)
+                elif context.scene.render.engine == 'VRAY_RENDER_RT' and not os.path.exists(vray_script):
+                    shutil.copy2(current_script, vray_script)
+                
+                # Replace with Cycles script
                 shutil.copy2(cycles_script, current_script)
             
-            # Reset the change tracking when successfully switching
-            self._render_engine_changed = False
-            
-            # Prompt for restart using window manager
+            # Prompt for restart
             def invoke_restart_prompt():
                 bpy.ops.world.restart_prompt('INVOKE_DEFAULT')
             
@@ -2697,16 +2747,9 @@ class QuickHDRIPreferences(AddonPreferences):
             return {'FINISHED'}
             
         except Exception as e:
-            # Print error for debugging
-            print(f"Error switching render engine: {str(e)}")
-            
-            # Show error using window manager popup
-            context.window_manager.popup_menu(
-                lambda self, context: self.layout.label(text=f"Could not switch render engine: {str(e)}"), 
-                title="Error", 
-                icon='ERROR'
-            )
-            
+            self.report({'ERROR'}, f"Failed to switch render engine: {str(e)}")
+            # Revert preference to current engine on error
+            self.render_engine = context.scene.render.engine
             return {'CANCELLED'}
         
     def render_engine(self, context):
@@ -2848,15 +2891,15 @@ class QuickHDRIPreferences(AddonPreferences):
                 tips_col.label(text="• Use PNG thumbnails for HDRs")
                 tips_col.label(text="• Check for updates regularly")          
         
-        # Preview Generation Section
+        # Preview Thumbnails Section
         box = layout.box()
         header = box.row()
-        header.prop(self, "show_preview_generation", 
-                  icon='TRIA_DOWN' if self.show_preview_generation else 'TRIA_RIGHT',
+        header.prop(self, "show_preview_thumbnails", 
+                  icon='TRIA_DOWN' if self.show_preview_thumbnails else 'TRIA_RIGHT',
                   icon_only=True, emboss=False)
         header_split = header.split(factor=0.7)
-        header_split.label(text="Preview Generation", icon='IMAGE_DATA')
-        
+        header_split.label(text="Preview Thumbnails", icon='IMAGE_DATA')
+
         # Status indicator
         status_row = header_split.row(align=True)
         status_row.alignment = 'RIGHT'
@@ -2865,8 +2908,8 @@ class QuickHDRIPreferences(AddonPreferences):
             status_row.label(text="Processing", icon='TIME')
         else:
             status_row.label(text="Ready", icon='CHECKMARK')
-        
-        if self.show_preview_generation:
+
+        if self.show_preview_thumbnails:
             main_col = box.column(align=True)
             main_col.separator()
             
@@ -2887,50 +2930,99 @@ class QuickHDRIPreferences(AddonPreferences):
                 grid.label(text=f"{self.preview_stats_time:.2f} seconds")
             
             else:
-                # Processing Mode
-                mode_box = main_col.box()
-                mode_row = mode_box.row(align=True)
-                mode_row.label(text="Processing Mode", icon='MODIFIER')
-                mode_row.prop(self, "preview_generation_type", text="", icon='PRESET')
+                # Preview Generation Options
+                gen_box = main_col.box()
+                gen_header = gen_box.row()
+                gen_header.prop(self, "show_preview_generation_settings", 
+                              icon='TRIA_DOWN' if getattr(self, 'show_preview_generation_settings', False) else 'TRIA_RIGHT',
+                              icon_only=True, emboss=False)
+                gen_header.label(text="Preview Generation", icon='PRESET')
                 
-                # Source Selection
-                if self.preview_generation_type != 'FULL_BATCH':
-                    source_box = main_col.box()
-                    source_row = source_box.row(align=True)
-                    source_row.label(text="Source", icon='FILEBROWSER')
+                if getattr(self, 'show_preview_generation_settings', False):
+                    gen_col = gen_box.column(align=True)
                     
-                    if self.preview_generation_type == 'SINGLE':
-                        source_row.prop(self, "preview_single_file", text="")
+                    # Processing Mode
+                    mode_row = gen_col.row(align=True)
+                    mode_row.label(text="Processing Mode:", icon='MODIFIER')
+                    mode_row.prop(self, "preview_generation_type", text="")
+                    
+                    # Source Selection
+                    if self.preview_generation_type != 'FULL_BATCH':
+                        source_row = gen_col.row(align=True)
+                        source_row.label(text="Source:", icon='FILEBROWSER')
+                        
+                        if self.preview_generation_type == 'SINGLE':
+                            source_row.prop(self, "preview_single_file", text="")
+                        else:
+                            source_row.prop(self, "preview_multiple_folder", text="")
+                    
+                    # Quality Settings
+                    quality_box = gen_col.box()
+                    quality_header = quality_box.row()
+                    quality_header.label(text="Quality Settings", icon='SETTINGS')
+                    
+                    # Quality settings grid
+                    quality_grid = quality_box.grid_flow(row_major=True, columns=2, even_columns=True)
+                    
+                    quality_grid.label(text="Scene Type:")
+                    quality_grid.prop(self, "preview_scene_type", text="")
+                    
+                    quality_grid.label(text="Render Device:")
+                    quality_grid.prop(self, "preview_render_device", text="")
+                    
+                    quality_grid.label(text="Resolution:")
+                    quality_grid.prop(self, "preview_resolution", text="%")               
+                    
+                    quality_grid.label(text="Render Samples:")
+                    quality_grid.prop(self, "preview_samples", text="")
+                                   
+                    # Output Resolution Info
+                    res_box = quality_box.box()
+                    res_box.scale_y = 0.9
+                    actual_x = int(1024 * (self.preview_resolution / 100))
+                    actual_y = int(768 * (self.preview_resolution / 100))
+                    res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
+                    
+                    # Generation Button
+                    gen_col.separator()
+                    action_row = gen_col.row(align=True)
+                    action_row.scale_y = 1.5
+                    
+                    button_text = {
+                        'SINGLE': 'Generate Preview',
+                        'MULTIPLE': 'Generate Previews',
+                        'FULL_BATCH': 'Generate All Previews'
+                    }.get(self.preview_generation_type)
+                    
+                    action_row.operator(
+                        "world.generate_hdri_previews",
+                        text=button_text,
+                        icon='RENDER_STILL'
+                    )
+                
+                # Preview Limit section
+                preview_limit_box = main_col.box()
+                preview_limit_header = preview_limit_box.row()
+                preview_limit_header.prop(self, "show_preview_limit_settings", 
+                            icon='TRIA_DOWN' if getattr(self, 'show_preview_limit_settings', False) else 'TRIA_RIGHT',
+                            icon_only=True, emboss=False)
+                preview_limit_header.label(text="Preview Limit", icon='IMAGE_DATA')
+                
+                if getattr(self, 'show_preview_limit_settings', False):
+                    limit_col = preview_limit_box.column(align=True)
+                    
+                    # Dropdown for preview limit
+                    limit_row = limit_col.row()
+                    limit_row.label(text="Maximum Previews:")
+                    limit_row.prop(self, "preview_limit", text="")
+                    
+                    # Explanation for preview limit
+                    explanation_box = limit_col.box()
+                    explanation_box.scale_y = 0.9
+                    if self.preview_limit == 0:
+                        explanation_box.label(text="No limit: All HDRIs will be loaded", icon='INFO')
                     else:
-                        source_row.prop(self, "preview_multiple_folder", text="")
-                
-                # Quality Settings
-                quality_box = main_col.box()
-                quality_header = quality_box.row()
-                quality_header.label(text="Quality Settings", icon='SETTINGS')
-                
-                # Quality settings grid
-                quality_grid = quality_box.grid_flow(row_major=True, columns=2, even_columns=True)
-                
-                # Left column
-                quality_grid.label(text="Scene Type:")
-                quality_grid.prop(self, "preview_scene_type", text="")
-                
-                quality_grid.label(text="Render Device:")
-                quality_grid.prop(self, "preview_render_device", text="")
-                
-                quality_grid.label(text="Resolution:")
-                quality_grid.prop(self, "preview_resolution", text="%")               
-                
-                quality_grid.label(text="Render Samples:")
-                quality_grid.prop(self, "preview_samples", text="")
-                               
-                # Output Resolution Info
-                res_box = quality_box.box()
-                res_box.scale_y = 0.9
-                actual_x = int(1024 * (self.preview_resolution / 100))
-                actual_y = int(768 * (self.preview_resolution / 100))
-                res_box.label(text=f"Output Resolution: {actual_x} × {actual_y} pixels")
+                        explanation_box.label(text=f"Only the first {self.preview_limit} HDRIs will be shown", icon='RESTRICT_VIEW_OFF')
                 
                 # Generation Status
                 if self.preview_stats_total > 0 and self.show_generation_stats:
@@ -2948,25 +3040,6 @@ class QuickHDRIPreferences(AddonPreferences):
                     
                     clear_row = status_box.row()
                     clear_row.operator("world.clear_preview_stats", text="Clear Results", icon='X')
-                
-                # Action Buttons
-                main_col.separator()
-                action_box = main_col.box()
-                
-                row = action_box.row(align=True)
-                row.scale_y = 1.5
-                
-                button_text = {
-                    'SINGLE': 'Generate Preview',
-                    'MULTIPLE': 'Generate Previews',
-                    'FULL_BATCH': 'Generate All Previews'
-                }.get(self.preview_generation_type)
-                
-                row.operator(
-                    "world.generate_hdri_previews",
-                    text=button_text,
-                    icon='RENDER_STILL'
-                )
  
                 
         # Proxy Section
@@ -4378,51 +4451,7 @@ class HDRI_PT_controls(Panel):
                         sub = row.row(align=True)
                         sub.scale_x = 1.0
                         sub.scale_y = 1.0
-                        sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')
-                # Metadata at bottom
-                meta_row = rotation_box.row(align=True)
-                meta_row.label(text="Metadata", icon='INFO')
-                meta_row.scale_y = 0.5
-                meta_row.prop(hdri_settings, "show_metadata",
-                    icon='TRIA_DOWN' if hdri_settings.show_metadata else 'TRIA_RIGHT',
-                    icon_only=True,
-                    emboss=False)
-                if hdri_settings.show_metadata and env_tex and env_tex.image:
-                    meta_box = rotation_box.box()
-                    meta_col = meta_box.column(align=True)
-                    meta_col.scale_y = 0.9
-                    metadata = get_hdri_metadata(env_tex.image)
-                    
-                    if metadata:
-                        # Filename
-                        row = meta_col.row(align=True)
-                        row.label(text="File:", icon='FILE_IMAGE')
-                        row.label(text=metadata['filename'])
-                      
-                        # Resolution
-                        row = meta_col.row(align=True)
-                        row.label(text="Resolution:", icon='TEXTURE')
-                        row.label(text=metadata['resolution'])
-                        
-                        # Color Space
-                        row = meta_col.row(align=True)
-                        row.label(text="Color Space:", icon='COLOR')
-                        row.label(text=metadata['color_space'])
-                        
-                        # Channels
-                        row = meta_col.row(align=True)
-                        row.label(text="Channels:", icon='NODE_COMPOSITING')
-                        row.label(text=str(metadata['channels']))
-                        
-                        # File Size
-                        row = meta_col.row(align=True)
-                        row.label(text="File Size:", icon='FILE_BLANK')
-                        row.label(text=metadata['file_size'])
-                        
-                        # File Format
-                        row = meta_col.row(align=True)
-                        row.label(text="Format:", icon='FILE')
-                        row.label(text=metadata['file_format'])                        
+                        sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')                    
         
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
@@ -4456,7 +4485,7 @@ def draw_hdri_menu(self, context):
 class HDRI_OT_apply_render_engine(Operator):
     bl_idname = "world.apply_render_engine"
     bl_label = "Apply Render Engine"
-    bl_description = "Switch between Cycles and Octane render engines"
+    bl_description = "Switch between render engines"
     
     target_engine: StringProperty(default='')
     
@@ -4465,12 +4494,39 @@ class HDRI_OT_apply_render_engine(Operator):
         return context.preferences.addons[__name__].preferences is not None
     
     def invoke(self, context, event):
+        # Check engine availability before showing confirmation
+        preferences = context.preferences.addons[__name__].preferences
+        target = self.target_engine or preferences.render_engine
+        
+        if target == 'VRAY_RENDER_RT':
+            # Check if V-Ray is in the available render engines
+            if not hasattr(bpy.ops, 'vray'):
+                def draw_vray_error(self, context):
+                    layout = self.layout
+                    layout.label(text="V-Ray is not installed!", icon='ERROR')
+                    layout.label(text="Please install the V-Ray plugin first.")
+                
+                context.window_manager.popup_menu(draw_vray_error, title="Render Engine Error", icon='ERROR')
+                return {'CANCELLED'}
+                
+        elif target == 'OCTANE':
+            try:
+                import _octane
+            except ImportError:
+                def draw_octane_error(self, context):
+                    layout = self.layout
+                    layout.label(text="Octane is not installed!", icon='ERROR')
+                    layout.label(text="Please install the Octane plugin first.")
+                
+                context.window_manager.popup_menu(draw_octane_error, title="Render Engine Error", icon='ERROR')
+                return {'CANCELLED'}
+        
         # Show confirmation dialog if target differs from current
-        if self.target_engine and self.target_engine != context.preferences.addons[__name__].preferences.render_engine:
+        if target != preferences.render_engine:
             return context.window_manager.invoke_confirm(
                 self, 
                 event, 
-                message=f"Switch to {self.target_engine} render engine? This will restart Blender."
+                message=f"Switch to {target} render engine? This will restart Blender."
             )
         return self.execute(context)
     

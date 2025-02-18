@@ -17,7 +17,7 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
 from bpy.app.handlers import persistent
 import numpy as np
 bl_info = {
-    "name": "Quick HDRI Controls (Cycles)",
+    "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
     "version": (2, 7, 4),
     "blender": (4, 0, 0),
@@ -180,168 +180,103 @@ def get_icons():
     return get_icons.icon_collection
 def get_hdri_previews():
     """Get or create the preview collection"""
+    print("Creating/getting preview collection")  # Debug
     if not hasattr(get_hdri_previews, "preview_collection"):
+        print("Creating new preview collection")  # Debug
         pcoll = bpy.utils.previews.new()
         get_hdri_previews.preview_collection = pcoll
-        #cache for current directory
         get_hdri_previews.cached_dir = None
         get_hdri_previews.cached_items = []
+    else:
+        print(f"Using existing collection with {len(get_hdri_previews.preview_collection)} items")  # Debug
     return get_hdri_previews.preview_collection
-def generate_previews(self, context):
-    """Generate preview items for HDRIs in current folder, using cache when possible"""
-    if not hasattr(context.scene, "hdri_settings"):
-        return []
         
+def generate_previews(self, context):
+    """Generate preview items for HDRIs in current folder"""
+    if not hasattr(context.scene, "hdri_settings"):
+        return [('', 'None', '', 0, 0)]
+
     preferences = context.preferences.addons[__name__].preferences
     base_dir = os.path.normpath(os.path.abspath(preferences.hdri_directory))
     current_dir = context.scene.hdri_settings.current_folder or base_dir
     current_dir = os.path.normpath(os.path.abspath(current_dir))
-    
+
     # Get search query and normalize it
     search_query = context.scene.hdri_settings.search_query.lower().strip()
-    
-    # Clear cache if search query is empty and we were previously searching
-    if not search_query and hasattr(get_hdri_previews, "last_search_query") and get_hdri_previews.last_search_query:
-        get_hdri_previews.cached_dir = None
-        get_hdri_previews.cached_items = []
-        pcoll = get_hdri_previews()
-        pcoll.clear()
-    
-    # Store current search query for next time
-    get_hdri_previews.last_search_query = search_query
-    
-    search_terms = search_query.replace('_', ' ').replace('-', ' ').split()
-    
-    # If search query is present, search entire base directory
-    search_dir = base_dir if search_query else current_dir
-    
-    # Check cache with search consideration
-    if (hasattr(get_hdri_previews, "cached_dir") and 
-        get_hdri_previews.cached_dir == search_dir and 
-        get_hdri_previews.cached_items):
-        
-        if search_query:
-            filtered_items = []
-            for item in get_hdri_previews.cached_items:
-                if item[0] == '':  # Keep 'None' option
-                    continue
-                    
-                # Get full path and filename for searching
-                filepath = item[0]
-                filename = os.path.basename(filepath)
-                rel_path = os.path.relpath(filepath, base_dir)
-                
-                # Create searchable text that includes path and filename
-                searchable_text = f"{rel_path} {filename}".lower()
-                searchable_text = searchable_text.replace('_', ' ').replace('-', ' ')
-                
-                # Check if all search terms are found
-                if all(term in searchable_text for term in search_terms):
-                    filtered_items.append(item)
-            
-            # Add 'None' option at the beginning if we found matches
-            if filtered_items:
-                filtered_items.insert(0, get_hdri_previews.cached_items[0])
-                
-            return filtered_items
-        
-        return get_hdri_previews.cached_items
-    
-    # Generate new previews
-    enum_items = []
+
     pcoll = get_hdri_previews()
-    
+    enum_items = [('', 'None', '', 0, 0)]
+
     # Get enabled extensions
     extensions = []
     if preferences.use_hdr: extensions.append('.hdr')
     if preferences.use_exr: extensions.append('.exr')
-    
+
     if not extensions:
         return enum_items
-    
-    # Add empty option
-    enum_items.append(('', 'None', '', 0, 0))
-    
+
+    # Determine search directory based on search query
+    search_dir = base_dir if search_query else current_dir
+    search_terms = search_query.replace('_', ' ').replace('-', ' ').split()
+
     try:
-        # Recursively find HDRI files
+        # Get all HDRI files
         hdri_files = []
         for root, dirs, files in os.walk(search_dir):
-            # Skip proxy folders
-            if 'proxies' in dirs:
+            if 'proxies' in dirs:  # Skip proxy folders
                 dirs.remove('proxies')
             
             for filename in files:
-                lower_name = filename.lower()
-                if any(lower_name.endswith(ext) for ext in extensions):
+                if filename.lower().endswith(tuple(extensions)):
                     full_path = os.path.join(root, filename)
-                    rel_path = os.path.relpath(full_path, base_dir)
-                    hdri_files.append((filename, full_path, rel_path))
-        
-        # Apply search filtering
-        if search_query:
+                    # Store the original path in our tracking
+                    original_paths[os.path.basename(filename)] = full_path
+                    hdri_files.append((filename, full_path))
+
+        # Apply search filter if needed
+        if search_terms:
             filtered_files = []
-            for filename, full_path, rel_path in hdri_files:
-                # Create searchable text that includes path and filename
+            for filename, full_path in hdri_files:
+                rel_path = os.path.relpath(full_path, base_dir)
                 searchable_text = f"{rel_path} {filename}".lower()
                 searchable_text = searchable_text.replace('_', ' ').replace('-', ' ')
                 
-                # Check if all search terms are found
                 if all(term in searchable_text for term in search_terms):
-                    filtered_files.append((filename, full_path, rel_path))
-            
+                    filtered_files.append((filename, full_path))
             hdri_files = filtered_files
-        
-        # Sort files by name while preserving directory structure
-        hdri_files.sort(key=lambda x: (os.path.dirname(x[2]), x[0]))
-        
-        # Process each HDR file
-        for idx, (filename, hdri_path, _) in enumerate(hdri_files, 1):
+
+        # Process thumbnails and create enum items
+        for idx, (filename, hdri_path) in enumerate(hdri_files, 1):
             try:
                 base_name = os.path.splitext(filename)[0]
-                base_name = base_name.rsplit('_', 1)[0]
-                
-                # Look for thumbnail in the same directory
                 thumb_path = os.path.join(os.path.dirname(hdri_path), f"{base_name}_thumb.png")
-                preview_path = thumb_path if os.path.exists(thumb_path) else hdri_path
                 
+                # Load thumbnail
                 if hdri_path not in pcoll:
-                    thumb = pcoll.load(hdri_path, preview_path, 'IMAGE')
-                    if not thumb or not thumb.icon_id:
-                        img = bpy.data.images.load(preview_path, check_existing=True)
-                        img.gl_load()
-                        thumb = pcoll.load(hdri_path, preview_path, 'IMAGE')
-                        img.gl_free()
-                        bpy.data.images.remove(img)
+                    thumb = pcoll.load(hdri_path, thumb_path if os.path.exists(thumb_path) else hdri_path, 'IMAGE')
                 else:
                     thumb = pcoll[hdri_path]
-                
+
                 if thumb and thumb.icon_id:
-                    # Include relative path in the display name when searching
-                    display_name = base_name
-                    if search_query:
-                        parent_dir = os.path.basename(os.path.dirname(hdri_path))
-                        if parent_dir:
-                            display_name = f"{parent_dir}/{display_name}"
+                    # Store the original path when creating enum items
+                    original_paths[hdri_path] = hdri_path
                     
+                    # Create enum item with original path as identifier
                     enum_items.append((
-                        hdri_path,
-                        display_name,
-                        "Using thumbnail preview" if preview_path != hdri_path else "",
+                        hdri_path,  # Always use original path as identifier
+                        base_name,
+                        "HDRI file",
                         thumb.icon_id,
                         idx
                     ))
-                
+
             except Exception as e:
                 print(f"Error processing {filename}: {str(e)}")
                 continue
-                
+
     except Exception as e:
         print(f"Error scanning directory: {str(e)}")
-    
-    # Cache the results
-    get_hdri_previews.cached_dir = search_dir
-    get_hdri_previews.cached_items = enum_items
-    
+
     return enum_items
     
     
@@ -412,10 +347,19 @@ def get_folders(context):
         print(f"Error reading directory {current_dir}: {str(e)}")
     return items
 def update_background_strength(self, context):
-    if context.scene.world and context.scene.world.use_nodes:
-        for node in context.scene.world.node_tree.nodes:
-            if node.type == 'BACKGROUND':
-                node.inputs['Strength'].default_value = self.background_strength
+    vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+    if vray_collection:
+        for obj in vray_collection.objects:
+            if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                if obj.data and obj.data.node_tree:
+                    light_dome = obj.data.node_tree.nodes.get("Light Dome")
+                    if light_dome:
+                        # Use the correct input name 'Intensity'
+                        light_dome.inputs['Intensity'].value = self.background_strength  # Changed to .value
+                        # Force viewport update
+                        light_dome.update()  # Added node update
+                        break
+
 def check_for_update_on_startup():
     """Check for updates on Blender startup if enabled in preferences."""
     preferences = bpy.context.preferences.addons[__name__].preferences
@@ -525,66 +469,43 @@ def load_handler(dummy):
             alt=preferences.popup_alt
         )
         addon_keymaps.append((km, kmi))
-def ensure_world_nodes():
-    """Ensure world nodes exist and are properly connected"""
+def ensure_vray_setup():
+    """Ensure V-Ray collection exists and return the dome light"""
     scene = bpy.context.scene
     
-    # Create world if it doesn't exist
-    if not scene.world:
-        scene.world = bpy.data.worlds.new("World")
+    # Check if V-Ray collection already exists
+    vray_collection = bpy.data.collections.get("vRay HDRI Controls")
     
-    world = scene.world
-    world.use_nodes = True
-    
-    # Initialize both visibility systems
-    if hasattr(world, "cycles_visibility"):
-        world.cycles_visibility.camera = True
-    
-    if hasattr(world, "visibility"):
-        world.visibility.camera = True
-    
-    nodes = world.node_tree.nodes
-    links = world.node_tree.links
-    
-    # Clear all nodes
-    nodes.clear()
-    
-    # Create nodes
-    node_output = nodes.new('ShaderNodeOutputWorld')
-    node_background = nodes.new('ShaderNodeBackground')
-    node_env = nodes.new('ShaderNodeTexEnvironment')
-    node_mapping = nodes.new('ShaderNodeMapping')
-    node_coord = nodes.new('ShaderNodeTexCoord')
-    
-    # Set initial strength
-    if hasattr(scene, "hdri_settings"):
-        node_background.inputs['Strength'].default_value = scene.hdri_settings.background_strength
-    
-    # Link nodes
-    links.new(node_coord.outputs['Generated'], node_mapping.inputs['Vector'])
-    links.new(node_mapping.outputs['Vector'], node_env.inputs['Vector'])
-    links.new(node_env.outputs['Color'], node_background.inputs['Color'])
-    links.new(node_background.outputs['Background'], node_output.inputs['Surface'])
-    
-    # Arrange nodes
-    node_output.location = (600, 300)
-    node_background.location = (300, 300)
-    node_env.location = (0, 300)
-    node_mapping.location = (-300, 300)
-    node_coord.location = (-600, 300)
-    
-    # Set up proxy handling
-    if hasattr(scene, "hdri_settings"):
-        hdri_settings = scene.hdri_settings
-        preferences = bpy.context.preferences.addons[__name__].preferences
+    if not vray_collection:
+        # Append V-Ray collection from support file
+        addon_dir = os.path.dirname(os.path.realpath(__file__))
+        vray_support_file = os.path.join(addon_dir, "misc", "vray", "vray_support.blend")
         
-        # Initialize proxy settings from preferences if not already set
-        if not hdri_settings.is_property_set("proxy_resolution"):
-            hdri_settings.proxy_resolution = preferences.default_proxy_resolution
-        if not hdri_settings.is_property_set("proxy_mode"):
-            hdri_settings.proxy_mode = preferences.default_proxy_mode
+        # Ensure the support file exists
+        if not os.path.exists(vray_support_file):
+            raise FileNotFoundError(f"V-Ray support file not found: {vray_support_file}")
+        
+        with bpy.data.libraries.load(vray_support_file, link=False) as (data_from, data_to):
+            data_to.collections = ["vRay HDRI Controls"]
+            
+        # Link collection to scene if the collection was successfully loaded
+        if data_to.collections and data_to.collections[0]:
+            vray_collection = data_to.collections[0]
+            scene.collection.children.link(vray_collection)
+        else:
+            raise RuntimeError("Failed to load V-Ray HDRI Controls collection")
     
-    return node_mapping, node_env, node_background
+    # Get VRayDomeLight
+    dome_light = None
+    for obj in vray_collection.objects:
+        if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+            dome_light = obj
+            break
+    
+    if not dome_light:
+        raise Exception("VRayDomeLight not found in collection")
+        
+    return dome_light
     
 def cleanup_hdri_proxies():
     """Clean up old proxy files"""
@@ -626,11 +547,16 @@ def has_hdri_files(context):
     
     return False
 def has_active_hdri(context):
-    """Check if there is an active HDRI loaded"""
-    if context.scene.world and context.scene.world.use_nodes:
-        for node in context.scene.world.node_tree.nodes:
-            if node.type == 'TEX_ENVIRONMENT' and node.image:
-                return True
+    """Check if there is an active HDRI loaded in V-Ray"""
+    # Find the VRayDomeLight
+    vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+    if vray_collection:
+        for obj in vray_collection.objects:
+            if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                if obj.data and obj.data.node_tree:
+                    bitmap_node = obj.data.node_tree.nodes.get("V-Ray Bitmap")
+                    if bitmap_node and hasattr(bitmap_node, 'BitmapBuffer') and bitmap_node.BitmapBuffer and bitmap_node.BitmapBuffer.file:
+                        return True
     return False
     
 def cleanup_unused_images():
@@ -652,6 +578,31 @@ def cleanup_preview_cache():
         if attr.startswith('preview_cache_'):
             delattr(generate_previews, attr)
             
+def get_hdri_metadata(image):
+    """Extract metadata from HDRI image"""
+    if not image:
+        return None
+        
+    metadata = {
+        'filename': os.path.basename(image.filepath) if image.filepath else image.name,
+        'resolution': f"{image.size[0]}x{image.size[1]}",
+        'color_space': image.colorspace_settings.name,
+        'file_format': image.file_format,
+        'channels': image.channels,
+        'file_size': os.path.getsize(image.filepath) if image.filepath else 0,
+        'filepath': image.filepath,
+    }
+    
+    # Convert file size to human-readable format
+    if metadata['file_size']:
+        size_bytes = metadata['file_size']
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024:
+                metadata['file_size'] = f"{size_bytes:.1f} {unit}"
+                break
+            size_bytes /= 1024
+            
+    return metadata
     
 class HDRI_OT_generate_proxies(Operator):
     bl_idname = "world.generate_hdri_proxies"
@@ -928,159 +879,192 @@ def create_hdri_proxy(original_path, target_resolution):
         
 @persistent
 def reload_original_for_render(dummy):
-    """Handler to reload original image for rendering"""
+    """Handler to replace proxy with full-quality HDRI before rendering"""
     context = bpy.context
-    if context.scene.world and context.scene.world.use_nodes:
-        for node in context.scene.world.node_tree.nodes:
-            if node.type == 'TEX_ENVIRONMENT' and node.image:
-                settings = context.scene.hdri_settings
-                original_path = original_paths.get(node.image.name)
-                
-                # Only reload original for 'VIEWPORT' mode
-                if original_path and settings.proxy_mode == 'VIEWPORT':
-                    node.image = bpy.data.images.load(original_path, check_existing=True)
-                break
-@persistent
-def reset_proxy_after_render(dummy):
-    """Handler to reset proxy image after render cancellation"""
-    context = bpy.context
-    if context.scene.world and context.scene.world.use_nodes:
-        for node in context.scene.world.node_tree.nodes:
-            if node.type == 'TEX_ENVIRONMENT' and node.image:
-                settings = context.scene.hdri_settings
-                original_path = original_paths.get(node.image.name)
-                
-                # Reset to proxy only for 'VIEWPORT' mode
-                if original_path and settings.proxy_mode == 'VIEWPORT':
-                    proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
-                    if proxy_path:
-                        node.image = bpy.data.images.load(proxy_path, check_existing=True)
-                break
-@persistent
-def reset_proxy_after_render_complete(dummy):
-    """Handler to reset proxy image after rendering completes"""
-    context = bpy.context
-    if context.scene.world and context.scene.world.use_nodes:
-        env_tex = None
-        for node in context.scene.world.node_tree.nodes:
-            if node.type == 'TEX_ENVIRONMENT':
-                env_tex = node
-                break
-                
-        if env_tex and env_tex.image:
-            settings = context.scene.hdri_settings
-            original_path = original_paths.get(env_tex.image.name, env_tex.image.filepath)
-            
-            if settings.proxy_mode == 'VIEWPORT':
-                proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
-                if proxy_path:
-                    # Clear existing image to ensure clean reload
-                    current_image = env_tex.image
-                    env_tex.image = None
-                    if current_image.users == 0:
-                        bpy.data.images.remove(current_image)
-                        
-                    # Load proxy
-                    env_tex.image = bpy.data.images.load(proxy_path, check_existing=True)
-        
-        
-def update_hdri_proxy(self, context):
-    """Update handler for proxy resolution and mode changes"""
-    if not context.scene.world or not context.scene.world.use_nodes:
-        return
-    
-    # Find environment texture node
-    env_tex = None
-    for node in context.scene.world.node_tree.nodes:
-        if node.type == 'TEX_ENVIRONMENT':
-            env_tex = node
-            break
-            
-    if not env_tex or not env_tex.image:
-        return
-        
     settings = context.scene.hdri_settings
     
+    # Only swap for 'VIEWPORT' proxy mode
+    if settings.proxy_mode == 'VIEWPORT':
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        if vray_collection:
+            for obj in vray_collection.objects:
+                if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                    node_tree = obj.data.node_tree
+                    bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
+                    
+                    if bitmap_node and bitmap_node.BitmapBuffer:
+                        current_file = bitmap_node.BitmapBuffer.file
+                        original_path = original_paths.get(os.path.basename(current_file), current_file)
+                        
+                        # Replace proxy with original high-quality HDRI
+                        bitmap_node.BitmapBuffer.file = original_path
+                        print("V-Ray: Swapped to full-quality HDRI for rendering")
+                    break
+
+@persistent
+def reset_proxy_after_render(dummy):
+    """Handler to reset to proxy after render cancellation"""
+    context = bpy.context
+    settings = context.scene.hdri_settings
+    
+    # Only swap back for 'VIEWPORT' proxy mode
+    if settings.proxy_mode == 'VIEWPORT':
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        if vray_collection:
+            for obj in vray_collection.objects:
+                if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                    node_tree = obj.data.node_tree
+                    bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
+                    
+                    if bitmap_node and bitmap_node.BitmapBuffer:
+                        current_file = bitmap_node.BitmapBuffer.file
+                        original_path = original_paths.get(os.path.basename(current_file), current_file)
+                        
+                        # Create and load proxy
+                        proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
+                        if proxy_path:
+                            bitmap_node.BitmapBuffer.file = proxy_path
+                            print("V-Ray: Render cancelled, swapped back to proxy")
+                    break
+
+@persistent
+def reset_proxy_after_render_complete(dummy):
+    """Handler to reset to proxy after rendering completes"""
+    context = bpy.context
+    settings = context.scene.hdri_settings
+    
+    # Only swap back for 'VIEWPORT' proxy mode
+    if settings.proxy_mode == 'VIEWPORT':
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        if vray_collection:
+            for obj in vray_collection.objects:
+                if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                    node_tree = obj.data.node_tree
+                    bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
+                    
+                    if bitmap_node and bitmap_node.BitmapBuffer:
+                        current_file = bitmap_node.BitmapBuffer.file
+                        original_path = original_paths.get(os.path.basename(current_file), current_file)
+                        
+                        # Create and load proxy
+                        proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
+                        if proxy_path:
+                            bitmap_node.BitmapBuffer.file = proxy_path
+                            print("V-Ray: Render complete, swapped back to proxy")
+                    break
+              
+def update_hdri_proxy(self, context):
+    """Universal HDRI proxy update method"""
     # Close proxy settings on any resolution or mode change
-    context.scene.hdri_settings.show_proxy_settings = False
+    context.scene.view_settings.view_transform = 'AgX'
     
-    # Get the original path - check in multiple places
-    current_image = env_tex.image
-    original_path = None
-    
-    # First check original_paths using image name
-    if current_image.name in original_paths:
-        original_path = original_paths[current_image.name]
-    # Then check original_paths using basename of filepath
-    elif os.path.basename(current_image.filepath) in original_paths:
-        original_path = original_paths[os.path.basename(current_image.filepath)]
-    # Finally use current filepath
-    else:
-        original_path = current_image.filepath
-    
-    # Always clear current image to force reload
-    env_tex.image = None
-    if current_image.users == 0:
-        bpy.data.images.remove(current_image)
-    
-    try:
-        if settings.proxy_resolution == 'ORIGINAL':
+    # Determine the appropriate node based on render engine
+    if context.scene.render.engine == 'CYCLES':
+        # Cycles uses world node tree
+        world = context.scene.world
+        if not world or not world.use_nodes:
+            return
+        
+        env_tex = None
+        background = None
+        current_image = None
+        for node in world.node_tree.nodes:
+            if node.type == 'TEX_ENVIRONMENT':
+                env_tex = node
+                current_image = node.image
+            elif node.type == 'BACKGROUND':
+                background = node
+        
+        if not env_tex or not background or not current_image:
+            return
+        
+        # Determine the original path
+        current_path = current_image.filepath
+        original_path = original_paths.get(current_image.name, current_path)
+        
+        # Load image logic
+        resolution = context.scene.hdri_settings.proxy_resolution
+        if resolution == 'ORIGINAL':
+            # Clear existing image and remove if no users
+            if current_image.users == 0:
+                bpy.data.images.remove(current_image)
+            
             # Load original file
             img = bpy.data.images.load(original_path, check_existing=True)
-            img.reload()  # Force reload of the image
             env_tex.image = img
-            # Clean up original_paths entries
-            if img.name in original_paths:
-                del original_paths[img.name]
-            if os.path.basename(original_path) in original_paths:
-                del original_paths[os.path.basename(original_path)]
+            
+            # Clean up original paths
+            if current_image.name in original_paths:
+                del original_paths[current_image.name]
         else:
             # Create and load proxy
-            proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
+            proxy_path = create_hdri_proxy(original_path, resolution)
+            proxy_img = bpy.data.images.load(proxy_path, check_existing=True)
+            
+            # Store original path for tracking
+            original_paths[proxy_img.name] = original_path
+            
+            env_tex.image = proxy_img
+        
+        # Update strength
+        background.inputs['Strength'].default_value = context.scene.hdri_settings.background_strength
+
+    elif context.scene.render.engine == 'VRAY_RENDER_RT':
+        # V-Ray uses node tree in VRayDomeLight
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        if not vray_collection:
+            return
+        
+        dome_light = None
+        for obj in vray_collection.objects:
+            if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                dome_light = obj
+                break
+        
+        if not dome_light:
+            return
+        
+        node_tree = dome_light.data.node_tree
+        bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
+        light_dome_node = node_tree.nodes.get("Light Dome")
+        
+        if not bitmap_node or not light_dome_node:
+            return
+        
+        # Get current file path
+        current_file = bitmap_node.BitmapBuffer.file if hasattr(bitmap_node.BitmapBuffer, 'file') else ''
+        
+        # Find the original path
+        original_path = original_paths.get(os.path.basename(current_file), current_file)
+        
+        # Load image logic
+        resolution = context.scene.hdri_settings.proxy_resolution
+        if resolution == 'ORIGINAL':
+            # Load original file
+            bitmap_node.BitmapBuffer.file = original_path
+            
+            # Clean up original paths tracking
+            if os.path.basename(current_file) in original_paths:
+                del original_paths[os.path.basename(current_file)]
+        else:
+            # Create and load proxy
+            proxy_path = create_hdri_proxy(original_path, resolution)
             if proxy_path:
-                # Force reload even if image exists
-                if proxy_path in bpy.data.images:
-                    bpy.data.images[proxy_path].reload()
-                    img = bpy.data.images[proxy_path]
-                else:
-                    img = bpy.data.images.load(proxy_path, check_existing=True)
-                    
-                original_paths[img.name] = original_path
+                # Update original paths tracking
                 original_paths[os.path.basename(proxy_path)] = original_path
-                env_tex.image = img
+                bitmap_node.BitmapBuffer.file = proxy_path
             else:
                 # Fallback to original if proxy creation fails
-                img = bpy.data.images.load(original_path, check_existing=True)
-                env_tex.image = img
-                
-    except Exception as e:
-        print(f"Error updating HDRI proxy: {str(e)}")
-        # Try to restore original if something fails
-        try:
-            img = bpy.data.images.load(original_path, check_existing=True)
-            env_tex.image = img
-        except:
-            pass
+                bitmap_node.BitmapBuffer.file = original_path
+        
+        # Update strength
+        light_dome_node.inputs['Intensity'].value = context.scene.hdri_settings.background_strength
+        
+        # Force node update
+        if hasattr(bitmap_node, 'socket_value_update'):
+            bitmap_node.socket_value_update(context)
     
-    # Handle render update - only use handlers for 'VIEWPORT' mode
-    if settings.proxy_mode == 'VIEWPORT':
-        # Add handlers if not already present
-        if reload_original_for_render not in bpy.app.handlers.render_init:
-            bpy.app.handlers.render_init.append(reload_original_for_render)
-        if reset_proxy_after_render not in bpy.app.handlers.render_cancel:
-            bpy.app.handlers.render_cancel.append(reset_proxy_after_render)
-        if reset_proxy_after_render_complete not in bpy.app.handlers.render_complete:
-            bpy.app.handlers.render_complete.append(reset_proxy_after_render_complete)
-    else:
-        # Remove handlers
-        if reload_original_for_render in bpy.app.handlers.render_init:
-            bpy.app.handlers.render_init.remove(reload_original_for_render)
-        if reset_proxy_after_render in bpy.app.handlers.render_cancel:
-            bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
-        if reset_proxy_after_render_complete in bpy.app.handlers.render_complete:
-            bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
-            
-    # Force redraw of viewport
+    # Force viewport update
     for area in context.screen.areas:
         if area.type == 'VIEW_3D':
             area.tag_redraw()
@@ -1586,7 +1570,7 @@ class HDRI_OT_reset_rotation(Operator):
 class HDRI_OT_quick_rotate(Operator):
     bl_idname = "world.quick_rotate_hdri"
     bl_label = "HDRI Rotation"
-    bl_description = "Adjust HDRI rotation"  # Default description
+    bl_description = "Adjust HDRI rotation"
     
     axis: IntProperty(
         name="Axis",
@@ -1600,43 +1584,17 @@ class HDRI_OT_quick_rotate(Operator):
         default=1
     )
     
-    def get_axis_name(self):
-        return ["X", "Y", "Z"][self.axis]
-        
-    @classmethod
-    def description(cls, context, properties):
-        # Get axis name (X, Y, or Z)
-        axis_name = ["X", "Y", "Z"][properties.axis]
-        
-        # Get rotation increment from preferences
-        preferences = context.preferences.addons[__name__].preferences
-        increment = preferences.rotation_increment
-        
-        # Return appropriate description based on direction
-        if properties.direction == -99:
-            return f"Reset {axis_name} rotation to 0°"
-        elif properties.direction == -1:
-            return f"Decrease {axis_name} rotation by {increment}°"
-        else:
-            return f"Increase {axis_name} rotation by {increment}°"
-    
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
-        world = context.scene.world
         
-        if world and world.use_nodes:
-            for node in world.node_tree.nodes:
-                if node.type == 'MAPPING':
-                    current_rotation = list(node.inputs['Rotation'].default_value)
-                    
-                    if self.direction == -99:  # Reset
-                        current_rotation[self.axis] = 0
-                    else:  # Regular rotation
-                        increment_in_radians = radians(preferences.rotation_increment)
-                        current_rotation[self.axis] += (self.direction * increment_in_radians)
-                    
-                    node.inputs['Rotation'].default_value = current_rotation
-                    break
+        for obj in bpy.data.objects:
+            if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                if self.direction == -99:  # Reset
+                    obj.rotation_euler[self.axis] = 0
+                else:  # Regular rotation
+                    increment_in_radians = radians(preferences.rotation_increment)
+                    obj.rotation_euler[self.axis] += (self.direction * increment_in_radians)
+                break
                     
         return {'FINISHED'}
 class HDRI_OT_reset_strength(Operator):
@@ -1654,18 +1612,21 @@ class HDRI_OT_setup_nodes(Operator):
     
     def execute(self, context):
         preferences = context.preferences.addons[__name__].preferences
-        hdri_settings = context.scene.hdri_settings
-        
-        # Check render engine
-        if context.scene.render.engine != 'CYCLES':
-            # Automatically switch to Cycles
-            context.scene.render.engine = 'CYCLES'
-            self.report({'INFO'}, "Render engine switched to Cycles")
-            
+        hdri_settings = context.scene.hdri_settings    
+
         # Change view transform to AgX
         context.scene.view_settings.view_transform = 'AgX'
-        self.report({'INFO'}, "View transform set to AgX")
+        self.report({'INFO'}, "View transform set to AgX") 
+ 
+        # Set scene color management defaults
+        context.scene.display_settings.display_device = 'sRGB'
+        context.scene.sequencer_colorspace_settings.name = 'sRGB'
         
+        # Check render engine and switch if needed
+        if context.scene.render.engine != 'VRAY_RENDER_RT':
+            context.scene.render.engine = 'VRAY_RENDER_RT'
+            self.report({'INFO'}, "Render engine switched to V-Ray")
+            
         # Verify HDRI directory exists and is accessible
         if not preferences.hdri_directory or not os.path.exists(preferences.hdri_directory):
             self.report({'ERROR'}, "HDRI directory not found. Please select a valid directory in preferences.")
@@ -1676,27 +1637,32 @@ class HDRI_OT_setup_nodes(Operator):
         if not hdri_settings.current_folder or not os.path.exists(hdri_settings.current_folder):
             hdri_settings.current_folder = preferences.hdri_directory
             
-        # Setup nodes
-        mapping, env_tex, background = ensure_world_nodes()
-        
-        # Check if there are any HDRIs in the current directory
-        if not has_hdri_files(context):
-            self.report({'WARNING'}, "(Only shows if no direct HDRIs are preset - Access folders)")
+        # Setup V-Ray collection and nodes
+        try:
+            dome_light = ensure_vray_setup()
+            
+            # Check if there are any HDRIs in the current directory
+            if not has_hdri_files(context):
+                self.report({'WARNING'}, "(Only shows if no direct HDRIs are preset - Access folders)")
+                return {'FINISHED'}
+                
+            # Generate previews for the current directory
+            enum_items = generate_previews(self, context)
+            
+            # If we have HDRIs, set the preview to the first one
+            if len(enum_items) > 1:
+                hdri_settings.hdri_preview = enum_items[1][0]
+                
+            # Force redraw of UI
+            for area in context.screen.areas:
+                area.tag_redraw()
+                
+            self.report({'INFO'}, "HDRI system initialized successfully")
             return {'FINISHED'}
             
-        # Generate previews for the current directory
-        enum_items = generate_previews(self, context)
-        
-        # If we have HDRIs, set the preview to the first one
-        if len(enum_items) > 1: 
-            hdri_settings.hdri_preview = enum_items[1][0]
-            
-        # Force redraw of UI
-        for area in context.screen.areas:
-            area.tag_redraw()
-            
-        self.report({'INFO'}, "HDRI system initialized successfully")
-        return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to setup HDRI system: {str(e)}")
+            return {'CANCELLED'}
             
 class HDRI_OT_browse_directory(Operator):
     bl_idname = "wm.directory_browse"
@@ -1838,52 +1804,83 @@ class HDRISettings(PropertyGroup):
     def update_hdri_preview(self, context):
         """Automatically load HDRI when selected from preview"""
         filepath = self.hdri_preview
-        
+
         # If a search query is active, only allow selection from the filtered results
         if self.search_query and filepath:
             # Check if the selected filepath is in the current filtered preview items
             enum_items = generate_previews(None, context)
             valid_paths = [item[0] for item in enum_items if item[0]]
-            
+
             if filepath not in valid_paths:
                 # If the selected filepath is not in the current filtered results, do nothing
                 return
-            
-        # Store current state as previous
-        world = context.scene.world
-        if world and world.use_nodes:
-            # Store current visibility state before making changes
-            current_visibility = world.cycles_visibility.camera
 
-            for node in world.node_tree.nodes:
-                if node.type == 'TEX_ENVIRONMENT' and node.image:
-                    self.previous_hdri_path = node.image.filepath
-                    self.previous_proxy_resolution = self.proxy_resolution
-                elif node.type == 'MAPPING':
-                    self.previous_rotation = node.inputs['Rotation'].default_value.copy()
-                elif node.type == 'BACKGROUND':
-                    self.previous_strength = node.inputs['Strength'].default_value
-                        
-            preferences = context.preferences.addons[__name__].preferences
-            
-            # Store current rotation if keep_rotation is enabled
-            current_rotation = None
-            if preferences.keep_rotation:
-                for node in context.scene.world.node_tree.nodes:
-                    if node.type == 'MAPPING':
-                        current_rotation = node.inputs['Rotation'].default_value.copy()
-                        break
-                        
-            # Set up nodes
-            mapping, env_tex, background = ensure_world_nodes()
-            
-            # Load the new image
-            try:
-                img = bpy.data.images.load(filepath, check_existing=True)
-                env_tex.image = img
-            except Exception as e:
-                print(f"Failed to load HDRI: {str(e)}")
-                return
+        # Store current state as previous
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        if not vray_collection:
+            return
+
+        dome_light = None
+        for obj in vray_collection.objects:
+            if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                dome_light = obj
+                break
+
+        if not dome_light:
+            return
+
+        node_tree = dome_light.data.node_tree
+        bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
+        light_dome_node = node_tree.nodes.get("Light Dome")
+
+        if not bitmap_node or not light_dome_node:
+            return
+
+        # Store previous state - Always store the original file path, not proxy
+        current_file = bitmap_node.BitmapBuffer.file if hasattr(bitmap_node.BitmapBuffer, 'file') else ''
+        current_file = original_paths.get(os.path.basename(current_file), current_file)
+
+        if current_file and current_file != filepath:
+            # Store previous state using original file path
+            self.previous_hdri_path = current_file
+            self.previous_strength = light_dome_node.inputs['Intensity'].value
+            self.previous_rotation = dome_light.rotation_euler.copy()
+
+        # Apply rotation settings
+        preferences = context.preferences.addons[__name__].preferences
+
+        # Store current rotation if keep_rotation is enabled
+        current_rotation = None
+        if preferences.keep_rotation:
+            current_rotation = dome_light.rotation_euler.copy()
+
+        # Always store the original filepath in our tracking
+        original_paths[os.path.basename(filepath)] = filepath
+
+        # Load the HDRI - Use proxy if enabled
+        try:
+            if self.proxy_resolution != 'ORIGINAL':
+                proxy_path = create_hdri_proxy(filepath, self.proxy_resolution)
+                if proxy_path and os.path.exists(proxy_path):
+                    # Store original path mapping before loading proxy
+                    original_paths[os.path.basename(proxy_path)] = filepath
+                    bitmap_node.BitmapBuffer.file = proxy_path
+                else:
+                    # Fallback to original if proxy creation fails
+                    bitmap_node.BitmapBuffer.file = filepath
+            else:
+                # Load original directly
+                bitmap_node.BitmapBuffer.file = filepath
+
+            # Apply rotation based on keep_rotation setting
+            if preferences.keep_rotation and current_rotation is not None:
+                dome_light.rotation_euler = current_rotation
+            else:
+                dome_light.rotation_euler = (0, 0, 0)
+
+        except Exception as e:
+            print(f"Failed to load HDRI: {str(e)}")
+            return
                 
             # Apply rotation based on keep_rotation setting
             if preferences.keep_rotation and current_rotation is not None:
@@ -1907,6 +1904,22 @@ class HDRISettings(PropertyGroup):
 
             # Restore visibility state
             world.cycles_visibility.camera = current_visibility
+            
+    def get_original_path(filepath):
+        """Get the original HDRI path from any filepath (proxy or original)"""
+        if not filepath:
+            return None
+        # First check by full path
+        original = original_paths.get(filepath)
+        if original:
+            return original
+        # Then check by basename
+        basename = os.path.basename(filepath)
+        original = original_paths.get(basename)
+        if original:
+            return original
+        # If not found in tracking, assume it's already the original
+        return filepath
     # Properties
     hdri_preview: EnumProperty(
         items=generate_previews,
@@ -1951,6 +1964,11 @@ class HDRISettings(PropertyGroup):
         default=True
     )
     
+    show_metadata: BoolProperty(
+        name="Show Metadata",
+        description="Show/Hide HDRI metadata information",
+        default=False
+    )
     
     # Store previous HDRI state
     previous_hdri_path: StringProperty(
@@ -2267,13 +2285,19 @@ class QuickHDRIPreferences(AddonPreferences):
         step=0.1
     )
     
+    show_preview_limit_settings: BoolProperty(
+        name="Show Preview Limit Settings",
+        description="Show or hide preview limit settings",
+        default=False
+    )
+    
     preview_limit: IntProperty(
         name="Preview Limit",
         description="Maximum number of HDRI previews to load at once (0 = no limit)",
         default=0,
         min=0,
         max=9000
-    )
+    )  
     
     preview_sort: EnumProperty(
         name="Preview Sort",
@@ -2351,12 +2375,6 @@ class QuickHDRIPreferences(AddonPreferences):
     show_preview_generation_settings: BoolProperty(
         name="Show Preview Generation Settings",
         description="Show or hide preview generation settings",
-        default=False
-    )
-    
-    show_preview_limit_settings: BoolProperty(
-        name="Show Preview Limit Settings",
-        description="Show or hide preview limit settings",
         default=False
     )
     
@@ -2485,7 +2503,7 @@ class QuickHDRIPreferences(AddonPreferences):
             ('VRAY_RENDER_RT', 'V-Ray: v1.0.0', 'Use V-Ray render engine'),
             ('OCTANE', 'Octane: v2.7.4', 'Use Octane render engine')
         ],
-        default='CYCLES'
+        default='VRAY_RENDER_RT'
     )
  
     enable_backups: BoolProperty(
@@ -2665,7 +2683,7 @@ class QuickHDRIPreferences(AddonPreferences):
                 # Revert preference to Cycles since we know it's always available
                 self.render_engine = 'CYCLES'
                 return {'CANCELLED'}
-
+                
         # If we get here, the target engine is available
         current_script_path = os.path.dirname(os.path.realpath(__file__))
         cycles_script = os.path.join(current_script_path, "__init__cycles.py")
@@ -2773,7 +2791,7 @@ class QuickHDRIPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         # Get custom icon
-        custom_icon = get_icons().get("cycles_icon")
+        custom_icon = get_icons().get("vray_icon")
         icon_id = custom_icon.icon_id if custom_icon else 0
         
         # HDRI Directory and Render Engine
@@ -3040,7 +3058,6 @@ class QuickHDRIPreferences(AddonPreferences):
                     
                     clear_row = status_box.row()
                     clear_row.operator("world.clear_preview_stats", text="Clear Results", icon='X')
- 
                 
         # Proxy Section
         box = layout.box()
@@ -3280,44 +3297,66 @@ class QuickHDRIPreferences(AddonPreferences):
 class HDRI_OT_toggle_visibility(Operator):
     bl_idname = "world.toggle_hdri_visibility"
     bl_label = "Toggle HDRI Visibility"
-    bl_description = "Toggle HDRI background visibility in camera (Ray Visibility)"
+    bl_description = "Toggle HDRI background visibility"
     
     def execute(self, context):
-        world = context.scene.world
-        if world:
-            # Toggle visibility
-            world.cycles_visibility.camera = not world.cycles_visibility.camera
-            
-            # Force update
-            context.scene.world.update_tag()
-            for area in context.screen.areas:
-                area.tag_redraw()
-            
-            # Report the change to the UI
-            self.report({'INFO'}, f"Camera visibility set to: {world.cycles_visibility.camera}")
-            
-            return {'FINISHED'}
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        if vray_collection:
+            for obj in vray_collection.objects:
+                if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                    light_dome = obj.data.node_tree.nodes["Light Dome"]
+                    # Toggle the invisible input
+                    current_value = light_dome.inputs["Invisible"].value
+                    light_dome.inputs["Invisible"].value = not current_value
+                    light_dome.update()  # Added node update
+                    
+                    # Report the change
+                    self.report({'INFO'}, f"Visibility set to: {not current_value}")
+                    return {'FINISHED'}
         return {'CANCELLED'}
         
 class HDRI_OT_delete_world(Operator):
     bl_idname = "world.delete_hdri_world"
-    bl_label = "Delete World"
-    bl_description = "Delete the current world"
+    bl_label = "Delete V-Ray HDRI"
+    bl_description = "Delete the V-Ray HDRI setup"
     
     def invoke(self, context, event):
         # Show confirmation dialog
         return context.window_manager.invoke_confirm(
             self, 
             event, 
-            title="Delete World?"
+            title="Delete V-Ray HDRI?"
         )
     
     def execute(self, context):
-        if context.scene.world:
-            world = context.scene.world
-            bpy.data.worlds.remove(world, do_unlink=True)
-            self.report({'INFO'}, "World deleted")
-        return {'FINISHED'}     
+        # Find the V-Ray collection
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        if vray_collection:
+            # Remove collection from all scenes first
+            for scene in bpy.data.scenes:
+                if vray_collection.name in scene.collection.children:
+                    scene.collection.children.unlink(vray_collection)
+                    
+            # Store objects and lights to remove
+            objects_to_remove = [obj for obj in vray_collection.objects]
+            lights_to_remove = [obj.data for obj in objects_to_remove if obj.data and obj.type == 'LIGHT']
+            
+            # Clear objects from collection
+            for obj in objects_to_remove:
+                vray_collection.objects.unlink(obj)
+                bpy.data.objects.remove(obj)
+                
+            # Remove light data
+            for light in lights_to_remove:
+                bpy.data.lights.remove(light)
+                
+            # Finally remove the collection
+            bpy.data.collections.remove(vray_collection)
+            
+            self.report({'INFO'}, "V-Ray HDRI setup deleted")
+            return {'FINISHED'}
+            
+        return {'CANCELLED'}   
             
 class HDRI_OT_previous_hdri(Operator):
     bl_idname = "world.previous_hdri"
@@ -3327,6 +3366,11 @@ class HDRI_OT_previous_hdri(Operator):
     def execute(self, context):
         hdri_settings = context.scene.hdri_settings
         enum_items = generate_previews(self, context)
+        
+        # Check if we have any items besides 'None'
+        if len(enum_items) <= 1:
+            self.report({'INFO'}, "No HDRIs available in current folder")
+            return {'CANCELLED'}
         
         # Find current HDRI index
         current_index = -1
@@ -3342,6 +3386,7 @@ class HDRI_OT_previous_hdri(Operator):
             hdri_settings.hdri_preview = enum_items[-1][0]
             
         return {'FINISHED'}
+            
 class HDRI_OT_next_hdri(Operator):
     bl_idname = "world.next_hdri"
     bl_label = "Next HDRI"
@@ -3350,6 +3395,11 @@ class HDRI_OT_next_hdri(Operator):
     def execute(self, context):
         hdri_settings = context.scene.hdri_settings
         enum_items = generate_previews(self, context)
+        
+        # Check if we have any items besides 'None'
+        if len(enum_items) <= 1:
+            self.report({'INFO'}, "No HDRIs available in current folder")
+            return {'CANCELLED'}
         
         # Find current HDRI index
         current_index = -1
@@ -3362,19 +3412,19 @@ class HDRI_OT_next_hdri(Operator):
         if current_index >= 0 and current_index < len(enum_items) - 1:
             hdri_settings.hdri_preview = enum_items[current_index + 1][0]
         elif current_index == len(enum_items) - 1:  # If at last HDRI, wrap to first
-            hdri_settings.hdri_preview = enum_items[1][0]  # Skip 'None' item
+            # Make sure we have a valid item to wrap to
+            if len(enum_items) > 1:
+                hdri_settings.hdri_preview = enum_items[1][0]  # Skip 'None' item
             
-        return {'FINISHED'}   
+        return {'FINISHED'}  
 class HDRI_OT_reset_hdri(Operator):
     bl_idname = "world.reset_hdri"
     bl_label = "Reset HDRI"
-    bl_description = "Reset to previously selected HDRI"
-    
+    bl_description = "Toggle between current and previous HDRI"
     def execute(self, context):
         hdri_settings = context.scene.hdri_settings
         preferences = context.preferences.addons[__name__].preferences
-        world = context.scene.world
-        
+
         # Check if we have a previous HDRI to restore
         if not hdri_settings.previous_hdri_path:
             self.report({'WARNING'}, "No previous HDRI to restore")
@@ -3386,62 +3436,34 @@ class HDRI_OT_reset_hdri(Operator):
             return {'CANCELLED'}
         
         try:
-            # Store current state before making changes
-            current_path = None
-            current_image = None
-            current_visibility = world.cycles_visibility.camera
-            if world and world.use_nodes:
-                for node in world.node_tree.nodes:
-                    if node.type == 'TEX_ENVIRONMENT' and node.image:
-                        current_image = node.image
-                        current_path = original_paths.get(current_image.name, node.image.filepath)
-                        break
+            # Find the V-Ray dome light
+            vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+            if not vray_collection:
+                self.report({'ERROR'}, "V-Ray collection not found")
+                return {'CANCELLED'}
             
-            # Set up nodes
-            mapping, env_tex, background = ensure_world_nodes()
-            
-            # Store the path we're resetting to
-            reset_to_path = original_paths.get(os.path.basename(hdri_settings.previous_hdri_path), 
-                                             hdri_settings.previous_hdri_path)
-            
-            # Load the appropriate version (proxy or original)
-            if hdri_settings.proxy_resolution != 'ORIGINAL':
-                # Create and load proxy
-                proxy_path = create_hdri_proxy(reset_to_path, hdri_settings.proxy_resolution)
-                if proxy_path:
-                    # Clear existing image
-                    if env_tex.image:
-                        old_image = env_tex.image
-                        env_tex.image = None
-                        if old_image.users == 0:
-                            bpy.data.images.remove(old_image)
-                    
-                    # Load proxy
-                    img = bpy.data.images.load(proxy_path, check_existing=True)
-                    original_paths[img.name] = reset_to_path  # Store original path
-                    env_tex.image = img
-                else:
-                    # If proxy creation fails, load original
-                    img = bpy.data.images.load(reset_to_path, check_existing=True)
-                    env_tex.image = img
-            else:
-                # Load original
-                img = bpy.data.images.load(reset_to_path, check_existing=True)
-                env_tex.image = img
-            
-            # Update the preview selection
-            enum_items = generate_previews(self, context)
-            for item in enum_items:
-                if item[0] == reset_to_path:
-                    hdri_settings.hdri_preview = item[0]
+            dome_light = None
+            for obj in vray_collection.objects:
+                if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                    dome_light = obj
                     break
             
-            # Update previous HDRI path to the one we just replaced
-            if current_path:
-                hdri_settings.previous_hdri_path = current_path
-                # Ensure we maintain the original path in our tracking
-                if current_image and current_image.name in original_paths:
-                    original_paths[os.path.basename(current_path)] = original_paths[current_image.name]
+            if not dome_light:
+                self.report({'ERROR'}, "VRayDomeLight not found")
+                return {'CANCELLED'}
+            
+            node_tree = dome_light.data.node_tree
+            bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
+            light_dome_node = node_tree.nodes.get("Light Dome")
+            
+            if not bitmap_node or not light_dome_node:
+                self.report({'ERROR'}, "V-Ray nodes not found")
+                return {'CANCELLED'}
+            
+            # Store current state before making changes
+            current_file = bitmap_node.BitmapBuffer.file if hasattr(bitmap_node.BitmapBuffer, 'file') else ''
+            reset_to_path = hdri_settings.previous_hdri_path
+            reset_to_path = original_paths.get(os.path.basename(reset_to_path), reset_to_path)
             
             # Only update current folder if there's no active search
             if not hdri_settings.search_query:
@@ -3460,15 +3482,62 @@ class HDRI_OT_reset_hdri(Operator):
                 except ValueError:
                     # Fallback if path comparison fails
                     hdri_settings.current_folder = base_dir
-            
+
             # Clear preview cache for folder change
             get_hdri_previews.cached_dir = None
             get_hdri_previews.cached_items = []
             
-            # Restore visibility state
-            world.cycles_visibility.camera = current_visibility
+            # Load the appropriate version (proxy or original)
+            if hdri_settings.proxy_resolution != 'ORIGINAL':
+                # Create and load proxy
+                proxy_path = create_hdri_proxy(reset_to_path, hdri_settings.proxy_resolution)
+                if proxy_path:
+                    # Store original path mapping
+                    original_paths[os.path.basename(proxy_path)] = reset_to_path
+                    bitmap_node.BitmapBuffer.file = proxy_path
+                else:
+                    # Fallback to original if proxy creation fails
+                    bitmap_node.BitmapBuffer.file = reset_to_path
+            else:
+                # Load original
+                bitmap_node.BitmapBuffer.file = reset_to_path
             
-            # Force redraw of viewport
+            # Update the preview selection
+            enum_items = generate_previews(self, context)
+            preview_found = False
+            
+            # First try to find exact match
+            for item in enum_items:
+                if not item[0]:  # Skip empty item
+                    continue
+                if os.path.normpath(item[0]) == os.path.normpath(reset_to_path):
+                    hdri_settings.hdri_preview = item[0]
+                    preview_found = True
+                    break
+            
+            # If no exact match found, try matching by basename
+            if not preview_found:
+                reset_basename = os.path.basename(reset_to_path)
+                for item in enum_items:
+                    if not item[0]:  # Skip empty item
+                        continue
+                    if os.path.basename(item[0]) == reset_basename:
+                        hdri_settings.hdri_preview = item[0]
+                        preview_found = True
+                        break
+            
+            # Update previous HDRI path to the one we just replaced
+            hdri_settings.previous_hdri_path = current_file
+            
+            # Restore previous strength if available
+            if hasattr(hdri_settings, 'previous_strength'):
+                light_dome_node.inputs['Intensity'].value = hdri_settings.previous_strength
+            
+            # Restore previous rotation if available
+            if hasattr(hdri_settings, 'previous_rotation'):
+                dome_light.rotation_euler = hdri_settings.previous_rotation
+            
+            # Force viewport update
             for area in context.screen.areas:
                 if area.type == 'VIEW_3D':
                     area.tag_redraw()
@@ -3478,7 +3547,7 @@ class HDRI_OT_reset_hdri(Operator):
             
         except Exception as e:
             self.report({'ERROR'}, f"Failed to reset HDRI: {str(e)}")
-            return {'CANCELLED'} 
+            return {'CANCELLED'}
 class HDRI_OT_generate_previews(Operator):
     bl_idname = "world.generate_hdri_previews"
     bl_label = "Generate HDRI Previews"
@@ -4017,12 +4086,12 @@ class HDRI_PT_controls(Panel):
         main_column = layout.column(align=True)
         
         # Get custom icon
-        custom_icon = get_icons().get("cycles_icon")
+        custom_icon = get_icons().get("vray_icon")
         icon_id = custom_icon.icon_id if custom_icon else 'BLENDER'
         
         # engine header
         header_row = main_column.row(align=True)
-        header_row.label(text="Cycles Build", icon_value=icon_id)
+        header_row.label(text="V-Ray Build", icon_value=icon_id)
         header_row.scale_y = 0.6
         main_column.separator(factor=0.5 * preferences.spacing_scale)
         
@@ -4075,16 +4144,24 @@ class HDRI_PT_controls(Panel):
             ).module = __name__
             footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
-            
-        world = context.scene.world
-        if not world or not world.use_nodes:
+
+        # Check for V-Ray collection and dome light
+        vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+        dome_light = None
+        if vray_collection:
+            for obj in vray_collection.objects:
+                if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                    dome_light = obj
+                    break
+
+        if not vray_collection or not dome_light or context.scene.render.engine != 'VRAY_RENDER_RT':
             box = main_column.box()
             box.alert = True
             col = box.column(align=True)
             col.scale_y = 1.2 * preferences.button_scale
             
             # Render engine check
-            if context.scene.render.engine != 'CYCLES':
+            if context.scene.render.engine != 'VRAY_RENDER_RT':
                 # Header row
                 header_row = col.row(align=True)
                 header_row.alignment = 'CENTER'
@@ -4094,7 +4171,7 @@ class HDRI_PT_controls(Panel):
                 col.separator()
                 explanation_row = col.row(align=True)
                 explanation_row.alignment = 'CENTER'
-                explanation_row.label(text="Cycles Engine Required", icon='RENDER_RESULT')      
+                explanation_row.label(text="V-Ray Engine Required", icon='RENDER_RESULT')      
 
                 col.separator()                
                 
@@ -4103,11 +4180,11 @@ class HDRI_PT_controls(Panel):
                     button_row = col.row(align=True)
                     button_row.scale_y = 1.5
                     button_row.operator("world.setup_hdri_nodes", 
-                        text="Enable Cycles",
+                        text="Enable V-Ray",
                         icon='WORLD_DATA')
             else:
-                # If no world nodes exist
-                col.label(text="HDRI System Not Initialized", icon='WORLD')
+                # If collection or dome light is missing
+                col.label(text="HDRI System Not Initialized", icon='WORLD_DATA')
                 
                 if preferences.hdri_directory:
                     col.operator("world.setup_hdri_nodes", 
@@ -4125,25 +4202,43 @@ class HDRI_PT_controls(Panel):
             ).module = __name__
             footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
-        # Get node references
-        mapping = None
-        env_tex = None
-        background = None
+
+        # Get V-Ray node references
+        bitmap_node = None
+        light_dome_node = None
         
-        for node in world.node_tree.nodes:
-            if node.type == 'MAPPING':
-                mapping = node
-            elif node.type == 'TEX_ENVIRONMENT':
-                env_tex = node
-            elif node.type == 'BACKGROUND':
-                background = node
-        if not mapping or not env_tex:
+        if dome_light and dome_light.data and dome_light.data.node_tree:
+            node_tree = dome_light.data.node_tree
+            light_dome_node = node_tree.nodes.get("Light Dome")
+            bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
+
+            # Check if nodes are connected correctly
+            if light_dome_node and bitmap_node:
+                # Find the image input socket of the light dome
+                for input in light_dome_node.inputs:
+                    if input.name in ["Texture", "Dome tex"]:  # Check both possible names
+                        if input.links:
+                            if input.links[0].from_node == bitmap_node:
+                                # Everything is set up correctly
+                                break
+                        else:
+                            # Nodes exist but aren't connected
+                            bitmap_node = None  # Force repair
+                            break
+                            
+            # Additional validation - ensure nodes are the correct V-Ray types
+            if light_dome_node and not light_dome_node.bl_idname.startswith('VRayNode'):
+                light_dome_node = None
+            if bitmap_node and not bitmap_node.bl_idname.startswith('VRayNode'):
+                bitmap_node = None
+
+        if not bitmap_node or not light_dome_node:
             box = main_column.box()
             box.alert = True
             col = box.column(align=True)
             col.scale_y = 1.2 * preferences.button_scale
             col.operator("world.setup_hdri_nodes", 
-                text="Repair HDRI System",
+                text="Repair V-Ray HDRI System",
                 icon='FILE_REFRESH')
             return
         # Main UI
@@ -4258,7 +4353,7 @@ class HDRI_PT_controls(Panel):
                 )
                 
                 # Navigation controls only if HDRI is active
-                if env_tex and env_tex.image and has_active_hdri(context):
+                if bitmap_node and hasattr(bitmap_node, 'BitmapBuffer') and bitmap_node.BitmapBuffer:
                     nav_box = preview_box.box()
                     nav_row = nav_box.row(align=True)
                     
@@ -4286,7 +4381,10 @@ class HDRI_PT_controls(Panel):
                     name_row = nav_row.row(align=True)
                     name_row.alignment = 'CENTER'
                     name_row.scale_x = 2.2
-                    name_row.label(text=env_tex.image.name)
+                    if bitmap_node and bitmap_node.BitmapBuffer and bitmap_node.BitmapBuffer.file:
+                        name_row.label(text=os.path.basename(bitmap_node.BitmapBuffer.file))
+                    else:
+                        name_row.label(text="No HDRI")
                     
                     # Next button
                     next_sub = nav_row.row(align=True)
@@ -4362,29 +4460,37 @@ class HDRI_PT_controls(Panel):
                     icon='LINKED' if preferences.keep_rotation else 'UNLINKED'
                 )
                 
-                # Add visibility toggle
-                is_visible = True
-                if context.scene.world:
-                    is_visible = context.scene.world.cycles_visibility.camera
-                
-                sub.operator("world.toggle_hdri_visibility",
-                    text="",
-                    icon='HIDE_OFF' if is_visible else 'HIDE_ON',
-                    depress=is_visible)
-               
-                # Layout based on compact mode
-                if preferences.use_compact_ui:
-                    # Compact layout
-                    col = rotation_box.column(align=True)
-                    col.scale_y = preferences.button_scale
-                    col.use_property_split = True
+                # Find VRayDomeLight for visibility toggle
+                dome_light = None
+                vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+                if vray_collection:
+                    for obj in vray_collection.objects:
+                        if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                            dome_light = obj
+                            break
+                            
+                if dome_light:
+                    # Get visibility state from V-Ray dome light
+                    light_dome_node = dome_light.data.node_tree.nodes["Light Dome"]
+                    is_visible = not light_dome_node.inputs["Invisible"].value  # Changed to use named input and .value
                     
-                    if mapping:
+                    sub.operator("world.toggle_hdri_visibility",
+                        text="",
+                        icon='HIDE_OFF' if is_visible else 'HIDE_ON',
+                        depress=is_visible)
+                    
+                    # Layout based on compact mode
+                    if preferences.use_compact_ui:
+                        # Compact layout
+                        col = rotation_box.column(align=True)
+                        col.scale_y = preferences.button_scale
+                        col.use_property_split = True
+                        
                         # X Rotation controls
                         row = col.row(align=True)
-                        row.prop(mapping.inputs['Rotation'], "default_value", index=0, text="X°")
+                        row.prop(dome_light, "rotation_euler", index=0, text="X°")
                         sub = row.row(align=True)
-                        sub.scale_x = 1.0 
+                        sub.scale_x = 1.0
                         
                         # Increase X rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
@@ -4394,7 +4500,7 @@ class HDRI_PT_controls(Panel):
                         # Decrease X rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
                         op.axis = 0
-                        op.direction = -1                        
+                        op.direction = -1
                         
                         # Reset X rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='LOOP_BACK')
@@ -4403,13 +4509,14 @@ class HDRI_PT_controls(Panel):
                         
                         # Y Rotation controls
                         row = col.row(align=True)
-                        row.prop(mapping.inputs['Rotation'], "default_value", index=1, text="Y°")
+                        row.prop(dome_light, "rotation_euler", index=1, text="Y°")
                         sub = row.row(align=True)
                         sub.scale_x = 1.0
+                        
                         # Increase Y rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
                         op.axis = 1
-                        op.direction = 1                      
+                        op.direction = 1
                         
                         # Decrease Y rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
@@ -4419,39 +4526,41 @@ class HDRI_PT_controls(Panel):
                         # Reset Y rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='LOOP_BACK')
                         op.axis = 1
-                        op.direction = -99                        
+                        op.direction = -99
                         
                         # Z Rotation controls
                         row = col.row(align=True)
-                        row.prop(mapping.inputs['Rotation'], "default_value", index=2, text="Z°")
+                        row.prop(dome_light, "rotation_euler", index=2, text="Z°")
                         sub = row.row(align=True)
-                        sub.scale_x = 1.0   
+                        sub.scale_x = 1.0
+                        
                         # Increase Z rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='ADD')
                         op.axis = 2
-                        op.direction = 1                        
+                        op.direction = 1
                         
                         # Decrease Z rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='REMOVE')
                         op.axis = 2
                         op.direction = -1
-                                               
+                        
                         # Reset Z rotation
                         op = sub.operator("world.quick_rotate_hdri", text="", icon='LOOP_BACK')
                         op.axis = 2
                         op.direction = -99
-                    
-                    # strength slider
-                    if preferences.show_strength_slider:
-                        col.separator()
-                        row = col.row(align=True)
-                        sub_row = row.row(align=True)
-                        sub_row.prop(hdri_settings, "background_strength", text="Strength")
-                        # Reset button
-                        sub = row.row(align=True)
-                        sub.scale_x = 1.0
-                        sub.scale_y = 1.0
-                        sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')                    
+                        
+                        # strength slider
+                        if preferences.show_strength_slider:
+                            col.separator()
+                            row = col.row(align=True)
+                            sub_row = row.row(align=True)
+                            if dome_light:
+                                sub_row.prop(hdri_settings, "background_strength", text="Strength")
+                                # Reset button
+                                sub = row.row(align=True)
+                                sub.scale_x = 1.0
+                                sub.scale_y = 1.0
+                                sub.operator("world.reset_hdri_strength", text="", icon='LOOP_BACK')                     
         
         main_column.separator(factor=1.0 * preferences.spacing_scale)
         
@@ -4603,9 +4712,9 @@ def register():
         os.makedirs(icons_dir)
     
     # Load the cycles icon
-    icon_path = os.path.join(icons_dir, "cycles_icon.png")
+    icon_path = os.path.join(icons_dir, "vray_icon.png")
     if os.path.exists(icon_path):
-        icons.load("cycles_icon", icon_path, 'IMAGE')
+        icons.load("vray_icon", icon_path, 'IMAGE')
     
     # Add keymap entry
     wm = bpy.context.window_manager
@@ -4639,7 +4748,7 @@ def unregister():
     bpy.app.handlers.render_init.remove(reload_original_for_render)
     bpy.app.handlers.render_cancel.remove(reset_proxy_after_render)
     bpy.app.handlers.render_complete.remove(reset_proxy_after_render_complete)
-    bpy.utils.unregister_class(HDRI_OT_revert_version)
+    bpy.utils.unregister_class(HDRI_OT_revert_version)   
     
     # Remove icon collection with proper error handling
     if hasattr(get_icons, "icon_collection"):

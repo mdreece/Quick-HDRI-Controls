@@ -8,7 +8,30 @@
 
 v2.7.0 Video Demonstration: https://youtu.be/J7YdZQ2oxQA?si=_VRiLHIhQbZ1yVK4
 
-Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
+Quick HDRI Controls is a Blender addon that streamlines the process of working with HDRIs in your 3D scenes. The addon provides a convenient interface directly in the 3D viewport header, allowing you to:
+
+Browse and preview HDRI files from your library
+Quickly switch between different HDRIs
+Adjust HDRI rotation on all axes with precise controls
+Modify HDRI strength/intensity
+Search through your HDRI collection
+Navigate HDRI folders and subfolders
+Generate preview thumbnails for your HDRIs
+Create lower resolution proxies for viewport performance
+Toggle HDRI visibility
+
+Key features include:
+
+Customizable keyboard shortcuts for quick access
+Support for HDR and EXR file formats
+Proxy system for better viewport performance
+Thumbnail generation for visual browsing
+Folder-based organization
+Search functionality
+Batch processing tools for previews and proxies
+
+The addon supports Cycles, V-Ray, and Octane with engine-specific versions to ensure compatibility and optimal functionality with your preferred renderer.
+To get started, simply set your HDRI directory in the addon preferences, and use the HDRI Controls panel in the 3D viewport header to manage your environment lighting.
 
 ![cycling](https://github.com/user-attachments/assets/a92ee270-33d9-496b-a925-be2c671ed1b7)
 

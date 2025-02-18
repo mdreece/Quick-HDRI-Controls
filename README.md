@@ -1,4 +1,4 @@
-# Quick HDRI Controls v2.7.4 for Blender (Cycles & Octane)
+# Quick HDRI Controls v2.7.4 for Blender (Cycles, V-Ray & Octane)
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
 ![Version](https://img.shields.io/badge/Version-2.7.4-blue.svg)
@@ -76,9 +76,10 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 2. Perform the following:
     - Set your HDRI folder by clicking the folder icon next to "HDRI Directory".
-    - Select your desired Render Engine and Apply. (Cycles by default, but supports Cycles and Octane. Blender will need to be restarted after changing and applying.)
+    - Select your desired Render Engine and Apply. (Cycles by default, but supports Cycles, V-Ray and Octane. Blender will need to be restarted after changing and applying.)
 
-![image](https://github.com/user-attachments/assets/c88d2dd1-8b12-4376-a383-2b3a4651a8f9)
+![image](https://github.com/user-attachments/assets/c88d2dd1-8b12-4376-a383-2b3a4651a8f9) ![image](https://github.com/user-attachments/assets/7df9eccc-e244-4b98-a3d4-d8cea935231b)
+
 
  - If this is not done, when attempting to use you will be prompted to set it anyway
    
@@ -107,10 +108,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
    
 ![image](https://github.com/user-attachments/assets/42f925ac-f443-4ee2-a5fc-6da4808500c1)
 ![image](https://github.com/user-attachments/assets/d170aea9-90eb-4f1a-90d7-4839d185131d)
+![image](https://github.com/user-attachments/assets/80ea20e2-a58e-4c4d-8f72-05a7d8a24530)
 
 Depending on the your set render engine (both in blender and in addon preferences) you will be prompted to switch to the set Render Engine if you are not already.
- - IF set to Cycles, the View Transform changes to AgX (can be adjusted in panel)
- - IF set to Octane, the View Transform changes to  Raw (can be adjusted in panel)
+ - IF set to Cycles or V-Ray, the View Transform changes to AgX (can be adjusted in panel)
+ - IF set to Octane, the View Transform changes to Raw (can be adjusted in panel)
    
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
  - Click a folder to browse the HDRIs
@@ -366,7 +368,7 @@ Keyboard Shortcut Conflicts
 ## Requirements
 
 - Blender 4.3.0 (could work on previous versions)
-- Works with Cycles and Octane Render Engines only
+- Works with Cycles, V-Ray and Octane Render Engines only
 - Windows 10, Windows 11, MacOS Sequoia(have not tested M-Series, but I'd imagine it works), Linux
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures

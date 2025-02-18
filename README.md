@@ -74,7 +74,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 ![image](https://github.com/user-attachments/assets/41958f5e-cdc0-4476-829c-9a1c27f09100)
 
 2. Perform the following:
-3. 
+   
 ![image](https://github.com/user-attachments/assets/c88d2dd1-8b12-4376-a383-2b3a4651a8f9)
 
     - Set your HDRI folder by clicking the folder icon next to "HDRI Directory".

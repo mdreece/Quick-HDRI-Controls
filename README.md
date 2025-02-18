@@ -19,7 +19,6 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
    - [First Time Setup](#first-time-setup)
 3. [Using the Addon](#using-the-addon)
    - [Proxies](#proxies-more-info-below-close-tab-for-better-performance)
-   - [HDRI Metadata](#hdri-metadata)
 4. [Full Dropdown Panel](#full-dropdown-panel)
 5. [Updates](#updates)
    - [Backup Settings](#backup-settings)
@@ -78,8 +77,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
     - Set your HDRI folder by clicking the folder icon next to "HDRI Directory".
     - Select your desired Render Engine and Apply '+'. (Cycles by default, but supports Cycles, V-Ray and Octane. Blender will need to be restarted after changing and applying.)
 
-![image](https://github.com/user-attachments/assets/c88d2dd1-8b12-4376-a383-2b3a4651a8f9) ![image](https://github.com/user-attachments/assets/7df9eccc-e244-4b98-a3d4-d8cea935231b)
-
+![image](https://github.com/user-attachments/assets/c88d2dd1-8b12-4376-a383-2b3a4651a8f9) 
 
  - If this is not done, when attempting to use you will be prompted to set it anyway
    
@@ -130,13 +128,13 @@ Depending on the your set render engine (both in blender and in addon preference
 - Click on the desired HDRI to load it to use it
 - Once loaded, use navigation arrows to cycle through HDRs in the present folder.
 
-![image](https://github.com/user-attachments/assets/f10988b1-7721-446e-a1e2-e079e0e2fb8a)
-  
+![image](https://github.com/user-attachments/assets/fce17064-9822-4444-ac0d-7c9cfaf5fe7f)
+
 - Once more than one HDRI has been selected, a reset button will appear to reset to the previously selected HDRI
 
 5. 'Settings' will appear once an HDRI has been loaded.
 
-![image](https://github.com/user-attachments/assets/254e00b4-30d6-4faa-adf0-a535bb13745a)
+![image](https://github.com/user-attachments/assets/ab401ff6-d8d2-4e49-8e04-1e2b1ea852a7)
 
 Buttons:
 - Keep Rotation lock (keeps rotation changes between HDRI switching)
@@ -157,17 +155,12 @@ Options:
  - Proxy Resolution Selection: Choose the desired resolution for your proxy of the selected HDRI
  - Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
 
-### HDRI Metadata
-
-![image](https://github.com/user-attachments/assets/f5c2c1f1-abd4-49d8-994e-ad951a6b3f6f)
-
- - Shows metadata related to the currently selected HDRI file (proxies included)
 
 
 ##
 ## Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/40cb713e-ba0a-4be3-8d64-617cbf71612b)
+![image](https://github.com/user-attachments/assets/d4ca9198-5077-405a-b400-f55bdc38aa51)
 
 
 

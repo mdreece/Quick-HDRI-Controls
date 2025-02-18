@@ -20,7 +20,7 @@ Generate preview thumbnails for your HDRIs
 Create lower resolution proxies for viewport performance
 Toggle HDRI visibility
 
-##Key features include:
+## Key features include:
 
 Customizable keyboard shortcuts for quick access
 Support for HDR and EXR file formats

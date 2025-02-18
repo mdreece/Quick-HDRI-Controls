@@ -1,6 +1,21 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 2-18-2025: V2.7.4
+### New Features 🔔:
+• V-Ray now supported (v1.0.0)
+
+• UI adjustments for preview generation area. Now within 'preview thumbnails' section.
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
+
+
 ## 2-7-2025: V2.7.3
 ### New Features 🔔:
 • UI updates to Preferences

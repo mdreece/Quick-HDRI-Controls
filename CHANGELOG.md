@@ -11,7 +11,7 @@
 • None
 
 ### Known Issues ⚠️:
-• None
+• MacOS is hit or miss with this update. Working on that.
 ##
 
 

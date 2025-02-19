@@ -363,7 +363,7 @@ Keyboard Shortcut Conflicts
 
 - Blender 4.3.0 (could work on previous versions)
 - Works with Cycles, V-Ray and Octane Render Engines only
-- Windows 10, Windows 11, MacOS Sequoia(have not tested M-Series, but I'd imagine it works), Linux
+- Windows 10, Windows 11, Linux (Manjaro), MacOS 12.0+
 - A collection of HDRI files
 - Enough RAM to handle HDRI textures
 

@@ -356,6 +356,7 @@ Keyboard Shortcut Conflicts
 
 **Errors Post Update**
  - Use the 'Revert to Previous' option in the updates section of preferences to reload the previous version of the addon.
+ - Visit the archive: https://github.com/mdreece/QHDRIC-ARCHIVE/tree/main
 
 ##
 ## Requirements

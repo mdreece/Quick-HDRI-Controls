@@ -361,11 +361,10 @@ Keyboard Shortcut Conflicts
 ##
 ## Requirements
 
-- Blender 4.3.0 (could work on previous versions)
-- Works with Cycles, V-Ray and Octane Render Engines only
-- Windows 10, Windows 11, Linux (Manjaro), MacOS 12.0+
-- A collection of HDRI files
-- Enough RAM to handle HDRI textures
+- Blender 4.2.0+ (older instances may work)
+- Supported Operation Systems & Render Engine
+     - Windows 10/11: Cycles, V-Ray, Octane
+     - MacOS 14.0+: Cycles
 
 ##
 ## Support

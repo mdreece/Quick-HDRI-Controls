@@ -363,8 +363,9 @@ Keyboard Shortcut Conflicts
 
 - Blender 4.2.0+ (older instances may work)
 - Supported Operation Systems & Render Engine
-     - Windows 10/11: Cycles, V-Ray, Octane
-     - MacOS 14.0+: Cycles
+     - Windows 10/11 (older may work): Cycles, V-Ray, Octane
+     - Linux Manjaro (others may work): Cycles
+     - MacOS 14.0+ (older may work): Cycles
 
 ##
 ## Support

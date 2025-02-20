@@ -79,8 +79,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
     - Set your HDRI folder by clicking the folder icon next to "HDRI Directory".
     - Select your desired Render Engine and Apply '+'. (Cycles by default, but supports Cycles, V-Ray and Octane. Blender will need to be restarted after changing and applying.)
+    
+![image](https://github.com/user-attachments/assets/25c57a1e-c207-4560-83dc-2e625796726c)
+
 - If this is not done, when attempting to use you will be prompted to set it anyway
-   
+
 ![image](https://github.com/user-attachments/assets/2af89aa1-9333-4e4b-8abd-79dccd056116)
  - Open Preferences set to HDRI Directory
  - Open/Choose HDRI Directory directly

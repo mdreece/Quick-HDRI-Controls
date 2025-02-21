@@ -2,7 +2,6 @@
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.3.0-green.svg)
 ![Version](https://img.shields.io/badge/Version-2.7.5-blue.svg)
-(V-Ray support WIP)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

@@ -360,7 +360,7 @@ When set to Octane and the HDRI System is initialized:
 ![image](https://github.com/user-attachments/assets/0ffb693a-75be-4328-9049-d35a1aa5fe99)
 
 
-### V-Ray
+### V-Ray:
 
 ![image](https://github.com/user-attachments/assets/1747660b-31d9-4984-8c77-7ec55c914e94)
 

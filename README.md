@@ -151,7 +151,7 @@ Options:
   - Addon version
   - Delete World
 
-### Proxies (more info below: close tab for better performance)
+### Proxies (more info below: [Proxy Settings](#proxy-settings))
 
 ![image](https://github.com/user-attachments/assets/38062ade-0af4-47db-8a11-e0b9c3a24962)
 

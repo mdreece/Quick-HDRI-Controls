@@ -228,7 +228,7 @@ Add the .png thumbnails to the same directory as the hdr.
  - Choose you desired resolution %
  - Choose number of samples
  - Choose Render Device
- - Select scene type: Orbs (orbs preview), Monk (suzanne), Cube (the default twins)
+ - Select scene type: Orbs-3, Orbs-4 or Teapot
  - GENERATE
 
 ### Scene Type Examples: Orbs-3, Orbs-4, Teapot

@@ -5,7 +5,7 @@
 • None
 
 ### Fixes 🛠️:
-• Somehome had cleared import bpy.utils.previews causing MacOS users to experience issues (Linux and Windows appear to be uneffected.)
+• Had cleared import bpy.utils.previews wihtout realizing it causing MacOS users to experience issues (Linux and Windows appear to be uneffected.) It has been re-added resulting in no further issues. Manual update may be required.
 
 ### Known Issues ⚠️:
 • None

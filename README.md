@@ -31,15 +31,11 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
    - [Batch Proxy Generation](#batch-proxy-generation)
 8. [Keyboard Shortcut](#keyboard-shortcut)
 9. [HDRI Settings](#hdri-settings)
-10. [Tips & Tricks](#tips--tricks)
-    - [For Best Results](#for-best-results)
-    - [Quick Workflow](#quick-workflow)
-    - [Pro Tips](#pro-tips)
-11. [Troubleshooting](#troubleshooting)
+10. [Troubleshooting](#troubleshooting)
     - [Common Issues](#common-issues)
-12. [Requirements](#requirements)
-13. [Support](#support)
-14. [Credits](#credits)
+11. [Requirements](#requirements)
+12. [Support](#support)
+13. [Credits](#credits)
 
 
 ##
@@ -315,28 +311,6 @@ Keyboard Shortcut Conflicts
  - Maximum Strength value for lighting in scenes
  - Rotations step degree for when rotating HDRIs in increments
  - Supported File Types" explained above
-
-
-##
-## Tips & Tricks
-
-### For Best Results
-- Organize HDRIs into folders (Indoor, Outdoor, Studio, etc.)
-- Use consistent naming for easier browsing
-- Keep your most-used HDRIs in a favorites folder
-
-### Quick Workflow
-1. Open the HDRI Controls panel
-2. Browse to your desired HDRI
-3. Click to select and load
-4. Adjust rotation and strength as needed
-5. Use reset buttons if you need to start over
-
-### Pro Tips
-- Use the strength slider to fine-tune lighting intensity
-- Rotate on the Z-axis to change light direction
-- X and Y rotation help with reflection angles
-- Reset buttons quickly restore default values
 
 
 ##

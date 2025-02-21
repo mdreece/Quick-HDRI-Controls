@@ -319,6 +319,8 @@ Keyboard Shortcut Conflicts
 
 ##
 ## Render Engine Specifics
+Each render engine requires specific nodes and settings changes (settings can be changed if desired but the nodes cannot) The following information will show what information changes and the overall nodes/objects that are needed for operation on a per engine basis.
+
 
 ### Cycles:
 

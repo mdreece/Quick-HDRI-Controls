@@ -1,5 +1,17 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 2-21-2025: V2.7.5
+### New Features 🔔:
+• None
+
+### Fixes 🛠️:
+• Somehome had cleared import bpy.utils.previews causing MacOS users to experience issues (Linux and Windows appear to be uneffected.)
+
+### Known Issues ⚠️:
+• None
+##
+
+
 
 ## 2-18-2025: V2.7.4
 ### New Features 🔔:

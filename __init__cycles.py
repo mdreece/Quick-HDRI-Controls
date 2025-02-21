@@ -3,7 +3,7 @@ import zipfile
 import shutil
 import tempfile
 from datetime import datetime
-from math import radians
+from math import radians, degrees, pi
 import bpy
 import subprocess
 import re

@@ -332,7 +332,7 @@ When set to Cycles and the HDRI System is initalized:
 
 ![image](https://github.com/user-attachments/assets/dd5d89b1-7843-45ee-89c5-fa016bcabd52)
 
-2. The Color Transform changes to AgX (can be adjusted in panel)
+2. The View Transform changes to AgX (can be adjusted in panel)
 
 ![image](https://github.com/user-attachments/assets/ede429d9-7fca-41a8-b293-a73eaf32416d)
 
@@ -351,7 +351,7 @@ When set to Octane and the HDRI System is initialized:
 
 ![image](https://github.com/user-attachments/assets/c6ae2704-f6cd-45f4-a810-a8fe9cc38c89)
 
-2. The Color Transform chages to RAW (can be adjusted in panel)
+2. The View Transform changes to RAW (can be adjusted in panel)
 
 ![image](https://github.com/user-attachments/assets/a0bfd5dd-d1ca-49e1-9f1c-4aeda0bf649e)
 
@@ -370,7 +370,7 @@ When set to V-Ray and the HDRI System is initialized:
 
 ![image](https://github.com/user-attachments/assets/c87f76bf-d201-4f0e-acb1-269655942a75)
 
-2. The Color Transform changes to AgX (can be adjusted in panel)
+2. The View Transform changes to AgX (can be adjusted in panel)
 
 ![image](https://github.com/user-attachments/assets/ede429d9-7fca-41a8-b293-a73eaf32416d)
 

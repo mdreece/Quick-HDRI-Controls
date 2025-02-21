@@ -246,7 +246,7 @@ Example of original and _thumb.png instance:
 ##
 ## Proxy Settings
 
-![image](https://github.com/user-attachments/assets/04767c24-dc3b-401b-be5d-ac6f5178c2f6)
+![image](https://github.com/user-attachments/assets/19e12083-1e15-44af-acca-99831b5acdc6)
 
 Default Resolution: The desired default resolution for proxies (if set to ORIGINAL, no proxies will be created and full resolution HDRI will be used - options = 1K, 2K, 4K, Original)
 

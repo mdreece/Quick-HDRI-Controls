@@ -2701,9 +2701,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.7.4', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.0', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.7.4', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.7.5', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.1', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.7.5', 'Use Octane render engine')
         ],
         default='OCTANE'
     )

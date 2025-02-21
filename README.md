@@ -260,10 +260,6 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
  - Cache Size Limit: Limits the amount of space that proxy files can take up (in MB)
  - Clear Proxy Cache: Will clear/delete all proxy files and folders for HDRIs
 
-### Advanced Settings
-
- - More than likely these will not need to be adjusted. Compression using ZIP works well in both MacOS and Windows. The format option is for you to set the proxies to be HDR or EXR formats
-
 ### Batch Proxy Generation
 
 ![ScreenRecording_01-03-2025 15-02-29_1 2](https://github.com/user-attachments/assets/c262cce4-6b77-48f4-8ec7-08a037f4579b)

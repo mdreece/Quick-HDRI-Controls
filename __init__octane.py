@@ -3,13 +3,14 @@ import zipfile
 import shutil
 import tempfile
 from datetime import datetime
-from math import radians, degrees, pi
+from math import radians
 import bpy
 import subprocess
 import re
 import os
 import sys
 import glob
+import bpy.utils.previews
 from bpy.types import (Panel, Operator, AddonPreferences, PropertyGroup)
 from bpy.props import (FloatProperty, StringProperty, EnumProperty, 
                       CollectionProperty, PointerProperty, IntProperty, 
@@ -19,7 +20,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 4),
+    "version": (2, 7, 5),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",

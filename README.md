@@ -314,6 +314,71 @@ Keyboard Shortcut Conflicts
 
 
 ##
+## Render Engine Specifics
+
+### Cycles:
+
+![image](https://github.com/user-attachments/assets/6091e730-069b-4953-a426-7f37f52a6fef)
+
+When set to Cycles and the HDRI System is initalized:
+
+1. The Render Engine switches to 'Cycles'
+
+![image](https://github.com/user-attachments/assets/dd5d89b1-7843-45ee-89c5-fa016bcabd52)
+
+2. The Color Transform changes to AgX (can be adjusted in panel)
+
+![image](https://github.com/user-attachments/assets/ede429d9-7fca-41a8-b293-a73eaf32416d)
+
+3. The following World node tree is created.
+
+![image](https://github.com/user-attachments/assets/91efde77-03aa-4c31-8661-de1d8868e0f9)
+
+
+### Octane:
+
+![image](https://github.com/user-attachments/assets/95684867-b4c1-48f8-ad46-b173cf146057)
+
+When set to Octane and the HDRI System is initialized:
+
+1. The Render Engine switches to 'Octane'
+
+![image](https://github.com/user-attachments/assets/c6ae2704-f6cd-45f4-a810-a8fe9cc38c89)
+
+2. The Color Transform chages to RAW (can be adjusted in panel)
+
+![image](https://github.com/user-attachments/assets/a0bfd5dd-d1ca-49e1-9f1c-4aeda0bf649e)
+
+3. The following World node tree is created.
+
+![image](https://github.com/user-attachments/assets/0ffb693a-75be-4328-9049-d35a1aa5fe99)
+
+
+### V-Ray
+
+![image](https://github.com/user-attachments/assets/1747660b-31d9-4984-8c77-7ec55c914e94)
+
+When set to V-Ray and the HDRI System is initialized:
+
+1. The Render Engine switches to 'V-Ray'
+
+![image](https://github.com/user-attachments/assets/c87f76bf-d201-4f0e-acb1-269655942a75)
+
+2. The Color Transform changes to AgX (can be adjusted in panel)
+
+![image](https://github.com/user-attachments/assets/ede429d9-7fca-41a8-b293-a73eaf32416d)
+
+3. A collection called 'vRay HDRI Controls' appears with a 'VRayDomeLight'
+
+![image](https://github.com/user-attachments/assets/6590417a-ed09-48d6-adf4-ab55576c60c1)
+
+4. The following node is imported from misc\vray\vray_support.blend and applied to the VRayDomeLight through the V-Ray Node Editor/Shader
+
+![image](https://github.com/user-attachments/assets/8a998e08-c61e-4b95-ab89-8a4b14541b15)
+
+
+
+##
 ## Troubleshooting
 
 ### Common Issues

@@ -8,7 +8,7 @@
 • Had cleared import bpy.utils.previews wihtout realizing it causing MacOS users to experience issues (Linux and Windows appear to be uneffected.) It has been re-added resulting in no further issues. Manual update may be required.
 
 ### Known Issues ⚠️:
-• V-Ray: Proxy switching only works if done by clicking F12 OR by clicking 'Start Production Render'. Does not work when using Interactive Render (WIP on solution)
+• V-Ray: Proxy switching only works if done by pressing F12 OR by clicking 'Start Production Render'. Does not work when using Interactive Render (WIP on solution)
 ##
 
 

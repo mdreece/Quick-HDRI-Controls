@@ -1,5 +1,20 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+
+
+## 2-25-2025: V2.7.6
+### New Features 🔔:
+• Keyboard shortcut keys now have cursor button support (if additional buttons are needed, let me know)
+
+### Fixes 🛠️:
+• CYCLES & OCTANE: Updated to show the navigation options once a folder that has HDRIs present is accessed to match V-RAY functions (this was missed initially)
+
+### Known Issues ⚠️:
+• V-RAY: Proxy switching works if done by pressing F12/Start Production Render. Does not work in Interactive Render (WIP)
+##
+
+
+
 ## 2-21-2025: V2.7.5
 ### New Features 🔔:
 • None

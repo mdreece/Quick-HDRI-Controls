@@ -128,7 +128,7 @@ Depending on the your set render engine (both in blender and in addon preference
 
 - Click the box to see thumbnails of your HDRIs
 - Click on the desired HDRI to load it to use it
-- Once loaded, use navigation arrows to cycle through HDRs in the present folder.
+- The navigation buttons can be used as well to choose the next or previous HDRI in the list.
 
 ![image](https://github.com/user-attachments/assets/fce17064-9822-4444-ac0d-7c9cfaf5fe7f)
 

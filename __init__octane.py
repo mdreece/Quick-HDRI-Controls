@@ -20,7 +20,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 5),
+    "version": (2, 7, 6),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -2333,8 +2333,9 @@ class QuickHDRIPreferences(AddonPreferences):
     # Keyboard shortcut properties
     popup_key: EnumProperty(
         name="Key",
-        description="Key for the popup menu shortcut",
+        description="Key or mouse button for the popup menu shortcut",
         items=[
+            # Keyboard keys (existing)
             ('A', 'A', ''), ('B', 'B', ''), ('C', 'C', ''),
             ('D', 'D', ''), ('E', 'E', ''), ('F', 'F', ''),
             ('G', 'G', ''), ('H', 'H', ''), ('I', 'I', ''),
@@ -2354,6 +2355,21 @@ class QuickHDRIPreferences(AddonPreferences):
             ('LEFT_COMMAND', 'Left Command', ''),
             ('RIGHT_COMMAND', 'Right Command', ''),
             ('OSKEY', 'OS Key', ''),
+            
+            # Mouse buttons (new)
+            ('LEFTMOUSE', 'Left Mouse', ''),
+            ('MIDDLEMOUSE', 'Middle Mouse', ''),
+            ('RIGHTMOUSE', 'Right Mouse', ''),
+            ('BUTTON4MOUSE', 'Mouse Button 4', ''),
+            ('BUTTON5MOUSE', 'Mouse Button 5', ''),
+            ('BUTTON6MOUSE', 'Mouse Button 6', ''),
+            ('BUTTON7MOUSE', 'Mouse Button 7', ''),
+            
+            # Mouse wheel options
+            ('WHEELUPMOUSE', 'Mouse Wheel Up', ''),
+            ('WHEELDOWNMOUSE', 'Mouse Wheel Down', ''),
+            ('WHEELINMOUSE', 'Mouse Wheel In', ''),
+            ('WHEELOUTMOUSE', 'Mouse Wheel Out', ''),
         ],
         default='A'
     )
@@ -2701,9 +2717,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.7.5', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.1', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.7.5', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.7.6', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.2', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.7.6', 'Use Octane render engine')
         ],
         default='OCTANE'
     )
@@ -3385,6 +3401,11 @@ class QuickHDRIPreferences(AddonPreferences):
             # Current shortcut row
             row = col.row()
             row.label(text="Current Shortcut: " + " + ".join(current_shortcut))
+
+            # Add a note about mouse buttons
+            note_row = col.row()
+            note_row.scale_y = 0.7
+            note_row.label(text="Tip: You can also use mouse buttons for shortcuts", icon='INFO')
             
             # Modifier keys
             row = col.row(align=True)
@@ -4476,57 +4497,59 @@ class HDRI_PT_controls(Panel):
                     scale=preferences.preview_scale
                 )
                 
-                # Navigation controls only if HDRI is active
-                if has_active_hdri(context):  # Only show settings if an HDRI is active
-                    nav_box = preview_box.box()
-                    nav_row = nav_box.row(align=True)
-                    
-                    # Reset to previous HDRI
-                    if hdri_settings.previous_hdri_path and os.path.exists(hdri_settings.previous_hdri_path):
-                        reset_sub = nav_row.row(align=True)
-                        reset_sub.scale_x = 0.9
-                        reset_sub.operator(
-                            "world.reset_hdri",
-                            text="",
-                            icon='LOOP_BACK'
-                        )
-                    nav_row.separator(factor=1.0)
-                    # Previous button
-                    prev_sub = nav_row.row(align=True)
-                    prev_sub.scale_x = 1.2
-                    prev_sub.operator(
-                        "world.previous_hdri", 
-                        text="", 
-                        icon='TRIA_LEFT',
-                        emboss=True
+                # Always show the navigation controls
+                nav_box = preview_box.box()
+                nav_row = nav_box.row(align=True)
+
+                # Reset to previous HDRI (only show if available)
+                if hdri_settings.previous_hdri_path and os.path.exists(hdri_settings.previous_hdri_path):
+                    reset_sub = nav_row.row(align=True)
+                    reset_sub.scale_x = 0.9
+                    reset_sub.operator(
+                        "world.reset_hdri",
+                        text="",
+                        icon='LOOP_BACK'
                     )
-                    
-                    # HDRI name - get from RGB Image node
-                    name_row = nav_row.row(align=True)
-                    name_row.alignment = 'CENTER'
-                    name_row.scale_x = 2.0
-                    
-                    # Find RGB Image node and get image name
-                    rgb_node = None
-                    for node in world.node_tree.nodes:
-                        if node.bl_idname == 'OctaneRGBImage':
-                            rgb_node = node
-                            break
-                    
-                    if rgb_node and rgb_node.image:
-                        # Get the base filename without extension
-                        name = os.path.splitext(os.path.basename(rgb_node.image.filepath))[0]
-                        name_row.label(text=name)
-                    
-                    # Next button
-                    next_sub = nav_row.row(align=True)
-                    next_sub.scale_x = 1.2
-                    next_sub.operator(
-                        "world.next_hdri", 
-                        text="", 
-                        icon='TRIA_RIGHT',
-                        emboss=True
-                    )
+                nav_row.separator(factor=1.0)
+
+                # Previous button
+                prev_sub = nav_row.row(align=True)
+                prev_sub.scale_x = 1.2
+                prev_sub.operator(
+                    "world.previous_hdri", 
+                    text="", 
+                    icon='TRIA_LEFT',
+                    emboss=True
+                )
+
+                # HDRI name
+                name_row = nav_row.row(align=True)
+                name_row.alignment = 'CENTER'
+                name_row.scale_x = 2.2
+
+                # Find RGB Image node to display current HDRI name
+                rgb_node = None
+                for node in world.node_tree.nodes:
+                    if node.bl_idname == 'OctaneRGBImage':
+                        rgb_node = node
+                        break
+
+                if rgb_node and rgb_node.image:
+                    # Get the base filename without extension
+                    name = os.path.splitext(os.path.basename(rgb_node.image.filepath))[0]
+                    name_row.label(text=name)
+                else:
+                    name_row.label(text="No HDRI")
+
+                # Next button
+                next_sub = nav_row.row(align=True)
+                next_sub.scale_x = 1.2
+                next_sub.operator(
+                    "world.next_hdri", 
+                    text="", 
+                    icon='TRIA_RIGHT',
+                    emboss=True
+                )
         # Proxy dropdown
         proxy_row = main_column.row(align=True)
         proxy_row.label(text="Proxies", icon='RENDER_RESULT')

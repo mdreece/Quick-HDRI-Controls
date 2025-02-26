@@ -20,7 +20,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 5),
+    "version": (2, 7, 6),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -2131,8 +2131,9 @@ class QuickHDRIPreferences(AddonPreferences):
     # Keyboard shortcut properties
     popup_key: EnumProperty(
         name="Key",
-        description="Key for the popup menu shortcut",
+        description="Key or mouse button for the popup menu shortcut",
         items=[
+            # Keyboard keys (existing)
             ('A', 'A', ''), ('B', 'B', ''), ('C', 'C', ''),
             ('D', 'D', ''), ('E', 'E', ''), ('F', 'F', ''),
             ('G', 'G', ''), ('H', 'H', ''), ('I', 'I', ''),
@@ -2152,6 +2153,21 @@ class QuickHDRIPreferences(AddonPreferences):
             ('LEFT_COMMAND', 'Left Command', ''),
             ('RIGHT_COMMAND', 'Right Command', ''),
             ('OSKEY', 'OS Key', ''),
+            
+            # Mouse buttons (new)
+            ('LEFTMOUSE', 'Left Mouse', ''),
+            ('MIDDLEMOUSE', 'Middle Mouse', ''),
+            ('RIGHTMOUSE', 'Right Mouse', ''),
+            ('BUTTON4MOUSE', 'Mouse Button 4', ''),
+            ('BUTTON5MOUSE', 'Mouse Button 5', ''),
+            ('BUTTON6MOUSE', 'Mouse Button 6', ''),
+            ('BUTTON7MOUSE', 'Mouse Button 7', ''),
+            
+            # Mouse wheel options
+            ('WHEELUPMOUSE', 'Mouse Wheel Up', ''),
+            ('WHEELDOWNMOUSE', 'Mouse Wheel Down', ''),
+            ('WHEELINMOUSE', 'Mouse Wheel In', ''),
+            ('WHEELOUTMOUSE', 'Mouse Wheel Out', ''),
         ],
         default='A'
     )
@@ -2500,9 +2516,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.7.5', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.1', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.7.5', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.7.6', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.2', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.7.6', 'Use Octane render engine')
         ],
         default='VRAY_RENDER_RT'
     )
@@ -3184,6 +3200,11 @@ class QuickHDRIPreferences(AddonPreferences):
             # Current shortcut row
             row = col.row()
             row.label(text="Current Shortcut: " + " + ".join(current_shortcut))
+
+            # Add a note about mouse buttons
+            note_row = col.row()
+            note_row.scale_y = 0.7
+            note_row.label(text="Tip: You can also use mouse buttons for shortcuts", icon='INFO')
             
             # Modifier keys
             row = col.row(align=True)

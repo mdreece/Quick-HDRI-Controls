@@ -1,6 +1,18 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 2-28-2025: V2.7.7
+### New Features 🔔:
+• None
+
+### Fixes 🛠️:
+• 'clear search' button only shows when there is an active search.
+
+### Known Issues ⚠️:
+• V-RAY: Proxy switching works if done by pressing F12/Start Production Render. Does not work in Interactive Render (WIP)
+##
+
+
 
 ## 2-25-2025: V2.7.6
 ### New Features 🔔:

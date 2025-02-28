@@ -9,6 +9,7 @@ import subprocess
 import re
 import os
 import sys
+import json
 import glob
 import bpy.utils.previews
 from bpy.types import (Panel, Operator, AddonPreferences, PropertyGroup)
@@ -20,7 +21,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 6),
+    "version": (2, 7, 7),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -2516,9 +2517,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.7.6', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.2', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.7.6', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.7.7', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.3', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.7.7', 'Use Octane render engine')
         ],
         default='VRAY_RENDER_RT'
     )
@@ -4283,8 +4284,9 @@ class HDRI_PT_controls(Panel):
             search_sub.enabled = not hdri_settings.search_locked
             search_sub.prop(hdri_settings, "search_query", text="", icon='VIEWZOOM')
 
-            # Clear button - always enabled
-            clear_btn = search_row.operator("world.clear_hdri_search", text="", icon='X')
+            # Only show clear button when there's search text
+            if hdri_settings.search_query.strip():
+                clear_btn = search_row.operator("world.clear_hdri_search", text="", icon='X')
             
             # Only show folders if there's no active search
             if not hdri_settings.search_query:

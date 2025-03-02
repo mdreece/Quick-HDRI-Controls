@@ -144,6 +144,8 @@ class HDRI_OT_show_changelog(Operator):
         row.operator("wm.url_open", text="Documentation", icon='HELP').url = "https://github.com/mdreece/Quick-HDRI-Controls"
         row.operator("wm.url_open", text="Report Issue", icon='URL').url = "https://github.com/mdreece/Quick-HDRI-Controls/issues"
         row.operator("wm.url_open", text="Change log", icon='INFO').url = "https://github.com/mdreece/Quick-HDRI-Controls/blob/main/CHANGELOG.md"
+        row.operator("wm.url_open", text="Blender Fund", icon='BLENDER').url = "https://fund.blender.org/"
+        row.operator("wm.url_open", text="BM", icon = 'BLENDER').url = "https://blendermarket.com/products/quick-hdri-controls"
         
     def execute(self, context):
         return {'FINISHED'}
@@ -3118,6 +3120,15 @@ class QuickHDRIPreferences(AddonPreferences):
                 links_row.operator("wm.url_open",
                                  text="Report Issue",
                                  icon='ERROR').url = "https://github.com/mdreece/Quick-HDRI-Controls/issues"
+                links_row.operator("wm.url_open",
+                                 text="Change log",
+                                 icon='INFO').url = "https://github.com/mdreece/Quick-HDRI-Controls/blob/main/CHANGELOG.md"
+                links_row.operator("wm.url_open",
+                                 text="Blender Fund", 
+                                 icon='BLENDER').url = "https://fund.blender.org/"
+                links_row.operator("wm.url_open",
+                                 text="BM", 
+                                 icon='BLENDER').url = "https://blendermarket.com/products/quick-hdri-controls"
                 
                 # Tips section
                 tips_col = docs_col.column(align=True)

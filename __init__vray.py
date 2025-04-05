@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from datetime import datetime
 from math import radians, degrees, pi
+import time
 import bpy
 import subprocess
 import re
@@ -21,7 +22,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 7),
+    "version": (2, 7, 8),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -184,19 +185,18 @@ def get_icons():
     return get_icons.icon_collection
 def get_hdri_previews():
     """Get or create the preview collection"""
-    print("Creating/getting preview collection")  # Debug
     if not hasattr(get_hdri_previews, "preview_collection"):
-        print("Creating new preview collection")  # Debug
         pcoll = bpy.utils.previews.new()
         get_hdri_previews.preview_collection = pcoll
         get_hdri_previews.cached_dir = None
         get_hdri_previews.cached_items = []
-    else:
-        print(f"Using existing collection with {len(get_hdri_previews.preview_collection)} items")  # Debug
+        get_hdri_previews.last_update_time = time.time()
     return get_hdri_previews.preview_collection
         
 def generate_previews(self, context):
     """Generate preview items for HDRIs in current folder"""
+    current_time = time.time()
+    
     if not hasattr(context.scene, "hdri_settings"):
         return [('', 'None', '', 0, 0)]
 
@@ -207,7 +207,16 @@ def generate_previews(self, context):
 
     # Get search query and normalize it
     search_query = context.scene.hdri_settings.search_query.lower().strip()
-
+    
+    # Check if we can use cached results - ADD THIS BLOCK HERE
+    # Only regenerate if directory or search query has changed, or if throttling timer allows
+    if (hasattr(get_hdri_previews, "cached_dir") and get_hdri_previews.cached_dir == current_dir and
+        hasattr(get_hdri_previews, "cached_query") and get_hdri_previews.cached_query == search_query and
+        hasattr(get_hdri_previews, "cached_items") and get_hdri_previews.cached_items):
+        # Within throttling time window, use cache
+        if hasattr(generate_previews, "last_update_time") and current_time - generate_previews.last_update_time < 0.5:
+            return get_hdri_previews.cached_items
+    
     pcoll = get_hdri_previews()
     enum_items = [('', 'None', '', 0, 0)]
 
@@ -281,6 +290,12 @@ def generate_previews(self, context):
     except Exception as e:
         print(f"Error scanning directory: {str(e)}")
 
+    # Update the cache variables - ADD THIS BLOCK HERE
+    get_hdri_previews.cached_dir = current_dir
+    get_hdri_previews.cached_query = search_query
+    get_hdri_previews.cached_items = enum_items
+    generate_previews.last_update_time = current_time
+    
     return enum_items
     
     
@@ -958,10 +973,6 @@ def reset_proxy_after_render_complete(dummy):
                     break
               
 def update_hdri_proxy(self, context):
-    """Universal HDRI proxy update method"""
-    # Close proxy settings on any resolution or mode change
-    context.scene.view_settings.view_transform = 'AgX'
-    
     # Determine the appropriate node based on render engine
     if context.scene.render.engine == 'CYCLES':
         # Cycles uses world node tree

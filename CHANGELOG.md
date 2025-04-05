@@ -9,7 +9,7 @@
 • 'clear search' button only shows when there is an active search.
 
 ### Known Issues ⚠️:
-• V-RAY: Proxy switching works if done by pressing F12/Start Production Render. Does not work in Interactive Render (WIP)
+• V-RAY: Proxy switching will happen when going from Interactive Render to Final Render. Additionally switches back when completed or stopped.
 ##
 
 

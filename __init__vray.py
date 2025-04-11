@@ -388,7 +388,7 @@ def check_for_update_on_startup():
     online_version = None
     try:
         # Fetch online version from GitHub
-        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
+        version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__vray.py"
         req = urllib.request.Request(version_url, headers={'User-Agent': 'Mozilla/5.0'})
 
         with urllib.request.urlopen(req) as response:

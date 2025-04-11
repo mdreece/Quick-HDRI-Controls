@@ -1273,7 +1273,7 @@ class HDRI_OT_check_updates(Operator):
     def get_online_version(self):
         """Fetch version info from GitHub"""
         try:
-            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
+            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__octane.py"
             req = urllib.request.Request(
                 version_url,
                 headers={'User-Agent': 'Mozilla/5.0'}

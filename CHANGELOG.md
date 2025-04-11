@@ -1,6 +1,20 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+
+## 4-11-2025: V2.7.9
+### New Features 🔔:
+• Testing a new update process on a per Render Engine basis.
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
+
+
 ## 4-05-2025: V2.7.8
 ### New Features 🔔:
 • None

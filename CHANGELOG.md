@@ -2,7 +2,7 @@
 
 
 
-## 4-11-2025: V2.7.9
+## 4-11-2025: CYCLES&OCTANE: V2.7.9 | V-Ray: V1.0.5
 ### New Features 🔔:
 • Testing a new update process on a per Render Engine basis.
 

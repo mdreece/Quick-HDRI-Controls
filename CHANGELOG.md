@@ -2,9 +2,9 @@
 
 
 
-## 4-11-2025: CYCLES&OCTANE: V2.7.9 | V-Ray: V1.0.5
+## 4-11-2025: CYCLES: v2.7.9 | OCTANE: V2.7.9 | V-Ray: V1.0.5
 ### New Features 🔔:
-• Testing a new update process on a per Render Engine basis.
+• Testing a new update process on a per Render Engine basis. Cycles instance now how its own custom icon instead of using Blender icon.
 
 ### Fixes 🛠️:
 • None
@@ -15,7 +15,7 @@
 
 
 
-## 4-05-2025: V2.7.8
+## 4-05-2025: CYCLES: v2.7.8 | OCTANE: V2.7.8 | V-Ray: V1.0.4
 ### New Features 🔔:
 • None
 
@@ -28,7 +28,7 @@
 
 
 
-## 2-28-2025: V2.7.7
+## 2-28-2025: CYCLES: v2.7.7 | OCTANE: V2.7.7 | V-Ray: V1.0.3
 ### New Features 🔔:
 • None
 
@@ -41,7 +41,7 @@
 
 
 
-## 2-25-2025: V2.7.6
+## 2-25-2025: CYCLES: v2.7.6 | OCTANE: V2.7.6 | V-Ray: V1.0.2
 ### New Features 🔔:
 • Keyboard shortcut keys now have cursor button support (if additional buttons are needed, let me know)
 
@@ -54,7 +54,7 @@
 
 
 
-## 2-21-2025: V2.7.5
+## 2-21-2025: CYCLES: v2.7.5 | OCTANE: V2.7.5 | V-Ray: V1.0.1
 ### New Features 🔔:
 • None
 
@@ -67,7 +67,7 @@
 
 
 
-## 2-18-2025: V2.7.4
+## 2-18-2025: CYCLES: v2.7.4 | OCTANE: V2.7.4 | V-Ray: V1.0.0
 ### New Features 🔔:
 • V-Ray now supported (v1.0.0)
 

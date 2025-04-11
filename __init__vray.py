@@ -22,7 +22,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 8),
+    "version": (1, 0, 5),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -2530,9 +2530,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.7.8', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.4', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.7.8', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.7.9', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.5', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.7.9', 'Use Octane render engine')
         ],
         default='VRAY_RENDER_RT'
     )

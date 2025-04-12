@@ -2,6 +2,19 @@
 
 
 
+## 4-12-2025: CYCLES: v2.8.0 | OCTANE: V2.8.0 | V-Ray: V1.0.6
+### New Features 🔔:
+• Pages option for HDRI Browser. You can now set a folder limit of displayed folders to assist with UI bloat if you have several folders with HDRIs. Access the settings in preferences-HDRI Settings. 
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
+
+
 ## 4-11-2025: CYCLES: v2.7.9 | OCTANE: V2.7.9 | V-Ray: V1.0.5
 ### New Features 🔔:
 • Testing a new update process on a per Render Engine basis. Cycles instance now how its own custom icon instead of using Blender icon.

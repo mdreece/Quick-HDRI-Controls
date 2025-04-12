@@ -21,7 +21,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 7, 9),
+    "version": (2, 8, 0),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1172,7 +1172,7 @@ class HDRI_OT_check_updates(Operator):
     def get_online_version(self):
         """Fetch version info from GitHub"""
         try:
-            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__.py"
+            version_url = "https://raw.githubusercontent.com/mdreece/Quick-HDRI-Controls/main/__init__cycles.py"
             req = urllib.request.Request(
                 version_url,
                 headers={'User-Agent': 'Mozilla/5.0'}
@@ -1540,7 +1540,7 @@ class HDRI_OT_change_folder(Operator):
 
             # Only allow if new path is base_dir or within it
             if not (os.path.normpath(new_path) == os.path.normpath(base_dir) or \
-                   os.path.normpath(new_path).startswith(os.path.normpath(base_dir))):
+                os.path.normpath(new_path).startswith(os.path.normpath(base_dir))):
                 self.report({'WARNING'}, "Cannot navigate above HDRI directory")
                 return {'CANCELLED'}
 
@@ -1551,12 +1551,15 @@ class HDRI_OT_change_folder(Operator):
 
         # Verify target is base_dir or within it
         if not (os.path.normpath(target_path) == os.path.normpath(base_dir) or \
-               os.path.normpath(target_path).startswith(os.path.normpath(base_dir))):
+            os.path.normpath(target_path).startswith(os.path.normpath(base_dir))):
             self.report({'WARNING'}, "Cannot navigate outside HDRI directory")
             return {'CANCELLED'}
 
         # Update current folder
         hdri_settings.current_folder = target_path
+
+        # Reset folder page to 0 when changing directories
+        hdri_settings.folder_page = 0
 
         # Clear preview cache for folder change
         get_hdri_previews.cached_dir = None
@@ -1568,6 +1571,47 @@ class HDRI_OT_change_folder(Operator):
                 area.tag_redraw()
 
         return {'FINISHED'}
+
+class HDRI_OT_change_folder_page(Operator):
+    bl_idname = "world.change_folder_page"
+    bl_label = "Change Folder Page"
+    bl_description = "Navigate to different pages of folders"
+
+    page: IntProperty(
+        name="Page",
+        description="Page number or offset",
+        default=0
+    )
+
+    go_to_page: BoolProperty(
+        name="Go To Page",
+        description="Go to absolute page number instead of relative offset",
+        default=False
+    )
+
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+        preferences = context.preferences.addons[__name__].preferences
+
+        # Get total number of folders and calculate max pages
+        folders = get_folders(context)
+        total_folders = len(folders)
+        items_per_page = preferences.folders_per_page
+        total_pages = max(1, (total_folders + items_per_page - 1) // items_per_page)  # At least 1 page
+
+        # Calculate the new page number with proper bounds
+        if self.go_to_page:
+            # Absolute page navigation (first/last)
+            new_page = max(0, min(self.page, total_pages - 1))
+        else:
+            # Relative page navigation (prev/next)
+            new_page = max(0, min(hdri_settings.folder_page + self.page, total_pages - 1))
+
+        # Update the page property
+        hdri_settings.folder_page = new_page
+
+        return {'FINISHED'}
+
 class HDRI_OT_reset_rotation(Operator):
     bl_idname = "world.reset_hdri_rotation"
     bl_label = "Reset HDRI Rotation"
@@ -2094,6 +2138,12 @@ class HDRISettings(PropertyGroup):
         default=False
     )
 
+    folder_page: IntProperty(
+        name="Folder Page",
+        description="Current page of folders",
+        default=0,
+        min=0
+    )
 
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
@@ -2501,9 +2551,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.7.9', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.5', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.7.9', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.8.0', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.6', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.8.0', 'Use Octane render engine')
         ],
         default='CYCLES'
     )
@@ -2522,6 +2572,19 @@ class QuickHDRIPreferences(AddonPreferences):
         max=50
     )
 
+    folders_per_page: IntProperty(
+        name="Folders Per Page",
+        description="Number of folders to display per page in the HDRI browser",
+        default=6,
+        min=2,
+        max=20
+    )
+
+    show_folder_pagination: BoolProperty(
+        name="Enable Folder Pagination",
+        description="Enable pagination for folders in the HDRI browser",
+        default=True
+    )
 
     # Preview display with image loading
     def get_preview_icon(self, context=None):
@@ -3294,6 +3357,16 @@ class QuickHDRIPreferences(AddonPreferences):
             row.prop(self, "use_exr", toggle=True)
             row.prop(self, "use_png", toggle=True)
             row.prop(self, "use_jpg", toggle=True)
+
+            col.separator()
+            col.label(text="Folder Browser Display", icon='FILE_FOLDER')
+
+            row = col.row(align=True)
+            row.prop(self, "show_folder_pagination", text="Enable Folder Pagination")
+
+            sub_row = col.row()
+            sub_row.enabled = self.show_folder_pagination
+            sub_row.prop(self, "folders_per_page")
 
     #properties to control visibility
     show_updates: BoolProperty(default=False)
@@ -4242,32 +4315,84 @@ class HDRI_PT_controls(Panel):
                     # Display folders only if they exist
                     folders = get_folders(context)
                     if folders:
-                        # Calculate grid layout
-                        num_items = len(folders)
-                        num_columns = 2 if num_items > 2 else 1
+                        preferences = context.preferences.addons[__name__].preferences
 
-                        # Create grid flow
-                        grid = browser_box.grid_flow(
-                            row_major=True,
-                            columns=num_columns,
-                            even_columns=True,
-                            even_rows=False,
-                            align=True
-                        )
+                        # Check if pagination is enabled in preferences
+                        if preferences.show_folder_pagination and len(folders) > preferences.folders_per_page:
+                            # Calculate pagination
+                            total_folders = len(folders)
+                            items_per_page = preferences.folders_per_page
+                            total_pages = max(1, (total_folders + items_per_page - 1) // items_per_page)
 
-                        # Add folders to grid
-                        for folder_path, name, tooltip, icon, _ in folders:
-                            if folder_path != "parent":
-                                row = grid.row(align=True)
-                                row.scale_y = 1.2
-                                row.scale_x = 1.0
+                            # Use current page (read-only)
+                            current_page = hdri_settings.folder_page
 
-                                op = row.operator(
-                                    "world.change_hdri_folder",
-                                    text=name,
-                                    icon='FILE_FOLDER'
-                                )
-                                op.folder_path = folder_path
+                            # Ensure we're using a valid page number for display purposes only
+                            # Note: We don't modify the property here, just calculate valid indices
+                            current_page = max(0, min(current_page, total_pages - 1))
+
+                            # Calculate slice for current page
+                            start_idx = current_page * items_per_page
+                            end_idx = min(start_idx + items_per_page, total_folders)
+                            current_folders = folders[start_idx:end_idx]
+
+                            # Show pagination controls
+                            nav_row = browser_box.row(align=True)
+
+                            # First page
+                            first_op = nav_row.operator("world.change_folder_page", text="", icon='REW')
+                            first_op.page = 0
+                            first_op.go_to_page = True
+
+                            # Previous page - disable if on first page
+                            prev_row = nav_row.row(align=True)
+                            prev_row.enabled = (current_page > 0)
+                            prev_op = prev_row.operator("world.change_folder_page", text="", icon='TRIA_LEFT')
+                            prev_op.page = -1
+                            prev_op.go_to_page = False
+
+                            # Page indicator
+                            nav_row.label(text=f"Page {current_page + 1}/{total_pages}")
+
+                            # Next page - disable if on last page
+                            next_row = nav_row.row(align=True)
+                            next_row.enabled = (current_page < total_pages - 1)
+                            next_op = next_row.operator("world.change_folder_page", text="", icon='TRIA_RIGHT')
+                            next_op.page = 1
+                            next_op.go_to_page = False
+
+                            # Last page
+                            last_op = nav_row.operator("world.change_folder_page", text="", icon='FF')
+                            last_op.page = total_pages - 1
+                            last_op.go_to_page = True
+                        else:
+                            # If pagination is disabled or not needed, show all folders
+                            current_folders = folders
+
+                        # Create grid flow for folders
+                        num_columns = min(2, len(current_folders))  # Use fewer columns if needed
+                        if num_columns > 0:  # Only create grid if we have folders
+                            grid = browser_box.grid_flow(
+                                row_major=True,
+                                columns=num_columns,
+                                even_columns=True,
+                                even_rows=False,
+                                align=True
+                            )
+
+                            # Add folders to grid
+                            for folder_path, name, tooltip, icon, _ in current_folders:
+                                if folder_path != "parent":
+                                    row = grid.row(align=True)
+                                    row.scale_y = 1.2
+                                    row.scale_x = 1.0
+
+                                    op = row.operator(
+                                        "world.change_hdri_folder",
+                                        text=name,
+                                        icon='FILE_FOLDER'
+                                    )
+                                    op.folder_path = folder_path
 
         # HDRI Preview Section
         if has_hdri_files(context) or hdri_settings.search_query:
@@ -4587,6 +4712,7 @@ classes = (
     HDRI_OT_reset_strength,
     HDRI_OT_setup_nodes,
     HDRI_OT_change_folder,
+    HDRI_OT_change_folder_page,
     HDRI_PT_controls,
     HDRI_OT_check_updates,
     HDRI_OT_download_update,

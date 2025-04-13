@@ -169,6 +169,7 @@ Options:
 ## Updates
 
 Stay up to date:
+Updates are based on Render Engine that is selected.
    
 ![image](https://github.com/user-attachments/assets/5e441aa5-46bd-4334-9789-b8b7aec3bfc8)
 

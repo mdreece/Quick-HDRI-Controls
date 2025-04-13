@@ -8,7 +8,7 @@ v2.7.0 Video Demonstration: https://youtu.be/J7YdZQ2oxQA?si=_VRiLHIhQbZ1yVK4
 
 Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and efficient. Switch environments, adjust lighting, and control rotations directly from your 3D viewport - no more digging through node editors!
 
-![cycling](https://github.com/user-attachments/assets/a92ee270-33d9-496b-a925-be2c671ed1b7)
+![AddonHeader](https://github.com/user-attachments/assets/e13b76ee-8c89-4a05-9855-03a18e1b2af8)
 
 # Table of Contents
 

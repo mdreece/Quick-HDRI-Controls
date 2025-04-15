@@ -2367,6 +2367,13 @@ class HDRISettings(PropertyGroup):
         min=0
     )
 
+    show_search_bar: BoolProperty(
+        name="Show Search Bar",
+        description="Show or hide the HDRI search bar",
+        default=False
+    )
+
+
 class QuickHDRIPreferences(AddonPreferences):
     bl_idname = __name__
     # Properties for auto-update and update alert
@@ -4347,6 +4354,22 @@ class HDRI_OT_clear_hdri_search(Operator):
 
         return {'FINISHED'}
 
+class HDRI_OT_toggle_search_bar(Operator):
+    bl_idname = "world.toggle_hdri_search_bar"
+    bl_label = "Toggle Search Bar"
+    bl_description = "Show or hide the HDRI search bar"
+
+    def execute(self, context):
+        hdri_settings = context.scene.hdri_settings
+
+        # Toggle the search bar visibility
+        hdri_settings.show_search_bar = not hdri_settings.show_search_bar
+
+        # If we're hiding the search bar and there's a search active, clear it
+        if not hdri_settings.show_search_bar and hdri_settings.search_query:
+            bpy.ops.world.clear_hdri_search()
+
+        return {'FINISHED'}
 
 class HDRI_PT_controls(Panel):
     bl_space_type = 'VIEW_3D'
@@ -4487,15 +4510,28 @@ class HDRI_PT_controls(Panel):
         sub.active = hdri_settings.show_browser
         sub.label(text="HDRI Browser", icon='FILE_FOLDER')
 
-        if hdri_settings.show_browser:
-            # Search field with lock behavior
-            search_row = browser_box.row(align=True)
-            search_sub = search_row.row(align=True)
-            search_sub.enabled = not hdri_settings.search_locked
-            search_sub.prop(hdri_settings, "search_query", text="", icon='VIEWZOOM')
+        # Add search button directly in the header
+        search_btn = browser_header.row(align=True)
+        search_btn.alignment = 'RIGHT'
+        search_btn.operator("world.toggle_hdri_search_bar",
+                           text="",
+                           icon='VIEWZOOM',
+                           emboss=False)
 
-            # Clear button - always enabled
-            clear_btn = search_row.operator("world.clear_hdri_search", text="", icon='X')
+        if hdri_settings.show_browser:
+            # Show search bar in a separate row when expanded
+            if hdri_settings.show_search_bar:
+                search_row = browser_box.row(align=True)
+                search_row.scale_y = 0.9  # Slightly smaller to look compact
+
+                # Search field
+                search_field = search_row.row(align=True)
+                search_field.enabled = not hdri_settings.search_locked
+                search_field.prop(hdri_settings, "search_query", text="", icon='VIEWZOOM')
+
+                # Clear button when there's search text
+                if hdri_settings.search_query.strip():
+                    clear_btn = search_row.operator("world.clear_hdri_search", text="", icon='X')
 
             # Only show folders if there's no active search
             if not hdri_settings.search_query:
@@ -4612,6 +4648,7 @@ class HDRI_PT_controls(Panel):
                                         icon='FILE_FOLDER'
                                     )
                                     op.folder_path = folder_path
+
 
         # HDRI Preview Section
         if has_hdri_files(context) or hdri_settings.search_query:
@@ -4982,6 +5019,7 @@ classes = (
     HDRI_OT_apply_render_engine,
     HDRI_OT_show_changelog,
     HDRI_OT_clear_hdri_search,
+    HDRI_OT_toggle_search_bar,
 )
 def register():
     bpy.types.WindowManager.hdri_changelog = StringProperty(

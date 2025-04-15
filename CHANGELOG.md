@@ -1,6 +1,17 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 4-15-2025: CYCLES: v2.8.0 | OCTANE: V2.8.0 | V-Ray: V1.0.6
+### New Features 🔔: (All)
+• Hide/Show Search.
+
+### Fixes 🛠️:
+• None
+
+### INFORMATION ⚠️:
+• Not updating version numbers as no major changes have been made. (Search hiding and pages)
+##
+
 
 ## 4-12-2025: CYCLES: v2.8.0 | OCTANE: V2.8.0 | V-Ray: V1.0.6
 ### New Features 🔔:

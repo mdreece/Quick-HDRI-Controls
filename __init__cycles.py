@@ -21,7 +21,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 0),
+    "version": (2, 8, 1),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1310,6 +1310,14 @@ class HDRI_OT_download_update(Operator):
     bl_label = "Download Update"
     bl_description = "Download and install the latest version"
 
+    def invoke(self, context, event):
+        # Show confirmation dialog
+        return context.window_manager.invoke_confirm(
+            self,
+            event,
+            message="Download and install the latest update? Blender will need to restart afterward."
+        )
+
     def backup_current_version(self, addon_path):
         """Create a backup of the current addon version, with configurable settings"""
         preferences = bpy.context.preferences.addons[__name__].preferences
@@ -2558,9 +2566,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.8.0', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.6', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.8.0', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.8.1', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.7', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.8.1', 'Use Octane render engine')
         ],
         default='CYCLES'
     )
@@ -4164,13 +4172,6 @@ class HDRI_PT_controls(Panel):
 
         main_column.separator(factor=0.5 * preferences.spacing_scale)
 
-        # Update notification
-        if preferences.update_available:
-            row = main_column.row()
-            row.alert = True
-            row.label(text="HDRI Controls - Update Available!", icon='ERROR')
-            row.operator("world.download_hdri_update", text="Download Update")
-
         # Early returns
         if not preferences.hdri_directory:
             box = main_column.box()
@@ -4205,7 +4206,18 @@ class HDRI_PT_controls(Panel):
                 icon='PREFERENCES',
                 emboss=False
             ).module = __name__
-            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+            # Modified version display in the footer
+            version_row = footer.row(align=True)
+            if preferences.update_available:
+                version_row.alert = True
+                version_row.operator(
+                    "world.download_hdri_update",
+                    text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                    emboss=False
+                )
+            else:
+                version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
 
         world = context.scene.world
@@ -4255,8 +4267,20 @@ class HDRI_PT_controls(Panel):
                 icon='PREFERENCES',
                 emboss=False
             ).module = __name__
-            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+            # Modified version display in the footer
+            version_row = footer.row(align=True)
+            if preferences.update_available:
+                version_row.alert = True
+                version_row.operator(
+                    "world.download_hdri_update",
+                    text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                    emboss=False
+                )
+            else:
+                version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
+
         # Get node references
         mapping = None
         env_tex = None
@@ -4269,6 +4293,7 @@ class HDRI_PT_controls(Panel):
                 env_tex = node
             elif node.type == 'BACKGROUND':
                 background = node
+
         if not mapping or not env_tex:
             box = main_column.box()
             box.alert = True
@@ -4277,6 +4302,29 @@ class HDRI_PT_controls(Panel):
             col.operator("world.setup_hdri_nodes",
                 text="Repair HDRI System",
                 icon='FILE_REFRESH')
+
+            # footer
+            main_column.separator(factor=1.0 * preferences.spacing_scale)
+            footer = main_column.row(align=True)
+            footer.scale_y = 0.8
+            footer.operator(
+                "preferences.addon_show",
+                text="",
+                icon='PREFERENCES',
+                emboss=False
+            ).module = __name__
+
+            # Modified version display in the footer
+            version_row = footer.row(align=True)
+            if preferences.update_available:
+                version_row.alert = True
+                version_row.operator(
+                    "world.download_hdri_update",
+                    text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                    emboss=False
+                )
+            else:
+                version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
         # Main UI
         # Folder Browser Section
@@ -4666,8 +4714,19 @@ class HDRI_PT_controls(Panel):
             icon='PREFERENCES',
             emboss=False
         )
-        # Version number
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+        # Version number - Modified to show update alert
+        version_row = footer.row(align=True)
+        if preferences.update_available:
+            version_row.alert = True
+            version_row.operator(
+                "world.download_hdri_update",
+                text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                emboss=False
+            )
+        else:
+            version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
         #delete world button
         delete_btn = footer.operator(
             "world.delete_hdri_world",

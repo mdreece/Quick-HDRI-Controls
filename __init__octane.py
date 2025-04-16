@@ -21,7 +21,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Octane)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 0),
+    "version": (2, 8, 1),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1411,6 +1411,14 @@ class HDRI_OT_download_update(Operator):
     bl_idname = "world.download_hdri_update"
     bl_label = "Download Update"
     bl_description = "Download and install the latest version"
+    
+    def invoke(self, context, event):
+        # Show confirmation dialog
+        return context.window_manager.invoke_confirm(
+            self,
+            event,
+            message="Download and install the latest update? Blender will need to restart afterward."
+        )
 
     def backup_current_version(self, addon_path):
         """Create a backup of the current addon version, with configurable settings"""
@@ -2779,9 +2787,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.8.0', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.6', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.8.0', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.8.1', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.7', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.8.1', 'Use Octane render engine')
         ],
         default='OCTANE'
     )
@@ -4397,20 +4405,6 @@ class HDRI_PT_controls(Panel):
         header_row.scale_y = 0.6
         main_column.separator(factor=0.5 * preferences.spacing_scale)
 
-        # Footer at the start
-        footer = main_column.row(align=True)
-        footer.scale_y = 0.8
-
-        # Add separator after footer
-        main_column.separator(factor=0.5 * preferences.spacing_scale)
-
-        # Update available notification
-        if preferences.update_available:
-            row = main_column.row()
-            row.alert = True
-            row.label(text="HDRI Controls - Update Available!", icon='ERROR')
-            row.operator("world.download_hdri_update", text="Download Update")
-
         # Early returns with styled messages
         if not preferences.hdri_directory:
             box = main_column.box()
@@ -4435,6 +4429,7 @@ class HDRI_PT_controls(Panel):
             op.directory = preferences.hdri_directory
             op.property_name = "hdri_directory"
             op.property_owner = "preferences"
+            
             # Add footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)
@@ -4445,7 +4440,18 @@ class HDRI_PT_controls(Panel):
                 icon='PREFERENCES',
                 emboss=False
             ).module = __name__
-            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+            # Modified version display in the footer
+            version_row = footer.row(align=True)
+            if preferences.update_available:
+                version_row.alert = True
+                version_row.operator(
+                    "world.download_hdri_update",
+                    text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                    emboss=False
+                )
+            else:
+                version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
 
         world = context.scene.world
@@ -4485,6 +4491,7 @@ class HDRI_PT_controls(Panel):
                     col.operator("world.setup_hdri_nodes",
                         text="Initialize HDRI System",
                         icon='WORLD_DATA')
+                        
             # Add footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)
@@ -4495,8 +4502,20 @@ class HDRI_PT_controls(Panel):
                 icon='PREFERENCES',
                 emboss=False
             ).module = __name__
-            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+            # Modified version display in the footer
+            version_row = footer.row(align=True)
+            if preferences.update_available:
+                version_row.alert = True
+                version_row.operator(
+                    "world.download_hdri_update",
+                    text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                    emboss=False
+                )
+            else:
+                version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
+        
         # Main UI
         # Folder Browser Section
         browser_box = main_column.box()
@@ -4911,8 +4930,19 @@ class HDRI_PT_controls(Panel):
             icon='PREFERENCES',
             emboss=False
         )
-        # Version number
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+        # Version number - Modified to show update alert
+        version_row = footer.row(align=True)
+        if preferences.update_available:
+            version_row.alert = True
+            version_row.operator(
+                "world.download_hdri_update",
+                text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                emboss=False
+            )
+        else:
+            version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
         #delete world button
         delete_btn = footer.operator(
             "world.delete_hdri_world",

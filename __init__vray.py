@@ -22,7 +22,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
-    "version": (1, 0, 6),
+    "version": (1, 0, 7),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1304,6 +1304,14 @@ class HDRI_OT_download_update(Operator):
     bl_idname = "world.download_hdri_update"
     bl_label = "Download Update"
     bl_description = "Download and install the latest version"
+    
+    def invoke(self, context, event):
+        # Show confirmation dialog
+        return context.window_manager.invoke_confirm(
+            self,
+            event,
+            message="Download and install the latest update? Blender will need to restart afterward."
+        )
 
     def backup_current_version(self, addon_path):
         """Create a backup of the current addon version, with configurable settings"""
@@ -2586,9 +2594,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.8.0', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.6', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.8.0', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.8.1', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.7', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.8.1', 'Use Octane render engine')
         ],
         default='VRAY_RENDER_RT'
     )
@@ -4236,19 +4244,6 @@ class HDRI_PT_controls(Panel):
         header_row.scale_y = 0.6
         main_column.separator(factor=0.5 * preferences.spacing_scale)
 
-        # Footer at the start
-        footer = main_column.row(align=True)
-        footer.scale_y = 0.8
-
-        main_column.separator(factor=0.5 * preferences.spacing_scale)
-
-        # Update notification
-        if preferences.update_available:
-            row = main_column.row()
-            row.alert = True
-            row.label(text="HDRI Controls - Update Available!", icon='ERROR')
-            row.operator("world.download_hdri_update", text="Download Update")
-
         # Early returns
         if not preferences.hdri_directory:
             box = main_column.box()
@@ -4273,6 +4268,7 @@ class HDRI_PT_controls(Panel):
             op.directory = preferences.hdri_directory
             op.property_name = "hdri_directory"
             op.property_owner = "preferences"
+            
             # Add footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)
@@ -4283,7 +4279,18 @@ class HDRI_PT_controls(Panel):
                 icon='PREFERENCES',
                 emboss=False
             ).module = __name__
-            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+            # Modified version display in the footer
+            version_row = footer.row(align=True)
+            if preferences.update_available:
+                version_row.alert = True
+                version_row.operator(
+                    "world.download_hdri_update",
+                    text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                    emboss=False
+                )
+            else:
+                version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
 
         # Check for V-Ray collection and dome light
@@ -4331,6 +4338,7 @@ class HDRI_PT_controls(Panel):
                     col.operator("world.setup_hdri_nodes",
                         text="Initialize HDRI System",
                         icon='WORLD_DATA')
+                        
             # footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)
@@ -4341,46 +4349,18 @@ class HDRI_PT_controls(Panel):
                 icon='PREFERENCES',
                 emboss=False
             ).module = __name__
-            footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
-            return
 
-        # Get V-Ray node references
-        bitmap_node = None
-        light_dome_node = None
-
-        if dome_light and dome_light.data and dome_light.data.node_tree:
-            node_tree = dome_light.data.node_tree
-            light_dome_node = node_tree.nodes.get("Light Dome")
-            bitmap_node = node_tree.nodes.get("V-Ray Bitmap")
-
-            # Check if nodes are connected correctly
-            if light_dome_node and bitmap_node:
-                # Find the image input socket of the light dome
-                for input in light_dome_node.inputs:
-                    if input.name in ["Texture", "Dome tex"]:  # Check both possible names
-                        if input.links:
-                            if input.links[0].from_node == bitmap_node:
-                                # Everything is set up correctly
-                                break
-                        else:
-                            # Nodes exist but aren't connected
-                            bitmap_node = None  # Force repair
-                            break
-
-            # Additional validation - ensure nodes are the correct V-Ray types
-            if light_dome_node and not light_dome_node.bl_idname.startswith('VRayNode'):
-                light_dome_node = None
-            if bitmap_node and not bitmap_node.bl_idname.startswith('VRayNode'):
-                bitmap_node = None
-
-        if not bitmap_node or not light_dome_node:
-            box = main_column.box()
-            box.alert = True
-            col = box.column(align=True)
-            col.scale_y = 1.2 * preferences.button_scale
-            col.operator("world.setup_hdri_nodes",
-                text="Repair V-Ray HDRI System",
-                icon='FILE_REFRESH')
+            # Modified version display in the footer
+            version_row = footer.row(align=True)
+            if preferences.update_available:
+                version_row.alert = True
+                version_row.operator(
+                    "world.download_hdri_update",
+                    text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                    emboss=False
+                )
+            else:
+                version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
             return
         # Main UI
         # Folder Browser Section
@@ -4560,48 +4540,58 @@ class HDRI_PT_controls(Panel):
                 )
 
                 # Navigation controls only if HDRI is active
-                if bitmap_node and hasattr(bitmap_node, 'BitmapBuffer') and bitmap_node.BitmapBuffer:
-                    nav_box = preview_box.box()
-                    nav_row = nav_box.row(align=True)
+                nav_box = preview_box.box()
+                nav_row = nav_box.row(align=True)
 
-                    # Reset to previous HDRI
-                    if hdri_settings.previous_hdri_path and os.path.exists(hdri_settings.previous_hdri_path):
-                        reset_sub = nav_row.row(align=True)
-                        reset_sub.scale_x = 0.9
-                        reset_sub.operator(
-                            "world.reset_hdri",
-                            text="",
-                            icon='LOOP_BACK'
-                        )
-                    nav_row.separator(factor=1.0)
-                    # Previous button
-                    prev_sub = nav_row.row(align=True)
-                    prev_sub.scale_x = 1.2
-                    prev_sub.operator(
-                        "world.previous_hdri",
+                # Find the VRayDomeLight for getting the current HDRI
+                vray_collection = bpy.data.collections.get("vRay HDRI Controls")
+                bitmap_node = None
+                if vray_collection:
+                    for obj in vray_collection.objects:
+                        if obj.type == 'LIGHT' and "VRayDomeLight" in obj.name:
+                            if obj.data and obj.data.node_tree:
+                                bitmap_node = obj.data.node_tree.nodes.get("V-Ray Bitmap")
+                                break
+
+                # Reset to previous HDRI
+                if hdri_settings.previous_hdri_path and os.path.exists(hdri_settings.previous_hdri_path):
+                    reset_sub = nav_row.row(align=True)
+                    reset_sub.scale_x = 0.9
+                    reset_sub.operator(
+                        "world.reset_hdri",
                         text="",
-                        icon='TRIA_LEFT',
-                        emboss=True
+                        icon='LOOP_BACK'
                     )
+                nav_row.separator(factor=1.0)
 
-                    # HDRI name
-                    name_row = nav_row.row(align=True)
-                    name_row.alignment = 'CENTER'
-                    name_row.scale_x = 2.2
-                    if bitmap_node and bitmap_node.BitmapBuffer and bitmap_node.BitmapBuffer.file:
-                        name_row.label(text=os.path.basename(bitmap_node.BitmapBuffer.file))
-                    else:
-                        name_row.label(text="No HDRI")
+                # Previous button
+                prev_sub = nav_row.row(align=True)
+                prev_sub.scale_x = 1.2
+                prev_sub.operator(
+                    "world.previous_hdri",
+                    text="",
+                    icon='TRIA_LEFT',
+                    emboss=True
+                )
 
-                    # Next button
-                    next_sub = nav_row.row(align=True)
-                    next_sub.scale_x = 1.2
-                    next_sub.operator(
-                        "world.next_hdri",
-                        text="",
-                        icon='TRIA_RIGHT',
-                        emboss=True
-                    )
+                # HDRI name
+                name_row = nav_row.row(align=True)
+                name_row.alignment = 'CENTER'
+                name_row.scale_x = 2.2
+                if bitmap_node and hasattr(bitmap_node, 'BitmapBuffer') and bitmap_node.BitmapBuffer.file:
+                    name_row.label(text=os.path.basename(bitmap_node.BitmapBuffer.file))
+                else:
+                    name_row.label(text="No HDRI")
+
+                # Next button
+                next_sub = nav_row.row(align=True)
+                next_sub.scale_x = 1.2
+                next_sub.operator(
+                    "world.next_hdri",
+                    text="",
+                    icon='TRIA_RIGHT',
+                    emboss=True
+                )
 
         # Proxy dropdown
         proxy_row = main_column.row(align=True)
@@ -4782,8 +4772,19 @@ class HDRI_PT_controls(Panel):
             icon='PREFERENCES',
             emboss=False
         )
-        # Version number
-        footer.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
+        # Version number - Modified to show update alert
+        version_row = footer.row(align=True)
+        if preferences.update_available:
+            version_row.alert = True
+            version_row.operator(
+                "world.download_hdri_update",
+                text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]} - Update Available",
+                emboss=False
+            )
+        else:
+            version_row.label(text=f"v{bl_info['version'][0]}.{bl_info['version'][1]}.{bl_info['version'][2]}")
+
         #delete world button
         delete_btn = footer.operator(
             "world.delete_hdri_world",

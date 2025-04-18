@@ -1,6 +1,19 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 4-16-2025: CYCLES: v2.8.2 | OCTANE: V2.8.2 | V-Ray: V1.0.8
+### New Features 🔔: (All)
+• Now supporting ACES color space/transform.
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
+##
+
+
+
 ## 4-16-2025: CYCLES: v2.8.1 | OCTANE: V2.8.1 | V-Ray: V1.0.7
 ### New Features 🔔: (All)
 • Hide/Show Search.

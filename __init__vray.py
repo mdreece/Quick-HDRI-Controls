@@ -22,7 +22,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
-    "version": (1, 0, 7),
+    "version": (1, 0, 8),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1304,7 +1304,7 @@ class HDRI_OT_download_update(Operator):
     bl_idname = "world.download_hdri_update"
     bl_label = "Download Update"
     bl_description = "Download and install the latest version"
-    
+
     def invoke(self, context, event):
         # Show confirmation dialog
         return context.window_manager.invoke_confirm(
@@ -1681,9 +1681,15 @@ class HDRI_OT_setup_nodes(Operator):
         preferences = context.preferences.addons[__name__].preferences
         hdri_settings = context.scene.hdri_settings
 
-        # Change view transform to AgX
-        context.scene.view_settings.view_transform = 'AgX'
-        self.report({'INFO'}, "View transform set to AgX")
+        # Try to set the view transform but don't error if it's not available
+        try:
+            # Check if 'AgX' is available in the view transform options
+            if 'AgX' in [item.identifier for item in context.scene.view_settings.bl_rna.properties['view_transform'].enum_items]:
+                context.scene.view_settings.view_transform = 'AgX'
+                self.report({'INFO'}, "View transform set to AgX")
+            # If not available, we'll leave it as is
+        except Exception as e:
+            self.report({'WARNING'}, f"Could not set color transform: {str(e)}")
 
         # Set scene color management defaults
         context.scene.display_settings.display_device = 'sRGB'
@@ -2594,9 +2600,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.8.1', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.7', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.8.1', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.8.2', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.8', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.8.2', 'Use Octane render engine')
         ],
         default='VRAY_RENDER_RT'
     )
@@ -4268,7 +4274,7 @@ class HDRI_PT_controls(Panel):
             op.directory = preferences.hdri_directory
             op.property_name = "hdri_directory"
             op.property_owner = "preferences"
-            
+
             # Add footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)
@@ -4338,7 +4344,7 @@ class HDRI_PT_controls(Panel):
                     col.operator("world.setup_hdri_nodes",
                         text="Initialize HDRI System",
                         icon='WORLD_DATA')
-                        
+
             # footer
             main_column.separator(factor=1.0 * preferences.spacing_scale)
             footer = main_column.row(align=True)

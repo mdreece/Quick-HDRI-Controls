@@ -21,7 +21,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 1),
+    "version": (2, 8, 2),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -1718,9 +1718,15 @@ class HDRI_OT_setup_nodes(Operator):
             context.scene.render.engine = 'CYCLES'
             self.report({'INFO'}, "Render engine switched to Cycles")
 
-        # Change view transform to AgX
-        context.scene.view_settings.view_transform = 'AgX'
-        self.report({'INFO'}, "View transform set to AgX")
+        # Try to set the view transform but don't error if it's not available
+        try:
+            # Check if 'AgX' is available in the view transform options
+            if 'AgX' in [item.identifier for item in context.scene.view_settings.bl_rna.properties['view_transform'].enum_items]:
+                context.scene.view_settings.view_transform = 'AgX'
+                self.report({'INFO'}, "View transform set to AgX")
+            # If not available, we'll leave it as is
+        except Exception as e:
+            self.report({'WARNING'}, f"Could not set color transform: {str(e)}")
 
         # Verify HDRI directory exists and is accessible
         if not preferences.hdri_directory or not os.path.exists(preferences.hdri_directory):
@@ -2566,9 +2572,9 @@ class QuickHDRIPreferences(AddonPreferences):
         name="HDRI Render Engine",
         description="Select the render engine for HDRI controls",
         items=[
-            ('CYCLES', 'Cycles: v2.8.1', 'Use Cycles render engine'),
-            ('VRAY_RENDER_RT', 'V-Ray: v1.0.7', 'Use V-Ray render engine'),
-            ('OCTANE', 'Octane: v2.8.1', 'Use Octane render engine')
+            ('CYCLES', 'Cycles: v2.8.2', 'Use Cycles render engine'),
+            ('VRAY_RENDER_RT', 'V-Ray: v1.0.8', 'Use V-Ray render engine'),
+            ('OCTANE', 'Octane: v2.8.2', 'Use Octane render engine')
         ],
         default='CYCLES'
     )

@@ -1,5 +1,7 @@
 # Quick HDRI Controls | Cycles | Octane | V-Ray | v2.8.3
 
+### RESTART BLENDER AT LEAST TWICE FOR v2.8.3 ###
+
 ![Blender Version](https://img.shields.io/badge/Blender-4.2.0-green.svg)
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)

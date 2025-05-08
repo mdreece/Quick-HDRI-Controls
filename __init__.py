@@ -124,21 +124,12 @@ def register():
     addon_dir = os.path.dirname(os.path.realpath(__file__))
     print(f"Addon directory: {addon_dir}")
     
-    # Define the legacy files to check for
+    # Define the legacy files to check for - ONLY in the main addon directory
     legacy_files = [
         os.path.join(addon_dir, "__init__cycles.py"),
         os.path.join(addon_dir, "__init__octane.py"),
         os.path.join(addon_dir, "__init__vray.py")
     ]
-    
-    # Check render_engines directory if it exists
-    render_engines_dir = os.path.join(addon_dir, "render_engines")
-    if os.path.exists(render_engines_dir):
-        legacy_files.extend([
-            os.path.join(render_engines_dir, "__init__cycles.py"),
-            os.path.join(render_engines_dir, "__init__octane.py"),
-            os.path.join(render_engines_dir, "__init__vray.py")
-        ])
     
     # Check each file and delete if it exists
     files_deleted = 0
@@ -150,6 +141,16 @@ def register():
                 files_deleted += 1
             except Exception as e:
                 print(f"❌ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+                # Try alternative file removal approach
+                try:
+                    import stat
+                    # Change permissions if needed
+                    os.chmod(file_path, stat.S_IWRITE)
+                    os.unlink(file_path)
+                    print(f"✓ Successfully removed file using alternative method")
+                    files_deleted += 1
+                except Exception as alt_e:
+                    print(f"❌❌ Alternative removal also failed: {str(alt_e)}")
     
     if files_deleted > 0:
         print(f"Successfully removed {files_deleted} legacy file(s)")
@@ -217,15 +218,6 @@ def register():
         os.path.join(addon_dir, "__init__vray.py")
     ]
     
-    # Check render_engines directory again (it might have been in the ZIP)
-    render_engines_dir = os.path.join(addon_dir, "render_engines")
-    if os.path.exists(render_engines_dir):
-        legacy_files.extend([
-            os.path.join(render_engines_dir, "__init__cycles.py"),
-            os.path.join(render_engines_dir, "__init__octane.py"),
-            os.path.join(render_engines_dir, "__init__vray.py")
-        ])
-    
     # Check each file and delete if it exists
     files_deleted = 0
     for file_path in legacy_files:
@@ -236,6 +228,16 @@ def register():
                 files_deleted += 1
             except Exception as e:
                 print(f"❌ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+                # Try alternative file removal approach
+                try:
+                    import stat
+                    # Change permissions if needed
+                    os.chmod(file_path, stat.S_IWRITE)
+                    os.unlink(file_path)
+                    print(f"✓ Successfully removed file using alternative method")
+                    files_deleted += 1
+                except Exception as alt_e:
+                    print(f"❌❌ Alternative removal also failed: {str(alt_e)}")
     
     if files_deleted > 0:
         print(f"Successfully removed {files_deleted} additional legacy file(s)")
@@ -247,7 +249,6 @@ def register():
     print("✓ Startup preparation complete, beginning normal registration")
     
     # Now that we've cleaned up and prepared everything, proceed with normal registration
-    
     # First setup hdri_management module
     from . import hdri_management
     print("✓ HDRI management module imported")
@@ -314,10 +315,6 @@ def register():
     # Ensure the addon directory structure is set up correctly
     utils.ensure_addon_structure()
     print("✓ Directory structure verified")
-
-    # Extract any additional or new update ZIPs
-    utils.extract_addon_zips()
-    print("✓ Additional addon ZIPs extracted")
 
     # Run update check if enabled
     utils.check_for_update_on_startup()

@@ -159,59 +159,131 @@ def register():
     else:
         print("No legacy files found for initial cleanup")
     
-    # SECOND STEP: Extract ZIP files
-    import zipfile
-    import shutil
-    import tempfile
-    
-    # Find all zip files in the addon directory
-    try:
-        zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
+    # SECOND STEP: Extract ZIP files with proper file replacement
+    def extract_zips_first():
+        """Extract ZIP files and properly replace existing files including __init__.py"""
+        import os
+        import zipfile
+        import shutil
+        import tempfile
+        import importlib
         
-        if zip_files:
-            print(f"Found {len(zip_files)} ZIP files to extract")
+        print("\n=== EXTRACTING ZIP FILES ===")
+        # Get the addon directory directly
+        addon_dir = os.path.dirname(os.path.realpath(__file__))
+        
+        # Find all zip files in the addon directory
+        try:
+            zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
             
-            for zip_file in zip_files:
-                zip_path = os.path.join(addon_dir, zip_file)
-                try:
-                    print(f"Extracting: {zip_file}")
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                            zip_ref.extractall(temp_dir)
-                        
-                        # Copy extracted files to addon directory
-                        extracted_items = os.listdir(temp_dir)
-                        for item in extracted_items:
-                            src_path = os.path.join(temp_dir, item)
-                            dst_path = os.path.join(addon_dir, item)
+            if zip_files:
+                print(f"Found {len(zip_files)} ZIP files to extract")
+                
+                for zip_file in zip_files:
+                    zip_path = os.path.join(addon_dir, zip_file)
+                    try:
+                        print(f"Extracting: {zip_file}")
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                                zip_ref.extractall(temp_dir)
                             
-                            if os.path.isfile(src_path):
-                                shutil.copy2(src_path, dst_path)
-                                print(f"Copied file: {item}")
-                            elif os.path.isdir(src_path):
-                                if os.path.exists(dst_path):
-                                    shutil.rmtree(dst_path)
-                                shutil.copytree(src_path, dst_path)
-                                print(f"Copied directory: {item}")
-                    
-                    # Remove the zip file
-                    os.remove(zip_path)
-                    print(f"Successfully extracted and removed {zip_file}")
-                    
-                except Exception as e:
-                    print(f"Error extracting {zip_file}: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
+                            # Copy extracted files to addon directory
+                            extracted_items = os.listdir(temp_dir)
+                            
+                            # If there's a single directory, use that as the source
+                            if len(extracted_items) == 1 and os.path.isdir(os.path.join(temp_dir, extracted_items[0])):
+                                source_dir = os.path.join(temp_dir, extracted_items[0])
+                                print(f"Using subdirectory as source: {extracted_items[0]}")
+                            else:
+                                source_dir = temp_dir
+                                print("Using temp directory directly as source")
+                            
+                            # List files to be copied
+                            source_items = os.listdir(source_dir)
+                            print(f"Source items to copy: {source_items}")
+                            
+                            # Copy all files to addon directory with proper replacement
+                            for item in source_items:
+                                src_path = os.path.join(source_dir, item)
+                                dst_path = os.path.join(addon_dir, item)
+                                
+                                try:
+                                    if os.path.isfile(src_path):
+                                        # For files: Remove existing file first, then copy
+                                        if os.path.exists(dst_path):
+                                            try:
+                                                os.remove(dst_path)
+                                                print(f"Removed existing file: {item}")
+                                            except PermissionError:
+                                                # If permission error, try changing permissions
+                                                import stat
+                                                os.chmod(dst_path, stat.S_IWRITE)
+                                                os.remove(dst_path)
+                                                print(f"Removed existing file (after changing permissions): {item}")
+                                        
+                                        # Now copy the new file
+                                        shutil.copy2(src_path, dst_path)
+                                        print(f"Copied file: {item}")
+                                    
+                                    elif os.path.isdir(src_path):
+                                        # For directories: Remove entirely, then copy the new one
+                                        if os.path.exists(dst_path):
+                                            try:
+                                                shutil.rmtree(dst_path)
+                                                print(f"Removed existing directory: {item}")
+                                            except PermissionError:
+                                                # If permission error, try alternative method
+                                                import stat
+                                                # Change permissions for all files in the directory
+                                                for root, dirs, files in os.walk(dst_path):
+                                                    for file in files:
+                                                        os.chmod(os.path.join(root, file), stat.S_IWRITE)
+                                                # Try removal again
+                                                shutil.rmtree(dst_path)
+                                                print(f"Removed existing directory (after changing permissions): {item}")
+                                        
+                                        # Now copy the new directory
+                                        shutil.copytree(src_path, dst_path)
+                                        print(f"Copied directory: {item}")
+                                
+                                except Exception as copy_error:
+                                    print(f"Error processing {item}: {str(copy_error)}")
+                                    import traceback
+                                    traceback.print_exc()
+                        
+                        # Remove the zip file after successful extraction
+                        try:
+                            os.remove(zip_path)
+                            print(f"Removed ZIP file: {zip_file}")
+                        except Exception as rm_error:
+                            print(f"Could not remove ZIP file: {str(rm_error)}")
+                        
+                        # Refresh import system after successful extraction
+                        importlib.invalidate_caches()
+                        print(f"Refreshed import system after extracting {zip_file}")
+                        
+                    except Exception as e:
+                        print(f"Error extracting {zip_file}: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
+            else:
+                print("No ZIP files found in addon directory")
+                
+        except Exception as e:
+            print(f"Error in ZIP extraction process: {str(e)}")
+            import traceback
+            traceback.print_exc()
             
-            # Refresh import system after extracting
-            importlib.invalidate_caches()
-        else:
-            print("No ZIP files found in addon directory")
-    except Exception as e:
-        print(f"Error checking for ZIP files: {str(e)}")
+        print("=== ZIP EXTRACTION COMPLETE ===\n")
+        
+        # Return whether we processed any ZIPs (for logging purposes)
+        return len(zip_files) > 0
+    
+    # Call our ZIP extraction function
+    extract_zips_first()
+    print("✓ ZIP extraction completed")
     
     # THIRD STEP: Check AGAIN for legacy files that might have been in the ZIPs
-    # Especially important after extraction
     legacy_files = [
         os.path.join(addon_dir, "__init__cycles.py"),
         os.path.join(addon_dir, "__init__octane.py"),
@@ -315,6 +387,10 @@ def register():
     # Ensure the addon directory structure is set up correctly
     utils.ensure_addon_structure()
     print("✓ Directory structure verified")
+
+    # Extract any additional or new update ZIPs
+    utils.extract_addon_zips()
+    print("✓ Additional addon ZIPs extracted")
 
     # Run update check if enabled
     utils.check_for_update_on_startup()

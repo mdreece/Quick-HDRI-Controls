@@ -11,7 +11,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 2),
+    "version": (2, 8, 3),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -114,89 +114,150 @@ def load_preferred_engine(dummy):
 def register():
     print("\n=== REGISTERING QUICK HDRI CONTROLS ===")
 
-    # First run the legacy file cleanup
-    from . import utils
-    utils.cleanup_legacy_files()
-    print("✓ Legacy file cleanup completed")
+    # IMPORTANT: Extract ZIPs first, before any imports
+    import os
+    import sys
+    import zipfile
+    import shutil
+    import tempfile
+    
+    # Simple ZIP extraction function defined inline to avoid imports
+    def extract_zips_first():
+        print("Performing initial ZIP extraction check...")
+        # Get the addon directory directly
+        addon_dir = os.path.dirname(os.path.realpath(__file__))
+        
+        # Find all zip files in the addon directory
+        zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
+        
+        if zip_files:
+            print(f"Found {len(zip_files)} ZIP files to extract")
+            
+            for zip_file in zip_files:
+                zip_path = os.path.join(addon_dir, zip_file)
+                try:
+                    print(f"Extracting: {zip_file}")
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                            zip_ref.extractall(temp_dir)
+                        
+                        # Copy extracted files to addon directory
+                        extracted_items = os.listdir(temp_dir)
+                        for item in extracted_items:
+                            src_path = os.path.join(temp_dir, item)
+                            dst_path = os.path.join(addon_dir, item)
+                            
+                            if os.path.isfile(src_path):
+                                shutil.copy2(src_path, dst_path)
+                            elif os.path.isdir(src_path):
+                                if os.path.exists(dst_path):
+                                    shutil.rmtree(dst_path)
+                                shutil.copytree(src_path, dst_path)
+                    
+                    # Remove the zip file
+                    os.remove(zip_path)
+                    print(f"Successfully extracted {zip_file}")
+                    
+                    # If we extracted anything, we need to refresh Python's import system
+                    import importlib
+                    importlib.invalidate_caches()
+                    
+                except Exception as e:
+                    print(f"Error extracting {zip_file}: {str(e)}")
+        else:
+            print("No ZIP files found in addon directory")
+    
+    # Call our inline extraction function
+    extract_zips_first()
+    print("✓ Initial ZIP extraction completed")
 
+    # Now proceed with normal imports
     # Split import statements to prevent circular imports
     import importlib
 
-    # First setup hdri_management module
-    from . import hdri_management
-    print("✓ HDRI management module imported")
+    # Check if render_engines directory now exists before trying to import
+    if os.path.exists(os.path.join(os.path.dirname(os.path.realpath(__file__)), "render_engines")):
+        # First setup hdri_management module
+        from . import hdri_management
+        print("✓ HDRI management module imported")
 
-    # Then, try to register the Preferences class
-    from . import preferences
-    preferences.register_preferences()
-    print("✓ Preferences registered")
+        # Then, try to register the Preferences class
+        from . import preferences
+        preferences.register_preferences()
+        print("✓ Preferences registered")
 
-    # Then, import and register the core modules
-    from . import utils
-    from . import core
-    core.register_core()
-    print("✓ Core components registered")
+        # Then, import and register the core modules
+        from . import utils
+        from . import core
+        core.register_core()
+        print("✓ Core components registered")
 
-    # Then the operators
-    from . import operators
-    operators.register_operators()
-    print("✓ Operators registered")
+        # Then the operators
+        from . import operators
+        operators.register_operators()
+        print("✓ Operators registered")
 
-    # Then the UI
-    from . import ui
-    ui.register_ui()
-    print("✓ UI registered")
+        # Then the UI
+        from . import ui
+        ui.register_ui()
+        print("✓ UI registered")
 
-    # Store changelog in window manager
-    bpy.types.WindowManager.hdri_changelog = bpy.props.StringProperty(
-        name="Changelog",
-        description="Stores current changelog entry",
-        default=""
-    )
-    print("✓ Window manager properties added")
-
-    # Register render engines
-    from . import render_engines
-
-    # Make sure the temp_engine property is registered if it doesn't exist already
-    if not hasattr(bpy.types.Scene, "temp_engine"):
-        bpy.types.Scene.temp_engine = bpy.props.EnumProperty(
-            name="Render Engine",
-            description="Select the render engine for HDRI controls",
-            items=[
-                ('CYCLES', "Cycles", "Use Cycles render engine"),
-                ('VRAY_RENDER_RT', "V-Ray", "Use V-Ray render engine"),
-                ('octane', "Octane", "Use Octane render engine")
-            ],
-            default='CYCLES'
+        # Store changelog in window manager
+        bpy.types.WindowManager.hdri_changelog = bpy.props.StringProperty(
+            name="Changelog",
+            description="Stores current changelog entry",
+            default=""
         )
-    
-    # Register load preferred engine handler
-    if load_preferred_engine not in bpy.app.handlers.load_post:
-        bpy.app.handlers.load_post.append(load_preferred_engine)
-    print("✅ Engine preference handler registered")
+        print("✓ Window manager properties added")
 
-    # Set up keyboard shortcuts
-    utils.setup_keymap(addon_keymaps)
-    print("✓ Keyboard shortcuts set up")
+        # Register render engines
+        from . import render_engines
 
-    # Set up handlers
-    utils.setup_handlers()
-    print("✓ Handlers set up")
-    
-    # Ensure the addon directory structure is set up correctly
-    utils.ensure_addon_structure()
-    print("✓ Directory structure verified")
+        # Make sure the temp_engine property is registered if it doesn't exist already
+        if not hasattr(bpy.types.Scene, "temp_engine"):
+            bpy.types.Scene.temp_engine = bpy.props.EnumProperty(
+                name="Render Engine",
+                description="Select the render engine for HDRI controls",
+                items=[
+                    ('CYCLES', "Cycles", "Use Cycles render engine"),
+                    ('VRAY_RENDER_RT', "V-Ray", "Use V-Ray render engine"),
+                    ('octane', "Octane", "Use Octane render engine")
+                ],
+                default='CYCLES'
+            )
+        
+        # Register load preferred engine handler
+        if load_preferred_engine not in bpy.app.handlers.load_post:
+            bpy.app.handlers.load_post.append(load_preferred_engine)
+        print("✅ Engine preference handler registered")
 
-    # Extract any update ZIPs
-    utils.extract_addon_zips()
-    print("✓ Addon ZIPs extracted")
+        # Set up keyboard shortcuts
+        utils.setup_keymap(addon_keymaps)
+        print("✓ Keyboard shortcuts set up")
 
-    # Run update check if enabled
-    utils.check_for_update_on_startup()
-    print("✓ Update check completed")
+        # Set up handlers
+        utils.setup_handlers()
+        print("✓ Handlers set up")
+        
+        # Ensure the addon directory structure is set up correctly
+        utils.ensure_addon_structure()
+        print("✓ Directory structure verified")
 
-    print("=== QUICK HDRI CONTROLS REGISTERED SUCCESSFULLY ===\n")
+        # Extract any remaining or new update ZIPs 
+        utils.extract_addon_zips()
+        print("✓ Additional addon ZIPs extracted")
+
+        # Run update check if enabled
+        utils.check_for_update_on_startup()
+        print("✓ Update check completed")
+
+        print("=== QUICK HDRI CONTROLS REGISTERED SUCCESSFULLY ===\n")
+        return
+    else:
+        # If render_engines is still missing, show error
+        print("ERROR: render_engines directory not found after ZIP extraction")
+        print("Please try installing the addon again or contact support")
+        return
 
 def unregister():
     print("\n=== UNREGISTERING QUICK HDRI CONTROLS ===")

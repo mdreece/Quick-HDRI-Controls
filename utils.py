@@ -294,60 +294,148 @@ def check_for_update_on_startup():
 
 def extract_addon_zips():
     """Extract any ZIP files found in the addon directory and clean up."""
-    addon_dir = os.path.dirname(os.path.realpath(__file__))
-    addon_dir = os.path.dirname(addon_dir)  # Go up one level from utils.py
-
+    # Log start of function for better debugging
+    print("\n=== CHECKING FOR ADDON ZIP FILES ===")
+    
+    # Get the absolute path of the addon directory using multiple methods
+    # Method 1: From utils.py location
+    utils_dir = os.path.dirname(os.path.realpath(__file__))
+    addon_dir = utils_dir
+    
+    # Print the paths we're using
+    print(f"Addon directory (from utils.py): {addon_dir}")
+    
+    # Alternative method to try and find the addon directory
+    addon_name = "Quick-HDRI-Controls-main"
+    alt_addon_dir = os.path.join(bpy.utils.user_resource('SCRIPTS'), "addons", addon_name)
+    print(f"Alternative addon path: {alt_addon_dir}")
+    
+    # Check if both exist, use the one that contains ZIPs
+    if os.path.exists(alt_addon_dir):
+        # Count ZIP files in each location
+        utils_zips = len([f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')])
+        alt_zips = len([f for f in os.listdir(alt_addon_dir) if f.lower().endswith('.zip')])
+        
+        print(f"Found {utils_zips} ZIPs in utils dir and {alt_zips} ZIPs in addon dir")
+        
+        # Use the directory with more ZIP files
+        if alt_zips > utils_zips:
+            addon_dir = alt_addon_dir
+            print(f"Using alternative addon directory: {addon_dir}")
+    
     # Find all zip files in the addon directory
-    zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
-
+    try:
+        zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
+        print(f"Found {len(zip_files)} ZIP files: {zip_files}")
+    except Exception as e:
+        print(f"Error listing directory {addon_dir}: {str(e)}")
+        print("=== ZIP CHECK FAILED ===\n")
+        return False
+    
+    # No ZIP files found
+    if not zip_files:
+        print("No ZIP files found to extract")
+        print("=== ZIP CHECK COMPLETE ===\n")
+        return False
+        
     # Flag to track if we actually extracted any updates
     update_installed = False
-
+    
     for zip_file in zip_files:
         zip_path = os.path.join(addon_dir, zip_file)
+        print(f"Processing ZIP file: {zip_path}")
+        
         try:
+            # Verify ZIP file exists and is readable
+            if not os.path.exists(zip_path):
+                print(f"ZIP file does not exist: {zip_path}")
+                continue
+                
+            # Check if file is a valid ZIP
+            if not zipfile.is_zipfile(zip_path):
+                print(f"File is not a valid ZIP: {zip_path}")
+                continue
+                
+            print(f"Extracting ZIP: {zip_file}")
+            
             # Create a temporary directory for extraction
             with tempfile.TemporaryDirectory() as temp_dir:
+                print(f"Created temp directory: {temp_dir}")
+                
                 # Extract the ZIP file
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_contents = zip_ref.namelist()
+                    print(f"ZIP contains {len(zip_contents)} files")
                     zip_ref.extractall(temp_dir)
-
-                # Get the extracted folder (assuming only one folder in ZIP)
+                
+                # Get the extracted folder contents
                 extracted_items = os.listdir(temp_dir)
+                print(f"Extracted items: {extracted_items}")
+                
                 if not extracted_items:
+                    print("ZIP extracted but contains no files")
                     continue
-
+                
                 # If there's a single directory, use that as the source
                 if len(extracted_items) == 1 and os.path.isdir(os.path.join(temp_dir, extracted_items[0])):
                     source_dir = os.path.join(temp_dir, extracted_items[0])
+                    print(f"Using subdirectory as source: {extracted_items[0]}")
                 else:
                     source_dir = temp_dir
-
+                    print("Using temp directory directly as source")
+                
+                # List files to be copied
+                source_items = os.listdir(source_dir)
+                print(f"Source items to copy: {source_items}")
+                
                 # Copy all files to addon directory
-                for item in os.listdir(source_dir):
+                copied_items = 0
+                for item in source_items:
                     src_path = os.path.join(source_dir, item)
                     dst_path = os.path.join(addon_dir, item)
-
-                    if os.path.isfile(src_path):
-                        shutil.copy2(src_path, dst_path)
-                    elif os.path.isdir(src_path):
-                        if os.path.exists(dst_path):
-                            shutil.rmtree(dst_path)
-                        shutil.copytree(src_path, dst_path)
-
-            # Remove the ZIP file
-            os.remove(zip_path)
+                    
+                    print(f"Copying {item} to {dst_path}")
+                    
+                    try:
+                        if os.path.isfile(src_path):
+                            shutil.copy2(src_path, dst_path)
+                            copied_items += 1
+                        elif os.path.isdir(src_path):
+                            if os.path.exists(dst_path):
+                                print(f"Removing existing directory: {dst_path}")
+                                shutil.rmtree(dst_path)
+                            shutil.copytree(src_path, dst_path)
+                            copied_items += 1
+                    except Exception as copy_error:
+                        print(f"Error copying {item}: {str(copy_error)}")
+                
+                print(f"Copied {copied_items} items to addon directory")
+            
+            # Try to remove the ZIP file
+            try:
+                os.remove(zip_path)
+                print(f"Removed original ZIP file: {zip_file}")
+            except Exception as rm_error:
+                print(f"Could not remove ZIP file, will retry: {str(rm_error)}")
+                # Try alternative approach using os.unlink
+                try:
+                    os.unlink(zip_path)
+                    print("Removed ZIP file using unlink")
+                except Exception as unlink_error:
+                    print(f"Still cannot remove ZIP file: {str(unlink_error)}")
+            
             update_installed = True
-            print(f"Successfully extracted and cleaned up {zip_file}")
-
+            print(f"Successfully extracted and processed {zip_file}")
+            
         except Exception as e:
             print(f"Error processing {zip_file}: {str(e)}")
-
-    # If we installed any updates, show the changelog
-    if update_installed:
-        # Import at function level to avoid circular imports
-        # Use timer to ensure Blender UI is ready
-        bpy.app.timers.register(show_changelog, first_interval=1.0)
+            import traceback
+            traceback.print_exc()
+    
+    print(f"ZIP extraction complete. Updates installed: {update_installed}")
+    print("=== ZIP CHECK COMPLETE ===\n")
+    
+    return update_installed
 
 def show_changelog():
     """Show the changelog dialog if an update was just installed"""

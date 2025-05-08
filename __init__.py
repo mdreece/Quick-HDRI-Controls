@@ -11,7 +11,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 3),
+    "version": (2, 8, 2),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -110,50 +110,6 @@ def load_preferred_engine(dummy):
         print(f"❌ Preferences file not found at: {preferences_path}")
     
     print("=== FINISHED LOADING PREFERRED ENGINE ===\n")
-
-def cleanup_legacy_files():
-    """
-    Checks for and removes legacy __init__ files in render engine directories.
-    These files can cause import conflicts after updates.
-    """
-    import os
-    import sys
-    import bpy
-    
-    print("\n=== CHECKING FOR LEGACY FILES ===")
-    
-    # Get the addon directory path
-    addon_name = "Quick-HDRI-Controls-main"  # Hardcoded for reliability
-    addon_dir = os.path.join(bpy.utils.user_resource('SCRIPTS'), 
-                             "addons", 
-                             addon_name)
-    
-    # Define the legacy files to check for
-    legacy_files = [
-        os.path.join(addon_dir, "render_engines", "__init__cycles.py"),
-        os.path.join(addon_dir, "render_engines", "__init__octane.py"),
-        os.path.join(addon_dir, "render_engines", "__init__vray.py")
-    ]
-    
-    # Check each file and delete if it exists
-    files_deleted = 0
-    for file_path in legacy_files:
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                print(f"✓ Removed legacy file: {os.path.basename(file_path)}")
-                files_deleted += 1
-            except Exception as e:
-                print(f"❌ Failed to remove {os.path.basename(file_path)}: {str(e)}")
-    
-    if files_deleted > 0:
-        print(f"Successfully removed {files_deleted} legacy file(s)")
-    else:
-        print("No legacy files found")
-    
-    print("=== LEGACY FILE CHECK COMPLETE ===\n")
-    
-    return files_deleted > 0  # Return True if any files were deleted
 
 def register():
     print("\n=== REGISTERING QUICK HDRI CONTROLS ===")

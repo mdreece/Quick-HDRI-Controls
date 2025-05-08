@@ -1,9 +1,14 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
-## 5-7-2025: v2.8.3
-### New Features 🔔: (All)
-• Restart Blender Twice to fully update. This update is a semi rewrite of the entire addon. Before each render engine had its own full __init__#engine#.py. This made the overall addon size much larger than it should have ever been. Please report eny bugs as I am sure I have missed a few.
+## 5-7-2025:  CYCLES: v2.8.3 | OCTANE: V2.8.3 | V-Ray: V2.8.3
+### New Features 🔔: (All)• Restart Blender Twice to fully update. This update is a semi rewrite of the entire addon. Before each render engine had its own full __init__#engine#.py. This made the overall addon size much larger than it should have ever been. Please report eny bugs as I am sure I have missed a few.
+
+### Fixes 🛠️:
+• None
+
+### Known Issues ⚠️:
+• None
 ##
 
 
@@ -64,8 +69,7 @@
 ### New Features 🔔:
 • None
 
-### Fixes 🛠️:
-• V-Ray: Preview loading should be much quicker (Had a repeating check that was causing locks)
+### Fixes 🛠️:• V-Ray: Preview loading should be much quicker (Had a repeating check that was causing locks)
 
 ### Known Issues ⚠️:
 • None

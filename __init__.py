@@ -114,16 +114,61 @@ def load_preferred_engine(dummy):
 def register():
     print("\n=== REGISTERING QUICK HDRI CONTROLS ===")
 
-    # IMPORTANT: Extract ZIPs first, before any imports
+    # IMPORTANT: First step - clean up legacy files before any imports
     import os
     import sys
+    import bpy
+    
+    def cleanup_legacy_files_first():
+        """
+        Checks for and removes legacy __init__ files in render engine directories.
+        These files can cause import conflicts after updates.
+        """
+        print("\n=== CHECKING FOR LEGACY FILES ===")
+        
+        # Get the addon directory path
+        addon_dir = os.path.dirname(os.path.realpath(__file__))
+        
+        # Define the legacy files to check for
+        legacy_files = [
+            os.path.join(addon_dir, "__init__cycles.py"),
+            os.path.join(addon_dir, "__init__octane.py"),
+            os.path.join(addon_dir, "__init__vray.py"),
+            os.path.join(addon_dir, "render_engines", "__init__cycles.py"),
+            os.path.join(addon_dir, "render_engines", "__init__octane.py"),
+            os.path.join(addon_dir, "render_engines", "__init__vray.py")
+        ]
+        
+        # Check each file and delete if it exists
+        files_deleted = 0
+        for file_path in legacy_files:
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    print(f"✓ Removed legacy file: {os.path.basename(file_path)}")
+                    files_deleted += 1
+                except Exception as e:
+                    print(f"❌ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+        
+        if files_deleted > 0:
+            print(f"Successfully removed {files_deleted} legacy file(s)")
+            # Refresh import system after removing files
+            import importlib
+            importlib.invalidate_caches()
+        else:
+            print("No legacy files found")
+        
+        print("=== LEGACY FILE CHECK COMPLETE ===\n")
+        
+        return files_deleted > 0  # Return True if any files were deleted
+    
+    # IMPORTANT: Extract ZIPs before any imports 
     import zipfile
     import shutil
     import tempfile
     
-    # Simple ZIP extraction function defined inline to avoid imports
     def extract_zips_first():
-        print("Performing initial ZIP extraction check...")
+        print("\n=== EXTRACTING ZIP FILES ===")
         # Get the addon directory directly
         addon_dir = os.path.dirname(os.path.realpath(__file__))
         
@@ -149,115 +194,116 @@ def register():
                             
                             if os.path.isfile(src_path):
                                 shutil.copy2(src_path, dst_path)
+                                print(f"Copied file: {item}")
                             elif os.path.isdir(src_path):
                                 if os.path.exists(dst_path):
                                     shutil.rmtree(dst_path)
                                 shutil.copytree(src_path, dst_path)
+                                print(f"Copied directory: {item}")
                     
                     # Remove the zip file
                     os.remove(zip_path)
-                    print(f"Successfully extracted {zip_file}")
+                    print(f"Successfully extracted and removed {zip_file}")
                     
-                    # If we extracted anything, we need to refresh Python's import system
+                    # Refresh Python's import system
                     import importlib
                     importlib.invalidate_caches()
                     
                 except Exception as e:
                     print(f"Error extracting {zip_file}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
         else:
             print("No ZIP files found in addon directory")
+            
+        print("=== ZIP EXTRACTION COMPLETE ===\n")
     
-    # Call our inline extraction function
+    # Run both critical startup functions
+    cleanup_legacy_files_first()
+    print("✓ Initial legacy file cleanup completed")
+    
     extract_zips_first()
-    print("✓ Initial ZIP extraction completed")
+    print("✓ ZIP extraction completed")
+    
+    # After extraction, check again for legacy files that might have been in the ZIP
+    cleanup_legacy_files_first()
+    print("✓ Second legacy file cleanup completed")
 
     # Now proceed with normal imports
     # Split import statements to prevent circular imports
     import importlib
 
-    # Check if render_engines directory now exists before trying to import
-    if os.path.exists(os.path.join(os.path.dirname(os.path.realpath(__file__)), "render_engines")):
-        # First setup hdri_management module
-        from . import hdri_management
-        print("✓ HDRI management module imported")
+    # First setup hdri_management module
+    from . import hdri_management
+    print("✓ HDRI management module imported")
 
-        # Then, try to register the Preferences class
-        from . import preferences
-        preferences.register_preferences()
-        print("✓ Preferences registered")
+    # Then, try to register the Preferences class
+    from . import preferences
+    preferences.register_preferences()
+    print("✓ Preferences registered")
 
-        # Then, import and register the core modules
-        from . import utils
-        from . import core
-        core.register_core()
-        print("✓ Core components registered")
+    # Then, import and register the core modules
+    from . import utils
+    from . import core
+    core.register_core()
+    print("✓ Core components registered")
 
-        # Then the operators
-        from . import operators
-        operators.register_operators()
-        print("✓ Operators registered")
+    # Then the operators
+    from . import operators
+    operators.register_operators()
+    print("✓ Operators registered")
 
-        # Then the UI
-        from . import ui
-        ui.register_ui()
-        print("✓ UI registered")
+    # Then the UI
+    from . import ui
+    ui.register_ui()
+    print("✓ UI registered")
 
-        # Store changelog in window manager
-        bpy.types.WindowManager.hdri_changelog = bpy.props.StringProperty(
-            name="Changelog",
-            description="Stores current changelog entry",
-            default=""
+    # Store changelog in window manager
+    bpy.types.WindowManager.hdri_changelog = bpy.props.StringProperty(
+        name="Changelog",
+        description="Stores current changelog entry",
+        default=""
+    )
+    print("✓ Window manager properties added")
+
+    # Register render engines
+    from . import render_engines
+
+    # Make sure the temp_engine property is registered if it doesn't exist already
+    if not hasattr(bpy.types.Scene, "temp_engine"):
+        bpy.types.Scene.temp_engine = bpy.props.EnumProperty(
+            name="Render Engine",
+            description="Select the render engine for HDRI controls",
+            items=[
+                ('CYCLES', "Cycles", "Use Cycles render engine"),
+                ('VRAY_RENDER_RT', "V-Ray", "Use V-Ray render engine"),
+                ('octane', "Octane", "Use Octane render engine")
+            ],
+            default='CYCLES'
         )
-        print("✓ Window manager properties added")
+    
+    # Register load preferred engine handler
+    if load_preferred_engine not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(load_preferred_engine)
+    print("✅ Engine preference handler registered")
 
-        # Register render engines
-        from . import render_engines
+    # Set up keyboard shortcuts
+    utils.setup_keymap(addon_keymaps)
+    print("✓ Keyboard shortcuts set up")
 
-        # Make sure the temp_engine property is registered if it doesn't exist already
-        if not hasattr(bpy.types.Scene, "temp_engine"):
-            bpy.types.Scene.temp_engine = bpy.props.EnumProperty(
-                name="Render Engine",
-                description="Select the render engine for HDRI controls",
-                items=[
-                    ('CYCLES', "Cycles", "Use Cycles render engine"),
-                    ('VRAY_RENDER_RT', "V-Ray", "Use V-Ray render engine"),
-                    ('octane', "Octane", "Use Octane render engine")
-                ],
-                default='CYCLES'
-            )
-        
-        # Register load preferred engine handler
-        if load_preferred_engine not in bpy.app.handlers.load_post:
-            bpy.app.handlers.load_post.append(load_preferred_engine)
-        print("✅ Engine preference handler registered")
+    # Set up handlers
+    utils.setup_handlers()
+    print("✓ Handlers set up")
+    
+    # Ensure the addon directory structure is set up correctly
+    utils.ensure_addon_structure()
+    print("✓ Directory structure verified")
 
-        # Set up keyboard shortcuts
-        utils.setup_keymap(addon_keymaps)
-        print("✓ Keyboard shortcuts set up")
+    # Run update check if enabled
+    utils.check_for_update_on_startup()
+    print("✓ Update check completed")
 
-        # Set up handlers
-        utils.setup_handlers()
-        print("✓ Handlers set up")
-        
-        # Ensure the addon directory structure is set up correctly
-        utils.ensure_addon_structure()
-        print("✓ Directory structure verified")
-
-        # Extract any remaining or new update ZIPs 
-        utils.extract_addon_zips()
-        print("✓ Additional addon ZIPs extracted")
-
-        # Run update check if enabled
-        utils.check_for_update_on_startup()
-        print("✓ Update check completed")
-
-        print("=== QUICK HDRI CONTROLS REGISTERED SUCCESSFULLY ===\n")
-        return
-    else:
-        # If render_engines is still missing, show error
-        print("ERROR: render_engines directory not found after ZIP extraction")
-        print("Please try installing the addon again or contact support")
-        return
+    print("=== QUICK HDRI CONTROLS REGISTERED SUCCESSFULLY ===\n")
 
 def unregister():
     print("\n=== UNREGISTERING QUICK HDRI CONTROLS ===")

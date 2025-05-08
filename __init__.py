@@ -114,65 +114,57 @@ def load_preferred_engine(dummy):
 def register():
     print("\n=== REGISTERING QUICK HDRI CONTROLS ===")
 
-    # IMPORTANT: First step - clean up legacy files before any imports
+    # CRITICAL: FIRST STEP - Clean up legacy files before ANYTHING else
+    # This section uses only standard library imports to avoid any dependencies
     import os
     import sys
-    import bpy
+    import importlib
     
-    def cleanup_legacy_files_first():
-        """
-        Checks for and removes legacy __init__ files in render engine directories.
-        These files can cause import conflicts after updates.
-        """
-        print("\n=== CHECKING FOR LEGACY FILES ===")
-        
-        # Get the addon directory path
-        addon_dir = os.path.dirname(os.path.realpath(__file__))
-        
-        # Define the legacy files to check for
-        legacy_files = [
-            os.path.join(addon_dir, "__init__cycles.py"),
-            os.path.join(addon_dir, "__init__octane.py"),
-            os.path.join(addon_dir, "__init__vray.py"),
-            os.path.join(addon_dir, "render_engines", "__init__cycles.py"),
-            os.path.join(addon_dir, "render_engines", "__init__octane.py"),
-            os.path.join(addon_dir, "render_engines", "__init__vray.py")
-        ]
-        
-        # Check each file and delete if it exists
-        files_deleted = 0
-        for file_path in legacy_files:
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                    print(f"✓ Removed legacy file: {os.path.basename(file_path)}")
-                    files_deleted += 1
-                except Exception as e:
-                    print(f"❌ Failed to remove {os.path.basename(file_path)}: {str(e)}")
-        
-        if files_deleted > 0:
-            print(f"Successfully removed {files_deleted} legacy file(s)")
-            # Refresh import system after removing files
-            import importlib
-            importlib.invalidate_caches()
-        else:
-            print("No legacy files found")
-        
-        print("=== LEGACY FILE CHECK COMPLETE ===\n")
-        
-        return files_deleted > 0  # Return True if any files were deleted
+    # Get the addon directory path - direct calculation
+    addon_dir = os.path.dirname(os.path.realpath(__file__))
+    print(f"Addon directory: {addon_dir}")
     
-    # IMPORTANT: Extract ZIPs before any imports 
+    # Define the legacy files to check for
+    legacy_files = [
+        os.path.join(addon_dir, "__init__cycles.py"),
+        os.path.join(addon_dir, "__init__octane.py"),
+        os.path.join(addon_dir, "__init__vray.py")
+    ]
+    
+    # Check render_engines directory if it exists
+    render_engines_dir = os.path.join(addon_dir, "render_engines")
+    if os.path.exists(render_engines_dir):
+        legacy_files.extend([
+            os.path.join(render_engines_dir, "__init__cycles.py"),
+            os.path.join(render_engines_dir, "__init__octane.py"),
+            os.path.join(render_engines_dir, "__init__vray.py")
+        ])
+    
+    # Check each file and delete if it exists
+    files_deleted = 0
+    for file_path in legacy_files:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"✓ Removed legacy file: {os.path.basename(file_path)}")
+                files_deleted += 1
+            except Exception as e:
+                print(f"❌ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+    
+    if files_deleted > 0:
+        print(f"Successfully removed {files_deleted} legacy file(s)")
+        # Refresh import system after removing files
+        importlib.invalidate_caches()
+    else:
+        print("No legacy files found for initial cleanup")
+    
+    # SECOND STEP: Extract ZIP files
     import zipfile
     import shutil
     import tempfile
     
-    def extract_zips_first():
-        print("\n=== EXTRACTING ZIP FILES ===")
-        # Get the addon directory directly
-        addon_dir = os.path.dirname(os.path.realpath(__file__))
-        
-        # Find all zip files in the addon directory
+    # Find all zip files in the addon directory
+    try:
         zip_files = [f for f in os.listdir(addon_dir) if f.lower().endswith('.zip')]
         
         if zip_files:
@@ -205,34 +197,57 @@ def register():
                     os.remove(zip_path)
                     print(f"Successfully extracted and removed {zip_file}")
                     
-                    # Refresh Python's import system
-                    import importlib
-                    importlib.invalidate_caches()
-                    
                 except Exception as e:
                     print(f"Error extracting {zip_file}: {str(e)}")
                     import traceback
                     traceback.print_exc()
+            
+            # Refresh import system after extracting
+            importlib.invalidate_caches()
         else:
             print("No ZIP files found in addon directory")
-            
-        print("=== ZIP EXTRACTION COMPLETE ===\n")
+    except Exception as e:
+        print(f"Error checking for ZIP files: {str(e)}")
     
-    # Run both critical startup functions
-    cleanup_legacy_files_first()
-    print("✓ Initial legacy file cleanup completed")
+    # THIRD STEP: Check AGAIN for legacy files that might have been in the ZIPs
+    # Especially important after extraction
+    legacy_files = [
+        os.path.join(addon_dir, "__init__cycles.py"),
+        os.path.join(addon_dir, "__init__octane.py"),
+        os.path.join(addon_dir, "__init__vray.py")
+    ]
     
-    extract_zips_first()
-    print("✓ ZIP extraction completed")
+    # Check render_engines directory again (it might have been in the ZIP)
+    render_engines_dir = os.path.join(addon_dir, "render_engines")
+    if os.path.exists(render_engines_dir):
+        legacy_files.extend([
+            os.path.join(render_engines_dir, "__init__cycles.py"),
+            os.path.join(render_engines_dir, "__init__octane.py"),
+            os.path.join(render_engines_dir, "__init__vray.py")
+        ])
     
-    # After extraction, check again for legacy files that might have been in the ZIP
-    cleanup_legacy_files_first()
-    print("✓ Second legacy file cleanup completed")
-
-    # Now proceed with normal imports
-    # Split import statements to prevent circular imports
-    import importlib
-
+    # Check each file and delete if it exists
+    files_deleted = 0
+    for file_path in legacy_files:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"✓ Removed legacy file after ZIP extraction: {os.path.basename(file_path)}")
+                files_deleted += 1
+            except Exception as e:
+                print(f"❌ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+    
+    if files_deleted > 0:
+        print(f"Successfully removed {files_deleted} additional legacy file(s)")
+        # Refresh import system after removing files
+        importlib.invalidate_caches()
+    else:
+        print("No additional legacy files found after ZIP extraction")
+    
+    print("✓ Startup preparation complete, beginning normal registration")
+    
+    # Now that we've cleaned up and prepared everything, proceed with normal registration
+    
     # First setup hdri_management module
     from . import hdri_management
     print("✓ HDRI management module imported")
@@ -259,6 +274,7 @@ def register():
     print("✓ UI registered")
 
     # Store changelog in window manager
+    import bpy
     bpy.types.WindowManager.hdri_changelog = bpy.props.StringProperty(
         name="Changelog",
         description="Stores current changelog entry",
@@ -298,6 +314,10 @@ def register():
     # Ensure the addon directory structure is set up correctly
     utils.ensure_addon_structure()
     print("✓ Directory structure verified")
+
+    # Extract any additional or new update ZIPs
+    utils.extract_addon_zips()
+    print("✓ Additional addon ZIPs extracted")
 
     # Run update check if enabled
     utils.check_for_update_on_startup()

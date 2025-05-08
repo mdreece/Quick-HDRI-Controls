@@ -1,6 +1,13 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 5-7-2025: v2.8.3
+### New Features 🔔: (All)
+• Restart Blender Twice to fully update. This update is a semi rewrite of the entire addon. Before each render engine had its own full __init__#engine#.py. This made the overall addon size much larger than it should have ever been. Please report eny bugs as I am sure I have missed a few.
+##
+
+
+
 ## 4-16-2025: CYCLES: v2.8.2 | OCTANE: V2.8.2 | V-Ray: V1.0.8
 ### New Features 🔔: (All)
 • Now supporting ACES color space/transform.

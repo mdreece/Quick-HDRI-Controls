@@ -1,5 +1,11 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 5-7-2025: v2.8.3
+### Information 🔔: (All)
+• Rewrote entire addon. I did the worst thing possible and had 3 instances of the same addon instead of properly implementing the render engines. Due to this there is a possibility of bugs. I will update as I run across them on my own or any reported issues.
+##
+
+
 
 ## 4-16-2025: CYCLES: v2.8.2 | OCTANE: V2.8.2 | V-Ray: V1.0.8
 ### New Features 🔔: (All)

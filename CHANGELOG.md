@@ -4,10 +4,8 @@
 ## 5-9-2025:  CYCLES: v2.8.3 | OCTANE: V2.8.3 | V-Ray: V2.8.3
 ### Information 🔔: (All)
 • Restart Blender Twice to fully update. Changelog will show twice
-• Preferences UI Change: Updates & Information
-• Preferences UI Change: Keyboard Shortcuts
-• Preferences UI Change: HDRI Settings
-• ui adjustment options in HDRI Settings
+• UI Changes in Preferences
+• Extended HDRI Settings
 
 ### INFORM OF ANY ERRORS/ISSUES ⚠️:
 ##

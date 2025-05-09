@@ -4,11 +4,9 @@
 ## 5-9-2025: CYCLES: v2.8.4 | OCTANE: V2.8.4 | V-Ray: V2.8.4
 ### Information 🔔: (All)
 • Restart Blender Twice to fully update.
-• Preferences redraw:
-	- Updates & Information
- 	- Keyboard Shortcuts
-  	- HDRI Settings
-   		- UI adjustment options
+• Preferences redraw: Updates & Information
+• Preferences redraw: Keyboard Shortcuts
+• Preferences redraw: HDRI Settings
 
 ### PLEASE REPORT ANY ISSUES ⚠️:
 ##

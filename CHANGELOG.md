@@ -8,7 +8,7 @@
 • Extended HDRI Settings
 
 ### INFORM OF ANY ERRORS/ISSUES ⚠️:
-
+• Though not much has changed, the addon was completely rewritten to be broken up into parts. Issues are entirely possible...
 ##
 
 

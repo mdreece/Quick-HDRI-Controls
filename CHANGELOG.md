@@ -1,10 +1,14 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
-## 5-7-2025:  CYCLES: v2.8.3 | OCTANE: V2.8.3 | V-Ray: V2.8.3
-### New Features 🔔: (All)
-• Restart Blender Twice to fully update. This update is a semi rewrite of the entire addon. Before each render engine had its own full __init__#engine#.py. This made the overall addon size much larger than it should have ever been. Please report eny bugs as I am sure I have missed a few.
-• CHANGELOG will show both times. (Render Engine drop down on the main panel means you're on the latest version.
+## 5-9-2025:  CYCLES: v2.8.3 | OCTANE: V2.8.3 | V-Ray: V2.8.3
+### Information 🔔: (All)
+• Restart Blender Twice to fully update. Changelog will show twice
+• Preferences UI Change: Updates & Information
+• Preferences UI Change: Keyboard Shortcuts
+• Preferences UI Change: HDRI Settings
+• ----------- ui adjustment options
+### INFORM OF ANY ERRORS/ISSUES ⚠️:
 ##
 
 

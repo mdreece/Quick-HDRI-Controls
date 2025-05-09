@@ -7,7 +7,8 @@
 • Preferences UI Change: Updates & Information
 • Preferences UI Change: Keyboard Shortcuts
 • Preferences UI Change: HDRI Settings
-• ----------- ui adjustment options
+• ui adjustment options in HDRI Settings
+
 ### INFORM OF ANY ERRORS/ISSUES ⚠️:
 ##
 

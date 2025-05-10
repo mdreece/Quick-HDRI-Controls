@@ -84,14 +84,15 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 - If this is not done, when attempting to use you will be prompted to set it anyway
 
-![image](https://github.com/user-attachments/assets/2af89aa1-9333-4e4b-8abd-79dccd056116)
+![Screenshot_20250510_134935](https://github.com/user-attachments/assets/1c04d8fa-292e-4f9a-88f9-8ace40584f16)
+-*************************
  - Open Preferences set to HDRI Directory
  - Open/Choose HDRI Directory directly
 
 3. In 'HDRI Settings' select which file types you want to use (HDR, EXR, PNG, JPG)
 (All are enabled by default)
 
-![image](https://github.com/user-attachments/assets/64f7d509-f9cb-4bc7-978c-693b7f0b5417)
+![Screenshot_20250510_135103](https://github.com/user-attachments/assets/1cc32d62-0fa4-41b2-b978-652c6313ec3d)
 
 4. Close the preferences
 
@@ -101,26 +102,21 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
 
-![image](https://github.com/user-attachments/assets/a1cd44f1-f46c-44ee-89bd-7ea8c9537b84)
-
+![Screenshot_20250510_135103](https://github.com/user-attachments/assets/79c7f421-3190-4040-8c34-e22756ad3c49)
+-----------------------------
 2. Click it and then 'Initialize HDRI System'
- - Quick access to addon preferences
- - Version number display
-   
-![image](https://github.com/user-attachments/assets/42f925ac-f443-4ee2-a5fc-6da4808500c1)
-![image](https://github.com/user-attachments/assets/d170aea9-90eb-4f1a-90d7-4839d185131d)
-![image](https://github.com/user-attachments/assets/80ea20e2-a58e-4c4d-8f72-05a7d8a24530)
-
-Depending on the your set render engine (both in blender and in addon preferences) you will be prompted to switch to the set Render Engine if you are not already.
- - IF set to Cycles or V-Ray, the View Transform changes to AgX (can be adjusted in panel)
+ - IF set to Cycles, the View Transform changes to AgX (can be adjusted in panel)
  - IF set to Octane, the View Transform changes to Raw (can be adjusted in panel)
+ - IF set to V-Ray, the View Transform changes to Standard (can be adjusted in panel)
 
    
 3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
+   
+![Screenshot_20250510_135611](https://github.com/user-attachments/assets/fa968946-8511-4369-b162-97aaaa1865c0)
+
  - Click a folder to browse the HDRIs
  - Use the search option to find HDRIs (use clear button to enter new search)
-
-![image](https://github.com/user-attachments/assets/60d3cb46-7602-4df9-bd99-4d0961582759)
+ - Choose a proxy resolution if desired for faster viewport rendering (a proxy will generate if one does not exist)
 
 4. Once a folder has been selected, 'HDRI Select' appears.
 
@@ -164,7 +160,7 @@ Options:
 ##
 ## Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/d4ca9198-5077-405a-b400-f55bdc38aa51)
+![Screenshot_20250510_135935](https://github.com/user-attachments/assets/e6385861-ca47-4273-a96c-3e3589f93a5d)
 
 
 
@@ -172,9 +168,8 @@ Options:
 ## Updates
 
 Stay up to date:
-Updates are based on Render Engine that is selected.
    
-![image](https://github.com/user-attachments/assets/5e441aa5-46bd-4334-9789-b8b7aec3bfc8)
+![Screenshot_20250510_140046](https://github.com/user-attachments/assets/25d6f81f-1c57-4b41-ad22-6c639cbaee88)
 
 Click on 'Check Now' to see if there are any pending updates.
  - If there are updates a message will prompt to update
@@ -307,12 +302,13 @@ Keyboard Shortcut Conflicts
 ##
 ## HDRI Settings
 
-![image](https://github.com/user-attachments/assets/50a5d22b-4346-4525-a88e-241b4c7b1d24)
+![Screenshot_20250510_140144](https://github.com/user-attachments/assets/a0199536-07e3-4d6e-a966-5aa1fc7cf420)
 
- - Keep Rotation options between HDRI changes
- - Maximum Strength value for lighting in scenes
- - Rotations step degree for when rotating HDRIs in increments
- - Supported File Types" explained above
+- Supported File Types: EXR, HDR, JPG (JPEG), PNG
+- Rotation Settings: Keep Rotation - Rotation Steps
+- Maximum Strength
+- UI Adjust options (they're wonky so youve been warned)
+- Preview limits and Folder Browser Page options
 
 
 ##
@@ -322,7 +318,7 @@ Each render engine requires specific nodes and settings changes (settings can be
 
 ### Cycles:
 
-![image](https://github.com/user-attachments/assets/6091e730-069b-4953-a426-7f37f52a6fef)
+![cycles_icon](https://github.com/user-attachments/assets/7e3bd0f9-0298-4f10-be7f-173be39beb77)
 
 When set to Cycles and the HDRI System is initalized:
 
@@ -341,7 +337,7 @@ When set to Cycles and the HDRI System is initalized:
 
 ### Octane:
 
-![image](https://github.com/user-attachments/assets/95684867-b4c1-48f8-ad46-b173cf146057)
+![octane_icon](https://github.com/user-attachments/assets/b5de57d4-2336-4dd3-ab88-d57202398216)
 
 When set to Octane and the HDRI System is initialized:
 
@@ -360,7 +356,7 @@ When set to Octane and the HDRI System is initialized:
 
 ### V-Ray:
 
-![image](https://github.com/user-attachments/assets/1747660b-31d9-4984-8c77-7ec55c914e94)
+![vray_icon](https://github.com/user-attachments/assets/c4cca536-d385-4410-9ef3-e387bd5f1084)
 
 When set to V-Ray and the HDRI System is initialized:
 

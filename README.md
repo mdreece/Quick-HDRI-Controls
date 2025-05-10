@@ -103,15 +103,15 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
    
-![Screenshot_20250510_142215](https://github.com/user-attachments/assets/56360063-1186-45af-a789-02914366ac38)
+![Screenshot_20250510_142404](https://github.com/user-attachments/assets/88377152-0d50-40dc-a10e-e62d203bd4f8)
 
-2. Click it and then 'Initialize HDRI System'
+Click it and then 'Initialize HDRI System'
  - IF set to Cycles, the View Transform changes to AgX (can be adjusted in panel)
  - IF set to Octane, the View Transform changes to Raw (can be adjusted in panel)
  - IF set to V-Ray, the View Transform changes to Standard (can be adjusted in panel)
 
    
-3. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
+2. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
    
 ![Screenshot_20250510_135611](https://github.com/user-attachments/assets/fa968946-8511-4369-b162-97aaaa1865c0)
 
@@ -119,7 +119,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
  - Use the search option to find HDRIs (use clear button to enter new search)
  - Choose a proxy resolution if desired for faster viewport rendering (a proxy will generate if one does not exist)
 
-4. Once a folder has been selected, 'HDRI Select' appears.
+3. Once a folder has been selected, 'HDRI Select' appears.
 
 ![Screenshot 2024-12-13 181705](https://github.com/user-attachments/assets/b78a08f4-1d95-4696-a8fe-e69b5cd65b22)
 
@@ -133,7 +133,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
 
 - Once more than one HDRI has been selected, a reset button will appear to reset to the previously selected HDRI
 
-5. 'Settings' will appear once an HDRI has been loaded.
+4. 'Settings' will appear once an HDRI has been loaded.
 
 ![image](https://github.com/user-attachments/assets/ab401ff6-d8d2-4e49-8e04-1e2b1ea852a7)
 

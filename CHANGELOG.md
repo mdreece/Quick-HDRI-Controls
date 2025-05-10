@@ -1,6 +1,18 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 5-10-2025:  CYCLES: v2.8.4 | OCTANE: V2.8.4 | V-Ray: V2.8.4
+### Information 🔔: (All)
+• Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice
+• UI Changes in Preferences
+• Extended HDRI Settings
+
+### Bug Fixes ⚠️:
+• Preview Generation is working now. Changed up how the addon checks files and had missed the preview generations.
+##
+
+
+
 ## 5-9-2025:  CYCLES: v2.8.3 | OCTANE: V2.8.3 | V-Ray: V2.8.3
 ### Information 🔔: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice

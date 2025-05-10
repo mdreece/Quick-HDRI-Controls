@@ -1,6 +1,7 @@
-# Quick HDRI Controls | Cycles | Octane | V-Ray | v2.8.3
+# Quick HDRI Controls | Cycles | Octane | V-Ray | v2.8.4
 
-### !!! RESTART BLENDER AT LEAST TWICE FOR v2.8.3 !!! ###
+### !!! RESTART BLENDER AT LEAST TWICE FOR v2.8.4 !!! ###
+### !!! THIS PROCESS WILL REMAIN UNTIL v3.0.0 (AT THE LATEST) TO ENSURE THAT USERS GET THE SPLIT INSTANCE !!! ###
 
 ![Blender Version](https://img.shields.io/badge/Blender-4.2.0-green.svg)
 

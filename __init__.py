@@ -21,7 +21,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 3),
+    "version": (2, 8, 4),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",

@@ -189,7 +189,7 @@ Click on 'Check Now' to see if there are any pending updates.
 
  - If enabled/blender restarted, the following will prompt upon accessing HDRI Controls if there is a pending update
    
-![Pending Update](https://github.com/user-attachments/assets/0405dd5c-5921-4d3e-bb13-6e052bdf23d3)
+![image](https://github.com/user-attachments/assets/981665e2-7689-424c-899a-e91718c50070)
 
  - Upon Blender restart, the changelog entry will show NewFeatures, Fixes and Known Issues
 

@@ -1,6 +1,20 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 5-20-2025:  CYCLES: v2.8.6 | OCTANE: V2.8.6 | V-Ray: V2.8.6
+### Information ⚠️: (All)
+• Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
+
+### New Features 🔔:
+• Suports proxy switching if submitting job for use with Flamenco
+• Favorites can now be saved and accessed from the 'HEART' icon. HDRIs can be added/removed by clicking the red 'HEART' icon in the navigation buttons bar
+
+### Bug Fixes 🛠️:
+• Proxy resolution set in preferences is the default in the panel (not sure when this had stopped working).
+##
+
+
+
 ## 5-19-2025:  CYCLES: v2.8.5 | OCTANE: V2.8.5 | V-Ray: V2.8.5
 ### Information ⚠️: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)

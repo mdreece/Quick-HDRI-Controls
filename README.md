@@ -80,7 +80,7 @@ Quick HDRI Controls is a Blender addon that makes working with HDRIs simple and 
     - Set your HDRI folder by clicking the folder icon next to "HDRI Directory".
     - Select your desired Render Engine and Apply '+'. (Cycles by default, but supports Cycles, V-Ray and Octane. Blender will need to be restarted after changing and applying.)
     
-![image](https://github.com/user-attachments/assets/25c57a1e-c207-4560-83dc-2e625796726c)
+![image](https://github.com/user-attachments/assets/1bcb5854-b0e9-4b2d-9bfd-c5cd8b7c63a7)
 
 - If this is not done, when attempting to use you will be prompted to set it anyway
 
@@ -112,10 +112,11 @@ Click it and then 'Initialize HDRI System'
    
 2. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
    
-![Screenshot_20250510_135611](https://github.com/user-attachments/assets/fa968946-8511-4369-b162-97aaaa1865c0)
+![image](https://github.com/user-attachments/assets/c2b6f039-16ca-4cc5-9263-794ca19c0dbe)
 
  - Click a folder to browse the HDRIs
  - Use the search option to find HDRIs (use clear button to enter new search)
+ - 'HEART' shows only saved 'favorite' HDRIs. (more below)
  - Choose a proxy resolution if desired for faster viewport rendering (a proxy will generate if one does not exist)
 
 3. Once a folder has been selected, 'HDRI Select' appears.
@@ -127,8 +128,9 @@ Click it and then 'Initialize HDRI System'
 - Click the box to see thumbnails of your HDRIs
 - Click on the desired HDRI to load it to use it
 - The navigation buttons can be used as well to choose the next or previous HDRI in the list.
+- The 'HEART' button is to save an HDRI to favorites. Click to save or remove from favorites (will show as RED if saved)
 
-![image](https://github.com/user-attachments/assets/fce17064-9822-4444-ac0d-7c9cfaf5fe7f)
+![image](https://github.com/user-attachments/assets/257f5120-cd10-400d-94af-da1d730128ed)
 
 - Once more than one HDRI has been selected, a reset button will appear to reset to the previously selected HDRI
 
@@ -150,7 +152,7 @@ Options:
 
 ### Proxies (more info below: [Proxy Settings](#proxy-settings))
 
-![image](https://github.com/user-attachments/assets/38062ade-0af4-47db-8a11-e0b9c3a24962)
+![image](https://github.com/user-attachments/assets/90f66b7f-b779-47f1-9c50-0c6268e2ca41)
 
  - Proxy Resolution Selection: Choose the desired resolution for your proxy of the selected HDRI
  - Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
@@ -160,7 +162,7 @@ Options:
 ##
 ## Full Dropdown Panel
 
-![Screenshot_20250510_135935](https://github.com/user-attachments/assets/e6385861-ca47-4273-a96c-3e3589f93a5d)
+![image](https://github.com/user-attachments/assets/3a43bfb3-8a9d-4527-8a35-7a06d329fda0)
 
 
 
@@ -270,13 +272,7 @@ Default Application: Options are 'Viewport Only' (default) and 'Both'
 ## Keyboard Shortcut
 Keyboard shortcut can be set for quickly pulling up the panel in the 3D viewport
 
-Windows/Linux:
-
-![QHDRIC_Shortcut](https://github.com/user-attachments/assets/2386ee2a-7904-42e4-92fb-05bf0d9c8e85)
-
-MacOS:
-
-<img width="533" alt="Screenshot 2024-10-28 at 6 14 22 PM" src="https://github.com/user-attachments/assets/32e18476-9c7e-46b5-a583-8b34027db7ef">
+![image](https://github.com/user-attachments/assets/30ff5841-84e3-40b4-878e-2187c7a7416c)
 
  - Set you current shortcut combination
  - Consists of:

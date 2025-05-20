@@ -6,7 +6,7 @@
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
 ### New Features 🔔:
-• Suports proxy switching if submitting job for use with Flamenco
+• Supports proxy switching if submitting job for use with Flamenco
 • Favorites can now be saved and accessed from the 'HEART' icon. HDRIs can be added/removed by clicking the red 'HEART' icon in the navigation buttons bar
 
 ### Bug Fixes 🛠️:
@@ -20,7 +20,7 @@
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
 ### New Features 🔔:
-• Suports proxy switching if submitting job for use with Flamenco
+• Supports proxy switching if submitting job for use with Flamenco
 • Favorites can now be saved and accessed from the 'HEART' icon. HDRIs can be added/removed by clicking the red 'HEART' icon in the navigation buttons bar
 ##
 

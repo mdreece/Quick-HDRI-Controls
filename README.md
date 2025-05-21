@@ -9,7 +9,7 @@
 
 v2.7.0 Video Demonstration: https://youtu.be/J7YdZQ2oxQA?si=_VRiLHIhQbZ1yVK4
 
-![banner](https://github.com/user-attachments/assets/72b2b41a-33fa-491f-8cac-4e5a1628bc72)
+![Banner3](https://github.com/user-attachments/assets/ae37d669-eaca-4836-bf9b-cef0103f51fe)
 
 # Table of Contents
 

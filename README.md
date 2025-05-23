@@ -249,7 +249,7 @@ Default Resolution: The desired default resolution for proxies (if set to ORIGIN
 
 Default Application: Options are 'Viewport Only' (default) and 'Both'
 
-- Viewport Only: The selected HDRI proxy will be used for viewport rendering. When a render begins (single frame or animation) the full resolution HDRI will be loaded in. Once completed the proxy will be reloaded for viewport rendering. (Proxy switching does not work with V-Ray Interactive Render. Use F12 render option/button for function to work).
+- Viewport Only: The selected HDRI proxy will be used for viewport rendering. When a render begins (single frame or animation) the full resolution HDRI will be loaded in. Once completed the proxy will be reloaded for viewport rendering. (Supports switching when submitting jobs to Flamenco)
 - Both: The selected HDRI proxy will be used for both viewport and final rendering.
    
 ### Cache Settings

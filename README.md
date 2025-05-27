@@ -1,6 +1,6 @@
 # Quick HDRI Controls | Cycles | Octane | V-Ray | v2.8.6
 ![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
-![QHDRIC Version](https://img.shields.io/badge/QHDRIC-2.8.4-blue.svg)
+![QHDRIC Version](https://img.shields.io/badge/QHDRIC-2.8.6-blue.svg)
 
 ### !!! RESTART BLENDER AT LEAST TWICE FOR v2.8.6 !!! ###
 ### !!! THIS PROCESS WILL REMAIN UNTIL v3.0.0 (AT THE LATEST) TO ENSURE THAT USERS GET THE SPLIT INSTANCE DUE TO RECENT FULL REWRITE OF ADDON !!! ###

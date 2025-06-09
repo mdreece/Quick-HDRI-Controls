@@ -1,6 +1,18 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 
+## 6-08-2025:  CYCLES: v2.8.7 | OCTANE: V2.8.7 | V-Ray: V2.8.7
+### Information ⚠️: (All)
+• Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
+
+### Fixes 🛠️:
+• 'Previews' box does not show when set to favorites if no favorites have been saved.
+• 'Folder Browser' now shows 'home' button to access the main directory from anywhere as well as the previous subfolder in the chain.
+• Panel Header/Engine dropdown has been changed around to allow for more clickable area to move the panel when using a shortcut.
+##
+
+
+
 ## 5-20-2025:  CYCLES: v2.8.6 | OCTANE: V2.8.6 | V-Ray: V2.8.6
 ### Information ⚠️: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)

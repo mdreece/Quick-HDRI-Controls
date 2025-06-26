@@ -1,5 +1,17 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 6-26-2025:  CYCLES: v2.8.8 | OCTANE: V2.8.8 | V-Ray: V2.8.8
+### Information ⚠️: (All)
+• Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
+
+### Fixes 🛠️:
+• SUBFOLDER HDRIs no londer show in PARENT folders.
+• Fixed a property value WARNING related to HDRI settings.
+• Panel location change = pref - HDRIsettings
+• vray_support/Previews.blend now in support.blend.
+##
+
+
 
 ## 6-08-2025:  CYCLES: v2.8.7 | OCTANE: V2.8.7 | V-Ray: V2.8.7
 ### Information ⚠️: (All)

@@ -7,8 +7,8 @@
 ### Fixes 🛠️:
 • SUBFOLDER HDRIs no londer show in PARENT folders.
 • Fixed a property value WARNING related to HDRI settings.
-• Panel location change = pref - HDRIsettings
-• vray_support/Previews.blend now in support.blend.
+• Added option to change the location of the main panel in UI (In HDRI Settings in preferences)
+• vray_support/Previews.blend now in support.blend so a little space saved.
 ##
 
 

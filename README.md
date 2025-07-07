@@ -224,8 +224,8 @@ Add the .png thumbnails to the same directory as the hdr.
    (For both the _thumb.png is in the same folder location as the chosen .hdr or .exr)
 
  User Source selection to choose you HDRI, folder of HDRIs, or batch process all.
- - Choose you desired resolution %
- - Choose number of samples
+ - Choose you desired resolution % (Lower will be faster)
+ - Choose number of samples (Lower will be faster)
  - Choose Render Device
  - Select scene type: Orbs-3, Orbs-4 or Teapot
  - GENERATE

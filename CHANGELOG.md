@@ -1,7 +1,8 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
 ## 6-26-2025:  CYCLES: v2.8.8 | OCTANE: V2.8.8 | V-Ray: V2.8.8
-### Information ⚠️: (All)
+### Information ⚠️:
+• V-Ray 7 support is WIP
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
 ### Fixes 🛠️:

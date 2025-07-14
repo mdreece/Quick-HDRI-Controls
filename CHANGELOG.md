@@ -2,7 +2,6 @@
 
 ## 6-26-2025:  CYCLES: v2.8.8 | OCTANE: V2.8.8 | V-Ray: V2.8.8
 ### Information ⚠️:
-• V-Ray 7 support is WIP
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
 ### Fixes 🛠️:
@@ -10,6 +9,9 @@
 • Fixed a property value WARNING related to HDRI settings.
 • Added option to change the location of the main panel in UI (In HDRI Settings in preferences)
 • vray_support/Previews.blend now in support.blend so a little space saved.
+
+### Known Issues ⚠️:
+• V-Ray 7 support is WIP
 ##
 
 

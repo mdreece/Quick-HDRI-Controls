@@ -2,9 +2,9 @@
 ![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
 ![QHDRIC Version](https://img.shields.io/badge/QHDRIC-2.8.8-blue.svg)
 
-### !!! RESTART BLENDER AT LEAST TWICE FOR v2.8.8 !!! ###
-### !!! THIS PROCESS WILL REMAIN UNTIL v3.0.0 (AT THE LATEST) TO ENSURE THAT USERS GET THE SPLIT INSTANCE DUE TO RECENT FULL REWRITE OF ADDON !!! ###
-### !!! V-Ray only tested up to 4.2.0 BETA | Octane only tested up to 4.3.0 !!! ###
+### RESTART BLENDER AT LEAST TWICE FOR v2.8.8 ###
+### THIS PROCESS WILL REMAIN UNTIL v3.0.0 (AT THE LATEST) TO ENSURE THAT USERS GET THE SPLIT INSTANCE DUE TO RECENT FULL REWRITE OF ADDON ###
+### V-Ray 4.2.0 BETA | Octane only tested up to 4.3.0 (29.15.1) ###
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

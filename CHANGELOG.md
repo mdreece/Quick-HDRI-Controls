@@ -1,5 +1,14 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 7-14-2025:  CYCLES: v2.8.9 | OCTANE: V2.8.9 | V-Ray: V2.8.9
+### Information ⚠️:
+• Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
+
+### Fixes 🛠️:
+• Now Supports V-Ray 7 for Blender: V-Ray is now out of BETA for Blender! Woohoo! However they had adjust their API so this addon may not have worked until now. Oddly I don't recall this being an issue, but with their changes I guess you need to have a camera present in order for V-Ray to render correctly. 
+##
+
+
 ## 6-26-2025:  CYCLES: v2.8.8 | OCTANE: V2.8.8 | V-Ray: V2.8.8
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)

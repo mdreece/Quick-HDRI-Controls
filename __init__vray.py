@@ -22,7 +22,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (V-Ray)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 8),
+    "version": (2, 8, 9),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",

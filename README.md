@@ -2,7 +2,7 @@
 ![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
 ![QHDRIC Version](https://img.shields.io/badge/QHDRIC-2.8.9-blue.svg)
 
-### RESTART BLENDER AT LEAST TWICE FOR v2.8.8 (until 3.0.0) ###
+### RESTART BLENDER AT LEAST TWICE FOR v2.8.9 (until 3.0.0) ###
 
 ### V-Ray tested up to 4.4.0 (7.00.40) | Octane tested up to 4.3.0 (29.15.1) ###
 

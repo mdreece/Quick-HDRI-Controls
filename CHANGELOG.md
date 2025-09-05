@@ -1,5 +1,16 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+
+## 9-5-2025:  CYCLES: v2.9.0 | OCTANE: v2.9.0 | V-Ray: v2.9.0
+### Information ⚠️:
+• Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
+
+### Fixes 🛠️:
+• VRAY - if one does not exist, a camera will be created to allow viewport rendering (corrects "Invalid camera object")
+• C/O/V - combined some processes to assist with faster UI navigation
+##
+
+
 ## 7-14-2025:  CYCLES: v2.8.9 | OCTANE: V2.8.9 | V-Ray: V2.8.9
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
@@ -473,3 +484,4 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+

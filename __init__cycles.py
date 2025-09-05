@@ -21,7 +21,7 @@ import numpy as np
 bl_info = {
     "name": "Quick HDRI Controls (Cycles)",
     "author": "Dave Nectariad Rome",
-    "version": (2, 8, 9),
+    "version": (2, 9, 0),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",
@@ -4940,3 +4940,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+

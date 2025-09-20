@@ -4,7 +4,7 @@
 
 ### RESTART BLENDER AT LEAST TWICE FOR v2.9.1 (until 2.9.5) ###
 
-### Cycles tested up to 5.0.0 (alpha) | V-Ray tested up to 4.5.2 (7.10.00) | Octane tested up to 4.5.2 (30.7.0) ###
+### Cycles up to 5.0.0 (alpha) | V-Ray up to 4.5.2 (7.10.00) | Octane up to 4.5.2 (30.7.0) ###
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

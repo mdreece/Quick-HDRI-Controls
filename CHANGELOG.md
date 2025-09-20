@@ -5,8 +5,9 @@
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
 ### Fixes 🛠️:
-• CYCLES: updated to support Blender v5.0.0 changes (BforArtists v 4.5.0 now supported)
-• OCTANE: updated for v30.7.0
+• CYCLES: updated to support Blender v5.0.0 node changes (BforArtists v 4.5.0 now supported)
+• OCTANE: updated for v30.7.0 and Blender v4.5.2
+• V-Ray: updated for v7.10.00 and Blender v4.5.2
 ##
 
 

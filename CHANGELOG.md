@@ -1,5 +1,14 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 9-19-2025:  CYCLES: v2.9.1 | OCTANE: V2.9.1 | V-Ray: V2.9.1
+### Information ⚠️:
+• Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
+
+### Fixes 🛠️:
+• CYCLES: updated to support Blender v5.0.0 changes (BforArtists v 4.5.0 now supported)
+• OCTANE: updated for v30.7.0
+##
+
 
 ## 9-5-2025:  CYCLES: v2.9.0 | OCTANE: V2.9.0 | V-Ray: V2.9.0
 ### Information ⚠️:
@@ -484,5 +493,6 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+
 
 

@@ -1,10 +1,10 @@
-# Quick HDRI Controls | Cycles | Octane | V-Ray | v2.9.0
+# Quick HDRI Controls | Cycles | Octane | V-Ray | v2.9.1
 ![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
-![QHDRIC Version](https://img.shields.io/badge/QHDRIC-2.9.0-blue.svg)
+![QHDRIC Version](https://img.shields.io/badge/QHDRIC-2.9.1-blue.svg)
 
-### RESTART BLENDER AT LEAST TWICE FOR v2.9.0 (until 2.9.5) ###
+### RESTART BLENDER AT LEAST TWICE FOR v2.9.1 (until 2.9.5) ###
 
-### V-Ray tested up to 4.4.0 (7.00.40) | Octane tested up to 4.3.0 (29.15.1) ###
+### V-Ray tested up to 4.4.0 (7.00.40) | Octane tested up to 4.5.2 (30.7.0) ###
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

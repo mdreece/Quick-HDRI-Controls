@@ -1,6 +1,6 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
-## 9-23-2025:  CYCLES: v2.9.3 | OCTANE: V2.9.3 | V-RAY: V2.9.3
+## 23-9-2025:  CYCLES: v2.9.3 | OCTANE: V2.9.3 | V-RAY: V2.9.3
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 • 5.0 changes may cause there to be many updates
@@ -10,7 +10,7 @@
 ##
 
 
-## 9-22-2025:  CYCLES: v2.9.2 | OCTANE: V2.9.2 | V-RAY: V2.9.2
+## 22-9-2025:  CYCLES: v2.9.2 | OCTANE: V2.9.2 | V-RAY: V2.9.2
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 • 5.0 changes may cause there to be many updates
@@ -20,7 +20,7 @@
 ##
 
 
-## 9-19-2025:  CYCLES: v2.9.1 | OCTANE: V2.9.1 | V-RAY: V2.9.1
+## 19-9-2025:  CYCLES: v2.9.1 | OCTANE: V2.9.1 | V-RAY: V2.9.1
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
@@ -31,7 +31,7 @@
 ##
 
 
-## 9-5-2025:  CYCLES: v2.9.0 | OCTANE: V2.9.0 | V-Ray: V2.9.0
+## 5-9-2025:  CYCLES: v2.9.0 | OCTANE: V2.9.0 | V-Ray: V2.9.0
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
@@ -41,7 +41,7 @@
 ##
 
 
-## 7-14-2025:  CYCLES: v2.8.9 | OCTANE: V2.8.9 | V-Ray: V2.8.9
+## 14-7-2025:  CYCLES: v2.8.9 | OCTANE: V2.8.9 | V-Ray: V2.8.9
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
@@ -50,7 +50,7 @@
 ##
 
 
-## 6-26-2025:  CYCLES: v2.8.8 | OCTANE: V2.8.8 | V-Ray: V2.8.8
+## 26-6-2025:  CYCLES: v2.8.8 | OCTANE: V2.8.8 | V-Ray: V2.8.8
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
@@ -66,7 +66,7 @@
 
 
 
-## 6-08-2025:  CYCLES: v2.8.7 | OCTANE: V2.8.7 | V-Ray: V2.8.7
+## 8-6-2025:  CYCLES: v2.8.7 | OCTANE: V2.8.7 | V-Ray: V2.8.7
 ### Information ⚠️: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
@@ -78,7 +78,7 @@
 
 
 
-## 5-20-2025:  CYCLES: v2.8.6 | OCTANE: V2.8.6 | V-Ray: V2.8.6
+## 20-5-2025:  CYCLES: v2.8.6 | OCTANE: V2.8.6 | V-Ray: V2.8.6
 ### Information ⚠️: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
@@ -92,7 +92,7 @@
 
 
 
-## 5-19-2025:  CYCLES: v2.8.5 | OCTANE: V2.8.5 | V-Ray: V2.8.5
+## 19-5-2025:  CYCLES: v2.8.5 | OCTANE: V2.8.5 | V-Ray: V2.8.5
 ### Information ⚠️: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice.)
 
@@ -103,7 +103,7 @@
 
 
 
-## 5-10-2025:  CYCLES: v2.8.4 | OCTANE: V2.8.4 | V-Ray: V2.8.4
+## 10-5-2025:  CYCLES: v2.8.4 | OCTANE: V2.8.4 | V-Ray: V2.8.4
 ### Information 🔔: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice
 • UI Changes in Preferences
@@ -115,7 +115,7 @@
 
 
 
-## 5-9-2025:  CYCLES: v2.8.3 | OCTANE: V2.8.3 | V-Ray: V2.8.3
+## 9-5-2025:  CYCLES: v2.8.3 | OCTANE: V2.8.3 | V-Ray: V2.8.3
 ### Information 🔔: (All)
 • Restart Blender Twice to fully update (Engine dropdown on main panel is newest update. Changelog will show twice
 • UI Changes in Preferences
@@ -127,7 +127,7 @@
 
 
 
-## 4-16-2025: CYCLES: v2.8.2 | OCTANE: V2.8.2 | V-Ray: V1.0.8
+## 16-4-2025: CYCLES: v2.8.2 | OCTANE: V2.8.2 | V-Ray: V1.0.8
 ### New Features 🔔: (All)
 • Now supporting ACES color space/transform.
 
@@ -140,7 +140,7 @@
 
 
 
-## 4-16-2025: CYCLES: v2.8.1 | OCTANE: V2.8.1 | V-Ray: V1.0.7
+## 16-4-2025: CYCLES: v2.8.1 | OCTANE: V2.8.1 | V-Ray: V1.0.7
 ### New Features 🔔: (All)
 • Hide/Show Search.
 • Update prompt on panel shows on bottom.
@@ -153,7 +153,7 @@
 ##
 
 
-## 4-12-2025: CYCLES: v2.8.0 | OCTANE: V2.8.0 | V-Ray: V1.0.6
+## 12-4-2025: CYCLES: v2.8.0 | OCTANE: V2.8.0 | V-Ray: V1.0.6
 ### New Features 🔔:
 • Pages option for HDRI Browser. You can now set a folder limit of displayed folders to assist with UI bloat if you have several folders with HDRIs. Access the settings in preferences-HDRI Settings. 
 
@@ -166,7 +166,7 @@
 
 
 
-## 4-11-2025: CYCLES: v2.7.9 | OCTANE: V2.7.9 | V-Ray: V1.0.5
+## 11-4-2025: CYCLES: v2.7.9 | OCTANE: V2.7.9 | V-Ray: V1.0.5
 ### New Features 🔔:
 • Testing a new update process on a per Render Engine basis. Cycles instance now how its own custom icon instead of using Blender icon.
 
@@ -179,7 +179,7 @@
 
 
 
-## 4-05-2025: CYCLES: v2.7.8 | OCTANE: V2.7.8 | V-Ray: V1.0.4
+## 5-4-2025: CYCLES: v2.7.8 | OCTANE: V2.7.8 | V-Ray: V1.0.4
 ### New Features 🔔:
 • None
 
@@ -191,7 +191,7 @@
 
 
 
-## 2-28-2025: CYCLES: v2.7.7 | OCTANE: V2.7.7 | V-Ray: V1.0.3
+## 28-2-2025: CYCLES: v2.7.7 | OCTANE: V2.7.7 | V-Ray: V1.0.3
 ### New Features 🔔:
 • None
 
@@ -204,7 +204,7 @@
 
 
 
-## 2-25-2025: CYCLES: v2.7.6 | OCTANE: V2.7.6 | V-Ray: V1.0.2
+## 25-2-2025: CYCLES: v2.7.6 | OCTANE: V2.7.6 | V-Ray: V1.0.2
 ### New Features 🔔:
 • Keyboard shortcut keys now have cursor button support (if additional buttons are needed, let me know)
 
@@ -217,7 +217,7 @@
 
 
 
-## 2-21-2025: CYCLES: v2.7.5 | OCTANE: V2.7.5 | V-Ray: V1.0.1
+## 21-2-2025: CYCLES: v2.7.5 | OCTANE: V2.7.5 | V-Ray: V1.0.1
 ### New Features 🔔:
 • None
 
@@ -230,7 +230,7 @@
 
 
 
-## 2-18-2025: CYCLES: v2.7.4 | OCTANE: V2.7.4 | V-Ray: V1.0.0
+## 18-2-2025: CYCLES: v2.7.4 | OCTANE: V2.7.4 | V-Ray: V1.0.0
 ### New Features 🔔:
 • V-Ray now supported (v1.0.0)
 
@@ -245,7 +245,7 @@
 
 
 
-## 2-7-2025: V2.7.3
+## 7-2-2025: V2.7.3
 ### New Features 🔔:
 • UI updates to Preferences
 
@@ -266,7 +266,7 @@
 
 
 
-## 2-3-2025: V2.7.2
+## 3-2-2025: V2.7.2
 ### New Features 🔔:
 • Search feature now in 'HDRI Browser' for both Cycles and Octane.
 
@@ -514,6 +514,7 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+
 
 
 

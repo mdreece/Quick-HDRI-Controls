@@ -6,7 +6,7 @@
 • 5.0 changes may cause there to be many updates
 
 ### Fixes 🛠️:
-• CYCLES: corrected AttributeError: 'World' object has no attribute 'use_nodes' for proxy switching during renders.
+• CYCLES: corrected AttributeError: 'World' object has no attribute 'use_nodes' for proxy switching during renders. I more than likely have missed others that will show up as time progresses. I'm attempting as many tests as possible.
 ##
 
 
@@ -504,6 +504,7 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+
 
 
 

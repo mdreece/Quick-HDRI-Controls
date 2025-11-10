@@ -2,7 +2,7 @@
 
 ## 23-9-2025:  CYCLES: v2.9.4 | OCTANE: V2.9.4 | V-RAY: V2.9.4
 ### Information ⚠️:
-• Restart Blender Twice to fully update (Changelog will show twice. THIS (2.9.4) is the last like this)
+• Restart Blender Twice to fully update (Changelog will show twice. v2.9.5 is the last like this)
 
 ### Fixes 🛠️:
 • OCTANE: Reset button now resets more than once to match V-Ray and Cycles builds
@@ -525,6 +525,7 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+
 
 
 

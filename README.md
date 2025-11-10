@@ -361,7 +361,7 @@ When set to V-Ray and the HDRI System is initialized:
 
 ![image](https://github.com/user-attachments/assets/ede429d9-7fca-41a8-b293-a73eaf32416d)
 
-3. A collection called 'vRay HDRI Controls' appears with a 'VRayDomeLight'
+3. A collection called 'vRay HDRI Controls' appears with a 'VRayDomeLight' (if a camera is not present, one will be created)
 
 ![image](https://github.com/user-attachments/assets/6590417a-ed09-48d6-adf4-ab55576c60c1)
 

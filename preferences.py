@@ -1242,9 +1242,9 @@ class QuickHDRIPreferences(AddonPreferences):
 
             # Platform-specific modifiers
             if sys.platform == 'darwin':
-                mod_row.prop(self, "popup_ctrl", text="⌘ Command", toggle=True)
-                mod_row.prop(self, "popup_shift", text="⇧ Shift", toggle=True)
-                mod_row.prop(self, "popup_alt", text="⌥ Option", toggle=True)
+                mod_row.prop(self, "popup_ctrl", text="âŒ˜ Command", toggle=True)
+                mod_row.prop(self, "popup_shift", text="â‡§ Shift", toggle=True)
+                mod_row.prop(self, "popup_alt", text="âŒ¥ Option", toggle=True)
             else:
                 mod_row.prop(self, "popup_ctrl", text="Ctrl", toggle=True)
                 mod_row.prop(self, "popup_shift", text="Shift", toggle=True)
@@ -1282,11 +1282,11 @@ class QuickHDRIPreferences(AddonPreferences):
             # Build the shortcut representation
             shortcut_parts = []
             if self.popup_ctrl:
-                shortcut_parts.append("⌘ Command" if sys.platform == 'darwin' else "Ctrl")
+                shortcut_parts.append("âŒ˜ Command" if sys.platform == 'darwin' else "Ctrl")
             if self.popup_shift:
-                shortcut_parts.append("⇧ Shift")
+                shortcut_parts.append("â‡§ Shift")
             if self.popup_alt:
-                shortcut_parts.append("⌥ Option" if sys.platform == 'darwin' else "Alt")
+                shortcut_parts.append("âŒ¥ Option" if sys.platform == 'darwin' else "Alt")
             shortcut_parts.append(self.popup_key)
 
             # Visual key combination display
@@ -1346,7 +1346,7 @@ class QuickHDRIPreferences(AddonPreferences):
                     # Create shortcut text
                     keys = []
                     if conflict['ctrl']:
-                        keys.append('Ctrl' if not sys.platform == 'darwin' else '⌘')
+                        keys.append('Ctrl' if not sys.platform == 'darwin' else 'âŒ˜')
                     if conflict['shift']:
                         keys.append('Shift')
                     if conflict['alt']:
@@ -1495,11 +1495,11 @@ class QuickHDRIPreferences(AddonPreferences):
                 # Build current shortcut display
                 shortcut_parts = []
                 if self.popup_ctrl:
-                    shortcut_parts.append("⌘ Command" if sys.platform == 'darwin' else "Ctrl")
+                    shortcut_parts.append("âŒ˜ Command" if sys.platform == 'darwin' else "Ctrl")
                 if self.popup_shift:
-                    shortcut_parts.append("⇧ Shift")
+                    shortcut_parts.append("â‡§ Shift")
                 if self.popup_alt:
-                    shortcut_parts.append("⌥ Option" if sys.platform == 'darwin' else "Alt")
+                    shortcut_parts.append("âŒ¥ Option" if sys.platform == 'darwin' else "Alt")
                 shortcut_parts.append(self.popup_key)
 
                 current_shortcut = " + ".join(shortcut_parts)

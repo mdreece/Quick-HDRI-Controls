@@ -38,7 +38,7 @@ def load_preferred_engine(dummy):
     print(f"Looking for preferences in: {addon_dir}")
 
     if not os.path.exists(addon_dir):
-        print(f"Ã¢ÂÅ’ Addon directory not found: {addon_dir}")
+        print(f"⚠️ Addon directory not found: {addon_dir}")
         return
 
     preferences_path = os.path.join(addon_dir, "preferences.json")
@@ -76,7 +76,7 @@ def load_preferred_engine(dummy):
                         bpy.context.scene.temp_engine = preferred_engine
                         print(f"Set temp_engine to: {preferred_engine}")
 
-                    print(f"Ã¢Å“â€¦ Successfully set engine to: {preferred_engine}")
+                    print(f"✅ Successfully set engine to: {preferred_engine}")
                 else:
                     print(f"Preferred engine {preferred_engine} is not available, using {current_engine}")
                     # Sync temp_engine to current engine since preferred is not available
@@ -95,7 +95,7 @@ def load_preferred_engine(dummy):
             import traceback
             traceback.print_exc()
     else:
-        print(f"Ã¢ÂÅ’ Preferences file not found at: {preferences_path}")
+        print(f"⚠️ Preferences file not found at: {preferences_path}")
 
     print("=== FINISHED LOADING PREFERRED ENGINE ===\n")
 
@@ -128,20 +128,20 @@ def register():
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print(f"Ã¢Å“â€œ Removed legacy file: {os.path.basename(file_path)}")
+                print(f"✓ Removed legacy file: {os.path.basename(file_path)}")
                 files_deleted += 1
                 update_activity_detected = True
             except Exception as e:
-                print(f"Ã¢ÂÅ’ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+                print(f"⚠️ Failed to remove {os.path.basename(file_path)}: {str(e)}")
                 try:
                     import stat
                     os.chmod(file_path, stat.S_IWRITE)
                     os.unlink(file_path)
-                    print(f"Ã¢Å“â€œ Successfully removed file using alternative method")
+                    print(f"✓ Successfully removed file using alternative method")
                     files_deleted += 1
                     update_activity_detected = True
                 except Exception as alt_e:
-                    print(f"Ã¢ÂÅ’Ã¢ÂÅ’ Alternative removal also failed: {str(alt_e)}")
+                    print(f"⚠️⚠️ Alternative removal also failed: {str(alt_e)}")
 
     if files_deleted > 0:
         print(f"Successfully removed {files_deleted} legacy file(s)")
@@ -232,31 +232,31 @@ def register():
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print(f"Ã¢Å“â€œ Removed legacy file after ZIP extraction: {os.path.basename(file_path)}")
+                print(f"✓ Removed legacy file after ZIP extraction: {os.path.basename(file_path)}")
                 update_activity_detected = True
             except Exception as e:
-                print(f"Ã¢ÂÅ’ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+                print(f"⚠️ Failed to remove {os.path.basename(file_path)}: {str(e)}")
 
                 try:
                     import stat
                     os.chmod(file_path, stat.S_IWRITE)
                     os.unlink(file_path)
-                    print(f"Ã¢Å“â€œ Successfully removed file using alternative method")
+                    print(f"✓ Successfully removed file using alternative method")
                     update_activity_detected = True
                 except Exception as alt_e:
-                    print(f"Ã¢ÂÅ’Ã¢ÂÅ’ Alternative removal also failed: {str(alt_e)}")
+                    print(f"⚠️⚠️ Alternative removal also failed: {str(alt_e)}")
 
-    print("Ã¢Å“â€œ Startup preparation complete, beginning normal registration")
+    print("✓ Startup preparation complete, beginning normal registration")
 
     from . import hdri_management
-    print("Ã¢Å“â€œ HDRI management module imported")
+    print("✓ HDRI management module imported")
 
     from . import preferences
     try:
         preferences.register_preferences()
-        print("Ã¢Å“â€œ Preferences registered")
+        print("✓ Preferences registered")
     except Exception as e:
-        print(f"Ã¢ÂÅ’ Error registering preferences: {str(e)}")
+        print(f"⚠️ Error registering preferences: {str(e)}")
         # Try to continue with registration even if preferences fail
         pass
 
@@ -264,28 +264,28 @@ def register():
     from . import core
     try:
         core.register_core()
-        print("Ã¢Å“â€œ Core components registered")
+        print("✓ Core components registered")
     except Exception as e:
-        print(f"Ã¢ÂÅ’ Error registering core: {str(e)}")
+        print(f"⚠️ Error registering core: {str(e)}")
         raise e  # Core is critical, so we should fail here
 
     from . import favorites
-    print("Ã¢Å“â€œ Favorites module imported")
+    print("✓ Favorites module imported")
 
     from . import operators
     try:
         operators.register_operators()
-        print("Ã¢Å“â€œ Operators registered")
+        print("✓ Operators registered")
     except Exception as e:
-        print(f"Ã¢ÂÅ’ Error registering operators: {str(e)}")
+        print(f"⚠️ Error registering operators: {str(e)}")
         raise e
 
     from . import ui
     try:
         ui.register_ui()
-        print("Ã¢Å“â€œ UI registered")
+        print("✓ UI registered")
     except Exception as e:
-        print(f"Ã¢ÂÅ’ Error registering UI: {str(e)}")
+        print(f"⚠️ Error registering UI: {str(e)}")
         raise e
 
     import bpy
@@ -294,7 +294,7 @@ def register():
         description="Stores current changelog entry",
         default=""
     )
-    print("Ã¢Å“â€œ Window manager properties added")
+    print("✓ Window manager properties added")
 
     from . import render_engines
 
@@ -312,7 +312,7 @@ def register():
 
     if load_preferred_engine not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(load_preferred_engine)
-    print("Ã¢Å“â€¦ Engine preference handler registered")
+    print("✅ Engine preference handler registered")
 
     # Sync temp_engine immediately for the current session
     # Use a timer to ensure context is available
@@ -334,23 +334,23 @@ def register():
     bpy.app.timers.register(sync_temp_engine_on_register, first_interval=0.1)
 
     utils.setup_keymap(addon_keymaps)
-    print("Ã¢Å“â€œ Keyboard shortcuts set up")
+    print("✓ Keyboard shortcuts set up")
 
     utils.setup_handlers()
-    print("Ã¢Å“â€œ Handlers set up")
+    print("✓ Handlers set up")
 
     utils.ensure_addon_structure()
-    print("Ã¢Å“â€œ Directory structure verified")
+    print("✓ Directory structure verified")
 
     utils.check_for_update_on_startup()
-    print("Ã¢Å“â€œ Update check completed")
+    print("✓ Update check completed")
 
     from . import flamenco
     try:
         flamenco.register_flamenco_handlers()
-        print("Ã¢Å“â€œ Flamenco integration registered")
+        print("✓ Flamenco integration registered")
     except Exception as e:
-        print(f"Ã¢Å¡Â Ã¯Â¸Â Warning: Flamenco integration failed: {str(e)}")
+        print(f"⚠️ Warning: Flamenco integration failed: {str(e)}")
         # Non-critical, continue
 
     if update_activity_detected:
@@ -368,12 +368,12 @@ def register():
                         bpy.context.window_manager.hdri_changelog = changes
 
                         bpy.ops.world.show_hdri_changelog('INVOKE_DEFAULT')
-                        print("Ã¢Å“â€œ Showing changelog for update")
+                        print("✓ Showing changelog for update")
                 except Exception as e:
                     print(f"Error showing changelog: {str(e)}")
 
         bpy.app.timers.register(show_changelog_delayed, first_interval=1.0)
-        print("Ã¢Å“â€œ Scheduled changelog to show after UI initialization")
+        print("✓ Scheduled changelog to show after UI initialization")
 
     print("=== QUICK HDRI CONTROLS REGISTERED SUCCESSFULLY ===\n")
 
@@ -382,7 +382,7 @@ def unregister():
 
     if load_preferred_engine in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(load_preferred_engine)
-    print("Ã¢Å“â€œ Engine preference handler removed")
+    print("✓ Engine preference handler removed")
 
     from . import utils
     from . import ui
@@ -392,33 +392,33 @@ def unregister():
     from . import flamenco
 
     flamenco.unregister_flamenco_handlers()
-    print("Ã¢Å“â€œ Flamenco integration unregistered")
+    print("✓ Flamenco integration unregistered")
 
     utils.remove_handlers()
-    print("Ã¢Å“â€œ Handlers removed")
+    print("✓ Handlers removed")
 
     utils.clear_keymaps(addon_keymaps)
     addon_keymaps.clear()
-    print("Ã¢Å“â€œ Keymaps cleared")
+    print("✓ Keymaps cleared")
 
     ui.unregister_ui()
-    print("Ã¢Å“â€œ UI unregistered")
+    print("✓ UI unregistered")
     operators.unregister_operators()
-    print("Ã¢Å“â€œ Operators unregistered")
+    print("✓ Operators unregistered")
     core.unregister_core()
-    print("Ã¢Å“â€œ Core components unregistered")
+    print("✓ Core components unregistered")
     preferences.unregister_preferences()
-    print("Ã¢Å“â€œ Preferences unregistered")
+    print("✓ Preferences unregistered")
 
     del bpy.types.WindowManager.hdri_changelog
-    print("Ã¢Å“â€œ Window manager properties cleared")
+    print("✓ Window manager properties cleared")
 
     if hasattr(bpy.types.Scene, "temp_engine"):
         del bpy.types.Scene.temp_engine
-    print("Ã¢Å“â€œ Scene properties cleared")
+    print("✓ Scene properties cleared")
 
     utils.cleanup_previews()
-    print("Ã¢Å“â€œ Previews cleaned up")
+    print("✓ Previews cleaned up")
 
     print("=== QUICK HDRI CONTROLS UNREGISTERED SUCCESSFULLY ===\n")
 

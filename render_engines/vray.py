@@ -84,16 +84,16 @@ def get_vray_bitmap_image_path(bitmap_node):
     """Get the image path from V-Ray Bitmap node using new or legacy API"""
     if not bitmap_node:
         return None
-    
+
     # Try new API first: texture.image
     if hasattr(bitmap_node, 'texture') and hasattr(bitmap_node.texture, 'image'):
         if bitmap_node.texture.image:
             return bitmap_node.texture.image.filepath
-    
+
     # Fallback to legacy API: BitmapBuffer.file
     elif hasattr(bitmap_node, 'BitmapBuffer') and hasattr(bitmap_node.BitmapBuffer, 'file'):
         return bitmap_node.BitmapBuffer.file
-    
+
     return None
 
 
@@ -101,39 +101,39 @@ def set_vray_bitmap_image(bitmap_node, filepath):
     """Set the image in V-Ray Bitmap node using new or legacy API"""
     if not bitmap_node or not filepath:
         return False
-    
+
     try:
         # Try new API first: texture.image
         if hasattr(bitmap_node, 'texture') and hasattr(bitmap_node.texture, 'image'):
             print(f"V-Ray: Using new texture.image API to load {filepath}")
-            
+
             # Load image into Blender
             img = bpy.data.images.load(filepath, check_existing=True)
-            
+
             # Set the image on the texture
             bitmap_node.texture.image = img
-            
+
             # Force node update
             if hasattr(bitmap_node, 'update'):
                 bitmap_node.update()
-            
+
             return True
-        
+
         # Fallback to legacy API: BitmapBuffer.file
         elif hasattr(bitmap_node, 'BitmapBuffer'):
             print(f"V-Ray: Using legacy BitmapBuffer.file API to load {filepath}")
             bitmap_node.BitmapBuffer.file = filepath
-            
+
             # Force node update
             if hasattr(bitmap_node, 'update'):
                 bitmap_node.update()
-            
+
             return True
-        
+
         else:
             print("V-Ray: No compatible API found on bitmap node")
             return False
-            
+
     except Exception as e:
         print(f"V-Ray: Error setting bitmap image: {str(e)}")
         return False
@@ -190,7 +190,7 @@ def ensure_vray_setup():
         raise Exception("VRayDomeLight not found in collection")
 
     return dome_light
-    
+
 def ensure_scene_camera():
     """Ensure that the scene has at least one camera for V-Ray to work with"""
     # Check if a camera already exists in any scene
@@ -202,22 +202,22 @@ def ensure_scene_camera():
                 bpy.context.scene.collection.objects.link(obj)
                 print(f"V-Ray: Linked existing camera '{obj.name}' to current scene")
             return True
-            
+
     # No camera found, create a new one
     print("V-Ray: No camera found in scene. Creating default camera.")
     camera_data = bpy.data.cameras.new(name="Default Camera")
     camera_obj = bpy.data.objects.new("Default Camera", camera_data)
-    
+
     # Add to current scene
     bpy.context.scene.collection.objects.link(camera_obj)
-    
+
     # Position the camera at a reasonable distance
     camera_obj.location = (0, -10, 2)
     camera_obj.rotation_euler = (radians(75), 0, 0)
-    
+
     # Set as active camera
     bpy.context.scene.camera = camera_obj
-    
+
     print("V-Ray: Created default camera")
     return True
 
@@ -269,7 +269,7 @@ def setup_hdri_system(context):
         # Check if 'AgX' is available in the view transform options
         available_transforms = [item.identifier for item in context.scene.view_settings.bl_rna.properties['view_transform'].enum_items]
         print(f"V-Ray: Available view transforms: {available_transforms}")
-        
+
         if 'AgX' in available_transforms:
             context.scene.view_settings.view_transform = 'AgX'
             print("V-Ray: Successfully set view transform to AgX")
@@ -415,7 +415,7 @@ def set_hdri(context, filepath):
     """Load a new HDRI into V-Ray - Updated for new V-Ray API with better error handling"""
     print(f"V-Ray set_hdri called with filepath: {filepath}")
     ensure_scene_camera()
-    
+
     # First, ensure V-Ray collection exists
     vray_collection = bpy.data.collections.get("vRay HDRI Controls")
     if not vray_collection:
@@ -442,7 +442,7 @@ def set_hdri(context, filepath):
     if not dome_light.data:
         print("ERROR: VRayDomeLight has no data")
         return False
-        
+
     if not dome_light.data.node_tree:
         print("ERROR: VRayDomeLight has no node tree")
         return False
@@ -455,7 +455,7 @@ def set_hdri(context, filepath):
         print("ERROR: V-Ray Bitmap node not found")
         print(f"Available nodes: {[node.name for node in node_tree.nodes]}")
         return False
-        
+
     if not light_dome_node:
         print("ERROR: Light Dome node not found")
         return False
@@ -483,7 +483,7 @@ def set_hdri(context, filepath):
         print(f"V-Ray: Got current file from BitmapBuffer.file: {current_file}")
     else:
         print("V-Ray: No current file found")
-    
+
     current_file = original_paths.get(os.path.basename(current_file), current_file)
 
     if current_file and current_file != filepath:
@@ -516,7 +516,7 @@ def set_hdri(context, filepath):
     # Load the HDRI - Use proxy if enabled
     try:
         target_path = filepath
-        
+
         if hdri_settings.proxy_resolution != 'ORIGINAL':
             proxy_path = create_hdri_proxy(filepath, hdri_settings.proxy_resolution)
             if proxy_path and os.path.exists(proxy_path):
@@ -530,21 +530,21 @@ def set_hdri(context, filepath):
                 print(f"V-Ray: Proxy creation failed, using original: {target_path}")
         else:
             print(f"V-Ray: Using original file: {target_path}")
-        
+
         # NEW V-RAY API: Set both BitmapBuffer.file AND texture.image
         print(f"V-Ray: Loading HDRI using new API: {target_path}")
-        
+
         # Method 1: Set BitmapBuffer.file (legacy support)
         if hasattr(bitmap_node, 'BitmapBuffer') and hasattr(bitmap_node.BitmapBuffer, 'file'):
             bitmap_node.BitmapBuffer.file = target_path
             print(f"V-Ray: Set BitmapBuffer.file = {target_path}")
         else:
             print("WARNING: BitmapBuffer.file not available")
-        
+
         # Method 2: Set texture.image (NEW REQUIRED METHOD)
         if hasattr(bitmap_node, 'texture') and bitmap_node.texture:
             print("V-Ray: Setting texture.image...")
-            
+
             # Clear existing image reference if any
             if bitmap_node.texture.image:
                 old_image = bitmap_node.texture.image
@@ -553,18 +553,18 @@ def set_hdri(context, filepath):
                 if old_image.users == 0:
                     bpy.data.images.remove(old_image)
                     print("V-Ray: Removed old image from memory")
-            
+
             # Load and set new image
             try:
                 new_image = bpy.data.images.load(target_path, check_existing=True)
                 bitmap_node.texture.image = new_image
                 print(f"V-Ray: Set texture.image = {new_image.name}")
-                
+
                 # Ensure image is marked as HDRI if it's an HDR/EXR file
                 if target_path.lower().endswith(('.hdr', '.exr')):
                     new_image.colorspace_settings.name = 'Linear'
                     print("V-Ray: Set image colorspace to Linear for HDRI")
-                
+
             except Exception as e:
                 print(f"V-Ray: Error loading image into texture.image: {str(e)}")
                 # Don't fail completely, just continue with BitmapBuffer.file
@@ -597,7 +597,7 @@ def set_hdri(context, filepath):
         if hasattr(bitmap_node, 'update'):
             bitmap_node.update()
             print("V-Ray: Updated bitmap node")
-            
+
         if hasattr(node_tree, 'update_tag'):
             node_tree.update_tag()
             print("V-Ray: Updated node tree")
@@ -614,7 +614,7 @@ def set_hdri(context, filepath):
 
         print(f"V-Ray: Successfully loaded HDRI: {target_path}")
         return True
-        
+
     except Exception as e:
         print(f"V-Ray: Failed to load HDRI: {str(e)}")
         import traceback
@@ -749,12 +749,12 @@ def update_hdri_proxy(self, context):
                 target_path = original_path
 
         # NEW V-RAY API: Update both BitmapBuffer.file AND texture.image
-        
+
         # Method 1: Set BitmapBuffer.file (legacy support)
         if hasattr(bitmap_node, 'BitmapBuffer') and hasattr(bitmap_node.BitmapBuffer, 'file'):
             bitmap_node.BitmapBuffer.file = target_path
             print(f"V-Ray Proxy Update: Set BitmapBuffer.file = {target_path}")
-        
+
         # Method 2: Set texture.image (NEW REQUIRED METHOD)
         if hasattr(bitmap_node, 'texture') and bitmap_node.texture:
             # Clear existing image reference if any
@@ -765,17 +765,17 @@ def update_hdri_proxy(self, context):
                 if old_image.users == 0:
                     bpy.data.images.remove(old_image)
                     print("V-Ray Proxy Update: Removed old image from memory")
-            
+
             # Load and set new image
             try:
                 new_image = bpy.data.images.load(target_path, check_existing=True)
                 bitmap_node.texture.image = new_image
                 print(f"V-Ray Proxy Update: Set texture.image = {new_image.name}")
-                
+
                 # Ensure image is marked as HDRI if it's an HDR/EXR file
                 if target_path.lower().endswith(('.hdr', '.exr')):
                     new_image.colorspace_settings.name = 'Linear'
-                
+
             except Exception as e:
                 print(f"V-Ray Proxy Update: Error loading image into texture.image: {str(e)}")
 
@@ -860,14 +860,14 @@ def toggle_hdri_visibility(context):
 def set_hdri_visibility(context, visible):
     """Set HDRI visibility to a specific state"""
     hdri_settings = context.scene.hdri_settings
-    
+
     # Update the UI property if it exists
     if hasattr(hdri_settings, 'hdri_visible'):
         hdri_settings.hdri_visible = visible
 
     # Apply the visibility to V-Ray
     set_hdri_visibility_direct(context, visible)
-    
+
     return visible
 
 
@@ -1265,7 +1265,7 @@ def reload_original_for_render(dummy):
                 break
 
 
-@bpy.app.handlers.persistent 
+@bpy.app.handlers.persistent
 def reset_proxy_after_render_complete(dummy):
     """Handler to reset to proxy after rendering completes - Updated for new API"""
     context = bpy.context
@@ -1291,11 +1291,11 @@ def reset_proxy_after_render_complete(dummy):
 
                         if bitmap_node:
                             print(f"V-Ray: Render complete, swapping back to proxy: {proxy_path}")
-                            
+
                             # Set using both old and new API
                             if hasattr(bitmap_node, 'BitmapBuffer') and hasattr(bitmap_node.BitmapBuffer, 'file'):
                                 bitmap_node.BitmapBuffer.file = proxy_path
-                            
+
                             if hasattr(bitmap_node, 'texture') and bitmap_node.texture:
                                 try:
                                     new_image = bpy.data.images.load(proxy_path, check_existing=True)
@@ -1350,7 +1350,7 @@ def reset_proxy_after_render(dummy):
                                 set_vray_bitmap_image(bitmap_node, proxy_path)
                                 print(f"V-Ray: Render cancelled, created new proxy: {proxy_path}")
                     break
-                    
+
 def get_current_hdri_path(context):
     """Get the path of the currently loaded HDRI in V-Ray - Updated for new API"""
     vray_collection = bpy.data.collections.get("vRay HDRI Controls")

@@ -147,11 +147,11 @@ class HDRI_OT_quick_rotate(Operator):
 
         # Return appropriate description based on direction
         if properties.direction == -99:
-            return f"Reset {axis_name} rotation to 0Â°"
+            return f"Reset {axis_name} rotation to 0°"
         elif properties.direction == -1:
-            return f"Decrease {axis_name} rotation by {increment}Â°"
+            return f"Decrease {axis_name} rotation by {increment}°"
         else:
-            return f"Increase {axis_name} rotation by {increment}Â°"
+            return f"Increase {axis_name} rotation by {increment}°"
 
     def execute(self, context):
         # Get the current render engine
@@ -187,7 +187,7 @@ class HDRI_OT_quick_rotate(Operator):
                         else:  # Regular rotation
                             increment_in_radians = radians(preferences.rotation_increment)
                             current_rotation[self.axis] += (self.direction * increment_in_radians)
-                            print(f"Adjusted Cycles axis {self.axis} by {self.direction * preferences.rotation_increment}Â°")
+                            print(f"Adjusted Cycles axis {self.axis} by {self.direction * preferences.rotation_increment}°")
 
                         node.inputs['Rotation'].default_value = current_rotation
                         break
@@ -642,7 +642,7 @@ class HDRI_OT_show_shortcut_conflicts(Operator):
                         # Format shortcut description
                         keys = []
                         if conflict['ctrl']:
-                            keys.append('Ctrl' if not sys.platform == 'darwin' else 'âŒ˜')
+                            keys.append('Ctrl' if not sys.platform == 'darwin' else '⌘')
                         if conflict['shift']:
                             keys.append('Shift')
                         if conflict['alt']:
@@ -1347,7 +1347,7 @@ class HDRI_OT_cleanup_backups(Operator):
             with open(preferences_path, 'w') as f:
                 json.dump(prefs_data, f, indent=4)
 
-            print(f"âœ… Saved render engine preference: {target_engine} to {preferences_path}")
+            print(f"✅ Saved render engine preference: {target_engine} to {preferences_path}")
         except Exception as e:
             self.report({'WARNING'}, f"Could not save preferences: {str(e)}")
 
@@ -1881,13 +1881,13 @@ class HDRI_OT_full_batch_previews(Operator):
 
     def invoke(self, context, event):
         message = (
-            "âš ï¸ Batch Process can take several minutes to hours âš ï¸\n"
-            "â€¢ Network speeds affect processing time if using NAS\n\n"
-            "ðŸ”„ Process Details ðŸ”„\n"
-            "â€¢ Creates thumbnails for ALL .hdr and .exr files\n"
-            "â€¢ Searches entire HDRI directory structure\n\n"
-            "ðŸ“ Settings ðŸ“\n"
-            "â€¢ Remember to adjust Quality settings!\n\n"
+            "⚠️ Batch Process can take several minutes to hours ⚠️\n"
+            "• Network speeds affect processing time if using NAS\n\n"
+            "🔧ž Process Details 🔧ž\n"
+            "• Creates thumbnails for ALL .hdr and .exr files\n"
+            "• Searches entire HDRI directory structure\n\n"
+            "📊 Settings 📊\n"
+            "• Remember to adjust Quality settings!\n\n"
             "Would you like to continue?"
         )
 
@@ -2115,11 +2115,11 @@ class HDRI_OT_full_batch_proxies(Operator):
 
     def invoke(self, context, event):
         message = (
-            "âš ï¸ Batch Process can take several minutes to hours âš ï¸\n"
-            "â€¢ Network speeds affect processing time if using NAS\n\n"
-            "ðŸ”„ Process Details ðŸ”„\n"
-            "â€¢ Creates proxies for ALL .hdr and .exr files\n"
-            "â€¢ Searches entire HDRI directory structure\n\n"
+            "⚠️ Batch Process can take several minutes to hours ⚠️\n"
+            "• Network speeds affect processing time if using NAS\n\n"
+            "🔧ž Process Details 🔧ž\n"
+            "• Creates proxies for ALL .hdr and .exr files\n"
+            "• Searches entire HDRI directory structure\n\n"
             "Would you like to continue?"
         )
 

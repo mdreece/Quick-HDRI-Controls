@@ -1,6 +1,19 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
-## 23-9-2025:  CYCLES: v2.9.4 | OCTANE: V2.9.4 | V-RAY: V2.9.4
+
+## 09-11-2025:  Quick HDRI Controls: v2.9.5
+### Information ⚠️:
+• Split build restarts are no more. Enough time has passed for users to have the split version of the addon.
+
+### Fixes 🛠️:
+• OCTANE: Reset button now resets more than once to match V-Ray and Cycles builds
+• All: Preferences proxy options were not being respected.
+• All: Render engine selection on main panel will reflect set engine in preferences (default is cycles if no other is set).
+• All: When engine is selected/set as default, the system will not automatically set. User input needed to initialize. 
+##
+
+
+## 08-11-2025:  CYCLES: v2.9.4 | OCTANE: V2.9.4 | V-RAY: V2.9.4
 ### Information ⚠️:
 • Restart Blender Twice to fully update (Changelog will show twice. v2.9.5 is the last like this)
 
@@ -525,6 +538,7 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+
 
 
 

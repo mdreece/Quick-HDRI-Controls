@@ -396,7 +396,7 @@ When set to V-Ray and the HDRI System is initialized:
 ##
 ## Requirements
 
-- Blender 4.2.0+
+- Blender 4.0.0+
 - Supported Operation Systems & Render Engine
      - Windows 10/11: Cycles, V-Ray, Octane
      - Linux: Cycles, Octane

@@ -401,6 +401,7 @@ When set to V-Ray and the HDRI System is initialized:
      - Windows 10/11: Cycles, V-Ray, Octane
      - Linux: Cycles, Octane
      - MacOS 14.0+: Cycles
+- Flamenco switching only supported with Cycles
 
 ##
 ## Support

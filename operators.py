@@ -1253,7 +1253,7 @@ class HDRI_OT_revert_version(Operator):
                     version = version_match.group(1)
                     self.report({'INFO'}, f"Reverted to version: {version}")
                 else:
-                    self.report({'INFO'}, f"Successfully reverted to backup: {os.path.basename(latest_backup)}")
+                    self.report({'INFO'}, f"Successfully reverted to backup: {os.path.basename(latest_backup)} : Please restart")
 
                 return {'FINISHED'}
             except Exception as e:

@@ -10,7 +10,7 @@ from bpy.app.handlers import persistent
 bl_info = {
     "name": "Quick HDRI Controls",
     "author": "Dave Nectariad Rome",
-    "version": (2, 9, 5),
+    "version": (2, 9, 6),
     "blender": (4, 0, 0),
     "location": "3D Viewport > Header",
     "warning": "Alpha Version (in-development)",

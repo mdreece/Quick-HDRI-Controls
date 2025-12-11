@@ -1,5 +1,10 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 10-12-2025:  Quick HDRI Controls: v2.9.6
+### Fixes 🛠️:
+• Version revert feature was still referencing an old directory. Updated to correct file directory. User now prompted to restart.
+##
+
 
 ## 09-11-2025:  Quick HDRI Controls: v2.9.5
 ### Information ⚠️:
@@ -538,6 +543,7 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+
 
 
 

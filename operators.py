@@ -1214,9 +1214,13 @@ class HDRI_OT_revert_version(Operator):
         )
 
     def execute(self, context):
-        addon_dir = os.path.dirname(__file__)
-        addon_dir = os.path.dirname(addon_dir)  # Go up one level
+        # Use the reliable method to get addon directory
+        from . import utils
+        addon_name = utils.get_addon_name()
+        addon_dir = os.path.join(bpy.utils.user_resource('SCRIPTS'), "addons", addon_name)
         backups_dir = os.path.join(addon_dir, "backups")
+
+        print(f"DEBUG: Looking for backups in: {backups_dir}")  # Debug output
 
         if not os.path.exists(backups_dir):
             self.report({'WARNING'}, "No backups directory found")
@@ -1268,9 +1272,12 @@ class HDRI_OT_cleanup_backups(Operator):
         from . import utils
         addon_name = utils.get_addon_name()
         preferences = context.preferences.addons[addon_name].preferences
-        addon_dir = os.path.dirname(__file__)
-        addon_dir = os.path.dirname(addon_dir)  # Go up one level
+
+        # Use the reliable method to get addon directory
+        addon_dir = os.path.join(bpy.utils.user_resource('SCRIPTS'), "addons", addon_name)
         backups_dir = os.path.join(addon_dir, "backups")
+
+        print(f"DEBUG: Looking for backups to clean in: {backups_dir}")  # Debug output
 
         try:
             if os.path.exists(backups_dir):

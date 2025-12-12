@@ -402,6 +402,7 @@ When set to V-Ray and the HDRI System is initialized:
      - Linux: Cycles, Octane
      - MacOS 14.0+: Cycles
 - Flamenco switching only supported with Cycles
+- Main features work in v4.0.0, for best experience use v4.2.0
 
 ##
 ## Support

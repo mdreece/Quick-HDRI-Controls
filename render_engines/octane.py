@@ -179,7 +179,7 @@ def setup_hdri_system(context):
         hdri_settings.current_folder = preferences.hdri_directory
 
     # Initialize proxy settings from preferences
-    from ..utils import initialize_hdri_settings_from_preferences
+    from ..utils import initialize_hdri_settings_from_preferences, update_proxy_handlers
     initialize_hdri_settings_from_preferences(context)
 
     # Setup nodes
@@ -196,8 +196,9 @@ def setup_hdri_system(context):
     if len(enum_items) > 1:
         hdri_settings.hdri_preview = enum_items[1][0]
 
-    # Register handlers
-    register_octane_handlers()
+    # Register handlers based on proxy mode
+    # This replaces the old register_octane_handlers() call
+    update_proxy_handlers(hdri_settings.proxy_mode)
 
     # Force redraw of UI
     for area in context.screen.areas:
@@ -292,6 +293,11 @@ def set_hdri(context, filepath):
         if hasattr(rgb_node, 'a_filename'):
             rgb_node.a_filename = target_path
             print(f"Octane: Set a_filename to {target_path}")
+
+        # Store original path mapping using image name for render handlers
+        # This is critical for viewport-only proxy mode to work correctly
+        original_paths[img.name] = filepath
+        print(f"Octane: Stored original path mapping: {img.name} -> {filepath}")
 
         # Handle rotation based on keep_rotation setting
         if transform_node:
@@ -977,8 +983,19 @@ def reset_proxy_after_render_complete(dummy):
                     if proxy_path and os.path.exists(proxy_path):
                         print(f"Octane: Restoring proxy after render: {proxy_path}")
 
-                        # Clear existing image
+                        # Get the original path BEFORE clearing the current image
+                        # The current image is the full resolution one we used for rendering
                         current_image = rgb_node.image
+                        original_path = original_paths.get(current_image.name)
+                        if not original_path and hasattr(rgb_node, 'a_filename'):
+                            original_path = original_paths.get(os.path.basename(rgb_node.a_filename))
+                        # If still not found, try using the a_filename directly as it should point to the original
+                        if not original_path and hasattr(rgb_node, 'a_filename'):
+                            if os.path.exists(rgb_node.a_filename):
+                                original_path = rgb_node.a_filename
+                        print(f"Octane: Found original path for proxy restoration: {original_path}")
+
+                        # Clear existing image
                         rgb_node.image = None
                         if current_image.users == 0:
                             bpy.data.images.remove(current_image)
@@ -989,6 +1006,12 @@ def reset_proxy_after_render_complete(dummy):
                         if hasattr(rgb_node, 'a_filename'):
                             rgb_node.a_filename = proxy_path
 
+                        # Store original path mapping so subsequent renders can find it
+                        if original_path:
+                            original_paths[img.name] = original_path
+                            original_paths[os.path.basename(proxy_path)] = original_path
+                            print(f"Octane: Restored proxy mapping: {img.name} -> {original_path}")
+
                         # Clear the stored path
                         context.scene.octane_proxy_restore_path = ""
 
@@ -996,10 +1019,11 @@ def reset_proxy_after_render_complete(dummy):
                         rgb_node.update()
                         context.scene.world.node_tree.update_tag()
 
-                        # Force viewport update
-                        for area in context.screen.areas:
-                            if area.type == 'VIEW_3D':
-                                area.tag_redraw()
+                        # Force viewport update (only if screen context is available)
+                        if context.screen:
+                            for area in context.screen.areas:
+                                if area.type == 'VIEW_3D':
+                                    area.tag_redraw()
 
 
 def register_octane_handlers():

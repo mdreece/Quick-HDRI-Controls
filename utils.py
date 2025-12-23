@@ -364,10 +364,10 @@ def cleanup_legacy_files():
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print(f"✓ Removed legacy file: {os.path.basename(file_path)}")
+                print(f"âœ“ Removed legacy file: {os.path.basename(file_path)}")
                 files_deleted += 1
             except Exception as e:
-                print(f"❌’ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+                print(f"âŒâ€™ Failed to remove {os.path.basename(file_path)}: {str(e)}")
 
     if files_deleted > 0:
         print(f"Successfully removed {files_deleted} legacy file(s)")
@@ -611,13 +611,30 @@ def clear_keymaps(addon_keymaps):
         km.keymap_items.remove(kmi)
 
 def update_proxy_handlers(proxy_mode):
-    """Update the render handlers based on proxy mode"""
-    # Import at function level to avoid circular imports
-    from .render_engines.cycles import (
-        reload_original_for_render,
-        reset_proxy_after_render,
-        reset_proxy_after_render_complete
-    )
+    """Update the render handlers based on proxy mode and current render engine"""
+    # Get current render engine
+    render_engine = bpy.context.scene.render.engine
+
+    # Import handlers based on render engine
+    if render_engine == 'octane':
+        from .render_engines.octane import (
+            reload_original_for_render,
+            reset_proxy_after_render,
+            reset_proxy_after_render_complete
+        )
+    elif render_engine == 'VRAY_RENDER_RT':
+        from .render_engines.vray import (
+            reload_original_for_render,
+            reset_proxy_after_render,
+            reset_proxy_after_render_complete
+        )
+    else:
+        # Default to Cycles
+        from .render_engines.cycles import (
+            reload_original_for_render,
+            reset_proxy_after_render,
+            reset_proxy_after_render_complete
+        )
 
     # Handle render update - only use handlers for 'VIEWPORT' mode
     if proxy_mode == 'VIEWPORT':
@@ -677,23 +694,15 @@ def init_hdri_settings_handler(dummy):
 
 def setup_handlers():
     """Set up all the handlers needed by the addon"""
-    # Import here to avoid circular imports
-    from .render_engines.cycles import (
-        reload_original_for_render,
-        reset_proxy_after_render,
-        reset_proxy_after_render_complete
-    )
+    # Note: Render handlers (render_init, render_cancel, render_complete) are now
+    # registered by update_proxy_handlers() based on the active render engine
+    # We only register the load_post handlers here
 
-    # Store references to handlers
+    # Store references to load_post handlers
     handler_references['load_post'].append(load_handler)
-    handler_references['render_init'].append(reload_original_for_render)
-    handler_references['render_cancel'].append(reset_proxy_after_render)
-    handler_references['render_complete'].append(reset_proxy_after_render_complete)
-
-    # Add our new initialization handler
     handler_references['load_post'].append(init_hdri_settings_handler)
 
-    # Register handlers
+    # Register load_post handlers
     if load_handler not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(load_handler)
 
@@ -703,9 +712,6 @@ def setup_handlers():
     if ensure_proxy_handlers_on_load not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(ensure_proxy_handlers_on_load)
 
-    # These handlers depend on the proxy mode
-    # They'll be added by update_proxy_handlers if needed
-
 def remove_handlers():
     """Remove all handlers registered by the addon"""
     # Load post handlers
@@ -713,20 +719,55 @@ def remove_handlers():
         if handler in bpy.app.handlers.load_post:
             bpy.app.handlers.load_post.remove(handler)
 
-    # Render init handlers
-    for handler in handler_references['render_init']:
-        if handler in bpy.app.handlers.render_init:
-            bpy.app.handlers.render_init.remove(handler)
+    # Remove render handlers from all engines
+    # We need to import all handlers to properly clean them up
+    try:
+        from .render_engines.cycles import (
+            reload_original_for_render as cycles_reload,
+            reset_proxy_after_render as cycles_reset,
+            reset_proxy_after_render_complete as cycles_complete
+        )
+        # Remove Cycles handlers
+        if cycles_reload in bpy.app.handlers.render_init:
+            bpy.app.handlers.render_init.remove(cycles_reload)
+        if cycles_reset in bpy.app.handlers.render_cancel:
+            bpy.app.handlers.render_cancel.remove(cycles_reset)
+        if cycles_complete in bpy.app.handlers.render_complete:
+            bpy.app.handlers.render_complete.remove(cycles_complete)
+    except:
+        pass
 
-    # Render cancel handlers
-    for handler in handler_references['render_cancel']:
-        if handler in bpy.app.handlers.render_cancel:
-            bpy.app.handlers.render_cancel.remove(handler)
+    try:
+        from .render_engines.octane import (
+            reload_original_for_render as octane_reload,
+            reset_proxy_after_render as octane_reset,
+            reset_proxy_after_render_complete as octane_complete
+        )
+        # Remove Octane handlers
+        if octane_reload in bpy.app.handlers.render_init:
+            bpy.app.handlers.render_init.remove(octane_reload)
+        if octane_reset in bpy.app.handlers.render_cancel:
+            bpy.app.handlers.render_cancel.remove(octane_reset)
+        if octane_complete in bpy.app.handlers.render_complete:
+            bpy.app.handlers.render_complete.remove(octane_complete)
+    except:
+        pass
 
-    # Render complete handlers
-    for handler in handler_references['render_complete']:
-        if handler in bpy.app.handlers.render_complete:
-            bpy.app.handlers.render_complete.remove(handler)
+    try:
+        from .render_engines.vray import (
+            reload_original_for_render as vray_reload,
+            reset_proxy_after_render as vray_reset,
+            reset_proxy_after_render_complete as vray_complete
+        )
+        # Remove V-Ray handlers
+        if vray_reload in bpy.app.handlers.render_init:
+            bpy.app.handlers.render_init.remove(vray_reload)
+        if vray_reset in bpy.app.handlers.render_cancel:
+            bpy.app.handlers.render_cancel.remove(vray_reset)
+        if vray_complete in bpy.app.handlers.render_complete:
+            bpy.app.handlers.render_complete.remove(vray_complete)
+    except:
+        pass
 
     # Clear references
     for key in handler_references:

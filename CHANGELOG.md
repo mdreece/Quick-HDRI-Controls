@@ -2,7 +2,7 @@
 
 ## 22-12-2025:  Quick HDRI Controls: v2.9.7
 ### Fixes 🛠️:
-• Octane: Proxy switching when set to viewport is not working in BlenderOctane v4.5.2
+• Octane: Proxy switching when set to viewport is now working in BlenderOctane v4.5.2
 ##
 
 
@@ -549,6 +549,7 @@
 ## 27-10-2024: V1.1
 	- Fixed bug where sub folders would only show primary directory HDRI files. 
 	- When sub folders are selected, they will now display the HDRI files within the selected folder.
+
 
 
 

@@ -364,10 +364,10 @@ def cleanup_legacy_files():
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
-                print(f"âœ“ Removed legacy file: {os.path.basename(file_path)}")
+                print(f"✓ Removed legacy file: {os.path.basename(file_path)}")
                 files_deleted += 1
             except Exception as e:
-                print(f"âŒâ€™ Failed to remove {os.path.basename(file_path)}: {str(e)}")
+                print(f"⚠️ Failed to remove {os.path.basename(file_path)}: {str(e)}")
 
     if files_deleted > 0:
         print(f"Successfully removed {files_deleted} legacy file(s)")

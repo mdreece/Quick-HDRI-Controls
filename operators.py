@@ -1104,7 +1104,7 @@ class HDRI_OT_download_update(Operator):
 
     def cleanup(self):
         """Clean up resources"""
-        if self._timer:
+        if hasattr(self, '_timer') and self._timer:
             bpy.context.window_manager.event_timer_remove(self._timer)
             self._timer = None
 
@@ -1709,7 +1709,7 @@ class HDRI_OT_generate_previews(Operator):
             area.tag_redraw()
 
     def cancel(self, context):
-        if self._timer:
+        if hasattr(self, '_timer') and self._timer:
             context.window_manager.event_timer_remove(self._timer)
         context.window_manager.progress_end()
 
@@ -1890,10 +1890,10 @@ class HDRI_OT_full_batch_previews(Operator):
         message = (
             "⚠️ Batch Process can take several minutes to hours ⚠️\n"
             "• Network speeds affect processing time if using NAS\n\n"
-            "🔧ž Process Details 🔧ž\n"
+            "🔧 Process Details 🔧\n"
             "• Creates thumbnails for ALL .hdr and .exr files\n"
             "• Searches entire HDRI directory structure\n\n"
-            "📊 Settings 📊\n"
+            "📊 Settings 📊\n"
             "• Remember to adjust Quality settings!\n\n"
             "Would you like to continue?"
         )
@@ -1978,7 +1978,7 @@ class HDRI_OT_generate_proxies(Operator):
     bl_description = "Generate proxies for selected folder"
 
     def cancel(self, context):
-        if self._timer:
+        if hasattr(self, '_timer') and self._timer:
             context.window_manager.event_timer_remove(self._timer)
         context.window_manager.progress_end()
 
@@ -2124,7 +2124,7 @@ class HDRI_OT_full_batch_proxies(Operator):
         message = (
             "⚠️ Batch Process can take several minutes to hours ⚠️\n"
             "• Network speeds affect processing time if using NAS\n\n"
-            "🔧ž Process Details 🔧ž\n"
+            "🔧 Process Details 🔧\n"
             "• Creates proxies for ALL .hdr and .exr files\n"
             "• Searches entire HDRI directory structure\n\n"
             "Would you like to continue?"
@@ -2265,7 +2265,7 @@ class HDRI_OT_full_batch_proxies(Operator):
             return False
 
     def cancel(self, context):
-        if self._timer:
+        if hasattr(self, '_timer') and self._timer:
             context.window_manager.event_timer_remove(self._timer)
         context.window_manager.progress_end()
 

@@ -389,6 +389,10 @@ When set to V-Ray and the HDRI System is initialized:
 - Click "Initialize HDRI System" button
 - If issues persist, click "Repair HDRI System"
 
+**Errors Updating**
+ - v2.9.5 was the last version that supported the original instance of the addon where each render engine was its own file. This ultimately was a horrible move on my part as most of the script is the exact same. 2.9.5 was the first version where everything is split up into chunks which is smaller than before and on my part easier to update. Manually download the latest version above and there should be no additional update problems.
+
+
 **Errors Post Update**
  - Use the 'Revert to Previous' option in the updates section of preferences to reload the previous version of the addon.
  - Visit the archive: https://github.com/mdreece/QHDRIC-ARCHIVE/tree/main

@@ -412,7 +412,7 @@ When set to V-Ray and the HDRI System is initialized:
 ## Support
 
 Need help? Found a bug? Have a suggestion?
-- Open an issue on GitHub or direct message on instagram @montanadreece (https://www.instagram.com/montanadreece/)
+- Open an issue on GitHub or direct message on instagram @montanadreece (https://www.instagram.com/blenderenderbender/)
 - Check existing issues for solutions
 - Include steps to reproduce any bugs
 

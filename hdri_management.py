@@ -133,6 +133,14 @@ def generate_previews(self, context):
                 thumb_path = os.path.join(os.path.dirname(hdri_path), f"{base_name}_thumb.png")
 
                 # Load thumbnail
+                if hdri_path in pcoll:
+                    existing = pcoll[hdri_path]
+                    # If thumb exists but the cached icon was loaded from the raw file, evict it
+                    thumb_exists = os.path.exists(thumb_path)
+                    loaded_from_raw = getattr(existing, 'filepath', hdri_path) == hdri_path
+                    if thumb_exists and loaded_from_raw:
+                        pcoll.pop(hdri_path)  # evict stale entry so it reloads with thumb
+
                 if hdri_path not in pcoll:
                     thumb = pcoll.load(hdri_path, thumb_path if os.path.exists(thumb_path) else hdri_path, 'IMAGE')
                 else:

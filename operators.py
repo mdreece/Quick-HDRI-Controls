@@ -1530,21 +1530,11 @@ class HDRI_OT_generate_previews(Operator):
     bl_description = "Generate thumbnails for HDRI files"
 
     def get_thumb_path(self, hdri_path):
-        # Ensure we're using the full, absolute path
         hdri_path = os.path.abspath(hdri_path)
-
-        # Get the directory of the original HDRI
         directory = os.path.dirname(hdri_path)
-
-        # Get the original filename and remove resolution suffixes
         filename = os.path.basename(hdri_path)
-
-        # Remove resolution suffixes like 2k, 4k, 8k (case insensitive)
-        # Replace underscores with hyphens
-        clean_filename = re.sub(r'(_\d+[kK])?(\.[^.]+)$', '', filename).replace('_', '-')
-
-        # Construct the new thumbnail path
-        thumb_path = os.path.join(directory, f"{clean_filename}_thumb.png")
+        base_name = os.path.splitext(filename)[0]
+        return os.path.join(directory, f"{base_name}_thumb.png")
 
         return thumb_path
 

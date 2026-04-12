@@ -1,6 +1,6 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
-## 09-11-2025:  Quick HDRI Controls: v2.9.9
+## 12-04-2026:  Quick HDRI Controls: v2.9.9
 ### Information ⚠️:
 • Not sure what to do for v3.0.0, but I want to try to add an overall new feature for each render engine/main panel vs an update to just preferences. My thinking was to attempt a sun generator that would create a sun at the angle relating to whatever the brightest point in the scene is. Previous attempts to do this were working 50% of the time. Anyways, hello first 2026 update. Minor but needed.
 

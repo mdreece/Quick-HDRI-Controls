@@ -2,7 +2,7 @@
 ![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
 ![QHDRIC Version](https://img.shields.io/badge/QHDRIC-2.9.9-blue.svg)
 
-### Cycles up to 5.1.0 (alpha) | V-Ray up to 4.5.2 (7.10.00) | Octane up to 4.5.2 (30.7.0) ###
+### Cycles up to 5.1.0 | V-Ray up to 4.5.2 (7.10.00) | Octane up to 4.5.2 (30.7.0) ###
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 
@@ -400,7 +400,7 @@ When set to V-Ray and the HDRI System is initialized:
 ##
 ## Requirements
 
-- Blender 4.0.0+
+- Blender v4.0.0 - v5.1.0
 - Supported Operation Systems & Render Engine
      - Windows 10/11: Cycles, V-Ray, Octane
      - Linux: Cycles, Octane

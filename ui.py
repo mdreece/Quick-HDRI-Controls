@@ -903,7 +903,7 @@ def draw_hdri_controls(self, context):
 
                     header_row.operator("world.toggle_hdri_visibility",
                         text="",
-                        icon='HIDE_ON' if is_visible else 'HIDE_OFF',
+                        icon='HIDE_OFF' if is_visible else 'HIDE_ON',
                         depress=is_visible)
                 else:
                     if context.scene.world:

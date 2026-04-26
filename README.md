@@ -334,7 +334,7 @@ When set to Cycles and the HDRI System is initalized:
 
 When set to Octane and the HDRI System is initialized:
 
-1. The Render Engine switches to 'Octane'
+1. The Render Engine switches to 'Octane' (if a camera is not present, one will be created)
 
 ![image](https://github.com/user-attachments/assets/c6ae2704-f6cd-45f4-a810-a8fe9cc38c89)
 

@@ -1,5 +1,16 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 04-26-26:  Quick HDRI Controls: v3.0.0
+### Information ⚠️:
+• I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.
+
+### Fixes 🛠️:
+• OCTANE: Updated for v4.5.5 (30.11). There were some strange issues with creating the world unless a camera is present in the scene. If one is not present it will be created when clicking 'Initialize'.
+• V-RAY: Updated to v5.0.1 (7.10.00).
+
+##
+
+
 ## 12-04-2026:  Quick HDRI Controls: v2.9.9
 ### Information ⚠️:
 • Not sure what to do for v3.0.0, but I want to try to add an overall new feature for each render engine/main panel vs an update to just preferences. My thinking was to attempt a sun generator that would create a sun at the angle relating to whatever the brightest point in the scene is. Previous attempts to do this were working 50% of the time. Anyways, hello first 2026 update. Minor but needed.

@@ -33,6 +33,18 @@ def ensure_world_nodes():
     """Create and setup the required Octane nodes for HDRI control"""
     scene = bpy.context.scene
 
+    # Octane requires a scene camera — without one it falls back to a fisheye
+    # default which shows as a circle in rendered viewport mode.
+    if not scene.camera:
+        cam_data = bpy.data.cameras.new(name="Camera")
+        cam_obj = bpy.data.objects.new("Camera", cam_data)
+        scene.collection.objects.link(cam_obj)
+        cam_obj.location = (7.358891, -6.925791, 4.958309)
+        from math import radians
+        cam_obj.rotation_euler = (radians(63.559), radians(0.0), radians(46.692))
+        scene.camera = cam_obj
+        print("Octane: Created default camera (required for correct rendered viewport)")
+
     # Create world if it doesn't exist
     if not scene.world:
         scene.world = bpy.data.worlds.new(name='octane_world')
@@ -50,16 +62,15 @@ def ensure_world_nodes():
     # Clear existing nodes
     nodes.clear()
 
-    # Create Octane nodes with specific positions
     # World Output
     node_world_output = nodes.new(type='OctaneEditorWorldOutputNode')
     node_world_output.location = (260.4977, 334.4536)
 
-    # Texture Environment for Environment
+    # Texture Environment for primary Environment (lighting + reflections)
     node_tex_env = nodes.new(type='OctaneTextureEnvironment')
     node_tex_env.location = (38.7377, 333.8394)
 
-    # RGB Image node
+    # RGB Image node — HDRI is loaded here
     node_rgb_image = nodes.new(type='OctaneRGBImage')
     node_rgb_image.location = (-190.3312, 333.9641)
 
@@ -67,26 +78,32 @@ def ensure_world_nodes():
     node_spherical = nodes.new(type='OctaneSpherical')
     node_spherical.location = (-415.2154, 330.2407)
 
-    # 3D Transformation
+    # 3D Transformation (rotation control)
     node_transform = nodes.new(type='Octane3DTransformation')
     node_transform.location = (-641.9505, 327.6602)
 
-    # Texture Environment for Visible Environment
+    # Texture Environment for Visible Environment (background display)
     node_tex_env_visible = nodes.new(type='OctaneTextureEnvironment')
     node_tex_env_visible.location = (38.7377, 18.3493)
+    # Backplate OFF by default — HDRI is visible in the background
+    node_tex_env_visible.inputs['Backplate'].default_value = False
 
-    # RGB Color node
+    # Black RGB Color node — used when visibility is toggled OFF
     node_rgb_color = nodes.new(type='OctaneRGBColor')
     node_rgb_color.location = (-182.2112, 15.3167)
-    node_rgb_color.a_value = (0, 0, 0)
+    if hasattr(node_rgb_color, 'a_value'):
+        node_rgb_color.a_value = (0.0, 0.0, 0.0)
 
-    # Create links
-    links.new(node_tex_env.outputs['Environment out'], node_world_output.inputs['Environment'])
-    links.new(node_rgb_image.outputs['Texture out'], node_tex_env.inputs['Texture'])
-    links.new(node_spherical.outputs['Projection out'], node_rgb_image.inputs['Projection'])
+    # Wire up the graph
     links.new(node_transform.outputs['Transform out'], node_spherical.inputs['Sphere transformation'])
+    links.new(node_spherical.outputs['Projection out'], node_rgb_image.inputs['Projection'])
+    links.new(node_rgb_image.outputs['Texture out'], node_tex_env.inputs['Texture'])
+    links.new(node_tex_env.outputs['Environment out'], node_world_output.inputs['Environment'])
+    # Visible env defaults to showing the HDRI (RGB Image -> visible TexEnv, Backplate OFF)
+    links.new(node_rgb_image.outputs['Texture out'], node_tex_env_visible.inputs['Texture'])
     links.new(node_tex_env_visible.outputs['Environment out'], node_world_output.inputs['Visible Environment'])
-    links.new(node_rgb_color.outputs['Texture out'], node_tex_env_visible.inputs['Texture'])
+
+    world.node_tree.update_tag()
 
     return node_transform, node_rgb_image, node_tex_env
 
@@ -585,71 +602,133 @@ def quick_rotate_hdri(context, axis, direction):
     return {'FINISHED'}
 
 
+def _find_world_output(world):
+    """Return the OctaneEditorWorldOutputNode, or None."""
+    for node in world.node_tree.nodes:
+        if node.bl_idname == 'OctaneEditorWorldOutputNode':
+            return node
+    return None
+
+
+def _find_visible_tex_env(world):
+    """Return the OctaneTextureEnvironment wired to Visible Environment, or None."""
+    world_output = _find_world_output(world)
+    if not world_output:
+        return None
+    vis_socket = world_output.inputs.get('Visible Environment')
+    if vis_socket and vis_socket.links:
+        node = vis_socket.links[0].from_node
+        if node.bl_idname == 'OctaneTextureEnvironment':
+            return node
+    return None
+
+
+def _find_rgb_image_node(world):
+    """Return the OctaneRGBImage node, or None."""
+    for node in world.node_tree.nodes:
+        if node.bl_idname == 'OctaneRGBImage':
+            return node
+    return None
+
+
+def _find_black_rgb_color(world):
+    """Return the black OctaneRGBColor node, or None."""
+    for node in world.node_tree.nodes:
+        if node.bl_idname == 'OctaneRGBColor':
+            if hasattr(node, 'a_value'):
+                r, g, b = node.a_value[0], node.a_value[1], node.a_value[2]
+                if r < 0.01 and g < 0.01 and b < 0.01:
+                    return node
+    return None
+
+
 def get_hdri_visible(context):
-    """Check if the HDRI is visible in Octane"""
-    print("Octane get_hdri_visible called")
+    """Return True if the HDRI background is visible.
+
+    Visibility is determined by the Backplate state on the visible TexEnv node:
+      - Backplate OFF → HDRI is showing in the background (visible)
+      - Backplate ON  → black solid is showing (hidden)
+    """
     world = context.scene.world
     if world and world.use_nodes:
-        for node in world.node_tree.nodes:
-            if node.bl_idname == 'OctaneTextureEnvironment':
-                # Find the one connected to Visible Environment
-                for output in node.outputs:
-                    for link in output.links:
-                        if link.to_socket.name == 'Visible Environment':
-                            visible = node.inputs['Backplate'].default_value
-                            print(f"Octane HDRI visibility: {visible} (Backplate value)")
-                            return visible
-
-    # Default to visible if not found or can't determine
-    print("Octane: No environment node found, defaulting visibility to True")
+        tex_env_visible = _find_visible_tex_env(world)
+        if tex_env_visible:
+            backplate = tex_env_visible.inputs['Backplate'].default_value
+            is_visible = not backplate
+            print(f"Octane get_hdri_visible: Backplate={backplate} → visible={is_visible}")
+            return is_visible
+    print("Octane get_hdri_visible: no visible TexEnv found, defaulting to True")
     return True
 
 
-def toggle_hdri_visibility(context):
-    """Toggle the visibility of the HDRI in Octane"""
-    print("Octane toggle_hdri_visibility called")
+def set_hdri_visibility(context, visible):
+    """Set the HDRI background visibility.
+
+    The node graph always keeps node_tex_env_visible connected to Visible Environment.
+    Visibility is toggled by swapping what feeds into node_tex_env_visible's Texture:
+      - visible=True  → OctaneRGBImage (HDRI) feeds into node_tex_env_visible, Backplate OFF
+      - visible=False → OctaneRGBColor (black) feeds into node_tex_env_visible, Backplate ON
+    """
     world = context.scene.world
-    if world and world.use_nodes:
-        tex_env_node = None
-        for node in world.node_tree.nodes:
-            if node.bl_idname == 'OctaneTextureEnvironment':
-                # Find the one connected to Visible Environment
-                for output in node.outputs:
-                    for link in output.links:
-                        if link.to_socket.name == 'Visible Environment':
-                            tex_env_node = node
-                            break
-                    if tex_env_node:
-                        break
-                if tex_env_node:
-                    break
+    if not (world and world.use_nodes):
+        print("Octane set_hdri_visibility: no world nodes")
+        return visible
 
-        if tex_env_node:
-            # Print all available inputs to understand what we're working with
-            print("Available inputs for OctaneTextureEnvironment node:")
-            for i, input in enumerate(tex_env_node.inputs):
-                print(f"  Input {i}: {input.name if hasattr(input, 'name') else 'unnamed'}")
+    nodes = world.node_tree.nodes
+    links = world.node_tree.links
 
-            # Toggle Backplate value
-            current_value = tex_env_node.inputs['Backplate'].default_value
-            print(f"Current Backplate value: {current_value}")
-            new_value = not current_value
-            tex_env_node.inputs['Backplate'].default_value = new_value
-            print(f"New Backplate value: {new_value}")
+    tex_env_visible = _find_visible_tex_env(world)
+    if not tex_env_visible:
+        print("Octane set_hdri_visibility: no visible TexEnv found")
+        return visible
 
-            # Force updates
-            tex_env_node.update()
-            world.node_tree.update_tag()
+    tex_socket = tex_env_visible.inputs.get('Texture')
+    if not tex_socket:
+        print("Octane set_hdri_visibility: no Texture socket on visible TexEnv")
+        return visible
 
-            # Force viewport update
-            for area in context.screen.areas:
-                if area.type == 'VIEW_3D':
-                    area.tag_redraw()
+    # Disconnect whatever is currently feeding the visible TexEnv's Texture
+    for link in list(tex_socket.links):
+        links.remove(link)
 
-            return new_value  # Return the new visibility state
+    if visible:
+        # Connect the HDRI RGB Image node → visible TexEnv, Backplate OFF
+        rgb_image = _find_rgb_image_node(world)
+        if rgb_image:
+            links.new(rgb_image.outputs['Texture out'], tex_socket)
+            tex_env_visible.inputs['Backplate'].default_value = False
+            print("Octane set_hdri_visibility: HDRI → visible TexEnv, Backplate=OFF → shown")
+        else:
+            print("Octane set_hdri_visibility: could not find OctaneRGBImage node")
+    else:
+        # Connect the black RGBColor → visible TexEnv, Backplate ON
+        black_node = _find_black_rgb_color(world)
+        if not black_node:
+            black_node = nodes.new(type='OctaneRGBColor')
+            black_node.location = (-182.2112, 15.3167)
+            if hasattr(black_node, 'a_value'):
+                black_node.a_value = (0.0, 0.0, 0.0)
 
-    print("Octane: No environment node found to toggle visibility")
-    return False
+        links.new(black_node.outputs['Texture out'], tex_socket)
+        tex_env_visible.inputs['Backplate'].default_value = True
+        print("Octane set_hdri_visibility: black RGBColor → visible TexEnv, Backplate=ON → hidden")
+
+    world.node_tree.update_tag()
+
+    for area in context.screen.areas:
+        if area.type == 'VIEW_3D':
+            area.tag_redraw()
+
+    return visible
+
+
+def toggle_hdri_visibility(context):
+    """Toggle the HDRI background visibility."""
+    current = get_hdri_visible(context)
+    new_state = not current
+    set_hdri_visibility(context, new_state)
+    print(f"Octane toggle_hdri_visibility: {current} → {new_state}")
+    return new_state
 
 def delete_world(context):
     """Delete the current Octane world"""

@@ -1,5 +1,5 @@
 """
-Quick HDRI Controls - V-Ray specific implementation (Updated for new V-Ray API)
+Quick HDRI Controls - V-Ray specific implementation
 """
 import os
 import re

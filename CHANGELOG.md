@@ -1,6 +1,6 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
-## 04-26-26:  Quick HDRI Controls: v3.0.0
+## 26-04-26:  Quick HDRI Controls: v3.0.0
 ### Information ⚠️:
 • I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.
 

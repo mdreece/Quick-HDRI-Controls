@@ -25,6 +25,71 @@ handler_references = {
     'render_complete': []
 }
 
+def is_octane_available():
+    """
+    Reliably detect whether Octane Render is installed/available.
+
+    Older Octane-for-Blender builds expose a private `_octane` module that
+    can be imported directly, so previous versions of this add-on relied on
+    `import _octane` succeeding as the sole detection method. Newer Octane
+    versions no longer expose that module the same way, so that check alone
+    now produces false negatives even when Octane is installed, enabled and
+    working perfectly.
+
+    This function uses a layered fallback so it keeps working across both
+    old and new Octane/Blender versions:
+        1. Legacy check - `import _octane` (older Octane builds).
+        2. Registered engine check - is 'octane' present in the list of
+           render engines Blender knows about (this is populated by the
+           Octane add-on itself when it registers, regardless of internal
+           module layout).
+        3. Active addon check - is an add-on with "octane" in its module
+           name currently enabled in bpy.context.preferences.addons.
+        4. Active scene engine check - if the scene's render engine is
+           already set to 'octane', it must be installed since Blender
+           would not allow selecting an unregistered engine identifier.
+
+    Returns True as soon as any check succeeds.
+    """
+    # 1. Legacy detection - kept for backwards compatibility with older
+    # Octane builds that still expose this module.
+    try:
+        import _octane  # noqa: F401
+        return True
+    except ImportError:
+        pass
+
+    # 2. Check Blender's registered render engines list. The Octane add-on
+    # registers a RenderEngine with identifier 'octane' on load, so this
+    # works regardless of how (or whether) it exposes a private module.
+    try:
+        engine_items = bpy.types.Scene.bl_rna.properties['engine'].enum_items
+        if 'octane' in [item.identifier for item in engine_items]:
+            return True
+    except Exception:
+        pass
+
+    # 3. Check if an Octane add-on is enabled in preferences, in case the
+    # engine hasn't been registered against this particular Scene yet.
+    try:
+        for addon_key in bpy.context.preferences.addons.keys():
+            if 'octane' in addon_key.lower():
+                return True
+    except Exception:
+        pass
+
+    # 4. As a last resort, if the current scene is already rendering with
+    # Octane, it must be installed and working - Blender would not let the
+    # engine identifier be set otherwise.
+    try:
+        if bpy.context.scene.render.engine == 'octane':
+            return True
+    except Exception:
+        pass
+
+    return False
+
+
 def world_has_nodes(world):
     """
     Compatibility function for checking if world has nodes.

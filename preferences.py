@@ -644,9 +644,15 @@ class QuickHDRIPreferences(AddonPreferences):
 
         elif self.render_engine == 'octane':  # Changed from 'OCTANE' to 'octane'
             # Check for Octane installation
-            try:
-                import _octane
-            except ImportError:
+            # NOTE: Previously this relied solely on `import _octane`, which
+            # newer Octane builds no longer expose the same way, causing
+            # false negatives even when Octane was installed and working
+            # correctly. is_octane_available() adds fallback checks
+            # (registered engine, enabled addon, active scene engine) so
+            # detection keeps working on both older and newer Octane
+            # versions.
+            from . import utils
+            if not utils.is_octane_available():
                 def draw_octane_error(self, context):
                     layout = self.layout
                     layout.label(text="Octane is not installed!", icon='ERROR')

@@ -2,7 +2,7 @@
 ![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
 ![QHDRIC Version](https://img.shields.io/badge/QHDRIC-3.0.0-blue.svg)
 
-### Cycles up to 5.1.0 | V-Ray up to 5.0.1 (7.10.00) | Octane up to 5.1.2 (31.9) ###
+### Cycles up to 5.1.2 | V-Ray up to 5.0.1 (7.10.00) | Octane up to 5.1.2 (31.9) ###
 
 ![image](https://github.com/user-attachments/assets/f34ccf54-7e65-4dcb-8173-7b43ba369ea8)
 

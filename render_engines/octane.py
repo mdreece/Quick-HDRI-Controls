@@ -13,7 +13,7 @@ from math import radians, degrees
 import time
 
 # Import from parent module
-from ..utils import get_hdri_previews, create_hdri_proxy, get_proxy_directory
+from ..utils import get_hdri_previews, create_hdri_proxy, get_proxy_directory, is_octane_available
 from ..core import original_paths
 
 # Import common HDRI management functions
@@ -151,9 +151,13 @@ def setup_hdri_system(context):
     hdri_settings = context.scene.hdri_settings
 
     # Check if Octane is installed and available
-    try:
-        import _octane
-    except ImportError:
+    # NOTE: Previously this relied solely on `import _octane`, which newer
+    # Octane builds no longer expose the same way, causing false negatives
+    # even when Octane was installed and working correctly. is_octane_available()
+    # uses several fallback checks (registered engine, enabled addon, active
+    # scene engine) in addition to the legacy import, so it keeps working on
+    # both older and newer Octane/Blender versions.
+    if not is_octane_available():
         # Octane is not installed
         def draw_octane_error(self, context):
             layout = self.layout

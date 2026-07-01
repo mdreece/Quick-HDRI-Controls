@@ -1,5 +1,17 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 01-07-26:  Quick HDRI Controls: v3.0.1
+### Information ⚠️:
+• I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.
+
+### Fixes 🛠️:
+• OCTANE: Updated for v5.1.2 (31.9) - Thank you to 'mohammad' on SuperHive for reporting this issue. In Blender 5.0+ Octane was not being detected properly. Adjustments have been made to maintain detection on older blender versions as well as 5.0+. Changes applied to octane.py, perferences.py and utils.py.
+
+### Known Issues ⚠️:
+• None
+##
+
+
 ## 26-04-26:  Quick HDRI Controls: v3.0.0
 ### Information ⚠️:
 • I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.
@@ -7,7 +19,6 @@
 ### Fixes 🛠️:
 • OCTANE: Updated for v4.5.5 (30.11). There were some strange issues with creating the world unless a camera is present in the scene. If one is not present it will be created when clicking 'Initialize'.
 • V-RAY: Updated to v5.0.1 (7.10.00).
-
 ##
 
 

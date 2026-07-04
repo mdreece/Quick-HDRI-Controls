@@ -132,6 +132,8 @@ Click it and then 'Initialize HDRI System'
 
 - Once more than one HDRI has been selected, a reset button will appear to reset to the previously selected HDRI
 
+### Proxies (more info below: [Proxy Settings](#proxy-settings))
+
 <img width="333" height="298" alt="image" src="https://github.com/user-attachments/assets/a23cb55e-d943-46c1-a4eb-a8f4923b1d6d" />
 
 Use the dropdown to choose a proxy resolution:
@@ -158,14 +160,6 @@ Options:
   - Quick access to preferences
   - Addon version
   - Delete World
-
-### Proxies (more info below: [Proxy Settings](#proxy-settings))
-
-![image](https://github.com/user-attachments/assets/90f66b7f-b779-47f1-9c50-0c6268e2ca41)
-
- - Proxy Resolution Selection: Choose the desired resolution for your proxy of the selected HDRI
- - Proxy Mode: Choose between 'Viewport Only' or 'Both' (more info below)
-
 
 
 ##

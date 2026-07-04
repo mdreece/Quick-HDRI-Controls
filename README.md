@@ -120,6 +120,7 @@ Click it and then 'Initialize HDRI System'
 
 <img width="226" height="297" alt="image" src="https://github.com/user-attachments/assets/85e4e3ca-b42d-433f-8244-3047ccdc690c" />
 
+
 <img width="384" height="437" alt="image" src="https://github.com/user-attachments/assets/da61313d-0621-4949-a184-1585318e9d71" />
 
 - Click the box to see thumbnails of your HDRIs

@@ -277,7 +277,7 @@ class HDRISettings(PropertyGroup):
 
     def update_hdri_proxy(self, context):
         """Update handler for proxy resolution and mode changes"""
-        print(f"Core update_hdri_proxy called: proxy_resolution={self.proxy_resolution}, proxy_mode={self.proxy_mode}")
+        print(f"Core update_hdri_proxy called: proxy_resolution={self.proxy_resolution}, proxy_viewport_only={self.proxy_viewport_only}")
 
         # Determine the appropriate engine to handle the update based on current render engine
         render_engine = context.scene.render.engine
@@ -383,10 +383,10 @@ class HDRISettings(PropertyGroup):
                 except Exception as e2:
                     print(f"Failed to restore original image: {str(e2)}")
 
-            # Handle render update - only use handlers for 'VIEWPORT' mode
+            # Handle render update - only use handlers when Viewport Only is enabled
             from .utils import update_proxy_handlers
-            update_proxy_handlers(settings.proxy_mode)
-            print(f"Updated proxy handlers for mode: {settings.proxy_mode}")
+            update_proxy_handlers(settings.proxy_viewport_only)
+            print(f"Updated proxy handlers, viewport_only={settings.proxy_viewport_only}")
 
             # Force redraw of viewport
             for area in context.screen.areas:
@@ -477,14 +477,10 @@ class HDRISettings(PropertyGroup):
         update=update_hdri_proxy
     )
 
-    proxy_mode: EnumProperty(
-        name="Proxy Mode",
-        description="Where to apply proxy resolution",
-        items=[
-            ('VIEWPORT', 'Viewport Only', 'Apply proxy resolution only in viewport'),
-            ('BOTH', 'Both', 'Apply proxy resolution to both viewport and render'),
-        ],
-        default='VIEWPORT',
+    proxy_viewport_only: BoolProperty(
+        name="Viewport Only",
+        description="Apply proxy resolution only in the viewport. When disabled, proxy resolution is applied to both viewport and render",
+        default=True,
         update=update_hdri_proxy
     )
 
@@ -566,12 +562,12 @@ def initialize_proxy_settings_from_preferences(scene):
         # to be respected when Blender starts, even if they changed settings in the panel
         # during the previous session
         hdri_settings.proxy_resolution = preferences.default_proxy_resolution
-        hdri_settings.proxy_mode = preferences.default_proxy_mode
+        hdri_settings.proxy_viewport_only = preferences.default_proxy_viewport_only
 
         # Mark as initialized (this flag can be used for other purposes if needed)
         hdri_settings.proxy_initialized = True
 
-        print(f"Synced proxy settings with preferences: resolution={preferences.default_proxy_resolution}, mode={preferences.default_proxy_mode}")
+        print(f"Synced proxy settings with preferences: resolution={preferences.default_proxy_resolution}, viewport_only={preferences.default_proxy_viewport_only}")
         return True
 
     except Exception as e:
@@ -618,11 +614,11 @@ def register_core():
         try:
             if bpy.context.scene:
                 initialize_proxy_settings_from_preferences(bpy.context.scene)
-                # ADD THIS: Register handlers based on current proxy mode
+                # Register handlers based on current proxy viewport-only setting
                 settings = bpy.context.scene.hdri_settings
                 from .utils import update_proxy_handlers
-                update_proxy_handlers(settings.proxy_mode)
-                print(f"Registered handlers for proxy mode: {settings.proxy_mode}")
+                update_proxy_handlers(settings.proxy_viewport_only)
+                print(f"Registered handlers, viewport_only={settings.proxy_viewport_only}")
         except Exception as e:
             print(f"Error in delayed proxy initialization: {str(e)}")
         return None  # Don't repeat the timer

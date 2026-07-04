@@ -114,14 +114,26 @@ def enable_world_nodes(world):
         world.use_nodes = True
     # In Blender 5.0+, nodes are always enabled, so no action needed
 
+def get_enum_display_name(data, prop_name):
+    """Return the human-readable label for the current value of an EnumProperty"""
+    try:
+        prop = data.bl_rna.properties[prop_name]
+        current_value = getattr(data, prop_name)
+        for item in prop.enum_items:
+            if item.identifier == current_value:
+                return item.name
+    except Exception as e:
+        print(f"Error getting enum display name for {prop_name}: {str(e)}")
+    return ""
+
 @bpy.app.handlers.persistent
 def ensure_proxy_handlers_on_load(dummy):
     """Ensure proxy handlers are registered when scenes load"""
     try:
         if bpy.context.scene and hasattr(bpy.context.scene, 'hdri_settings'):
             settings = bpy.context.scene.hdri_settings
-            update_proxy_handlers(settings.proxy_mode)
-            print(f"Ensured handlers registered for proxy mode: {settings.proxy_mode}")
+            update_proxy_handlers(settings.proxy_viewport_only)
+            print(f"Ensured handlers registered, viewport_only={settings.proxy_viewport_only}")
     except Exception as e:
         print(f"Error ensuring proxy handlers: {str(e)}")
 
@@ -675,8 +687,8 @@ def clear_keymaps(addon_keymaps):
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
 
-def update_proxy_handlers(proxy_mode):
-    """Update the render handlers based on proxy mode and current render engine"""
+def update_proxy_handlers(viewport_only):
+    """Update the render handlers based on the viewport-only setting and current render engine"""
     # Get current render engine
     render_engine = bpy.context.scene.render.engine
 
@@ -701,8 +713,8 @@ def update_proxy_handlers(proxy_mode):
             reset_proxy_after_render_complete
         )
 
-    # Handle render update - only use handlers for 'VIEWPORT' mode
-    if proxy_mode == 'VIEWPORT':
+    # Handle render update - only use handlers when Viewport Only is enabled
+    if viewport_only:
         # Add handlers if not already present
         if reload_original_for_render not in bpy.app.handlers.render_init:
             bpy.app.handlers.render_init.append(reload_original_for_render)
@@ -740,13 +752,13 @@ def initialize_hdri_settings_from_preferences(context):
     # Initialize proxy settings from preferences
     try:
         hdri_settings.proxy_resolution = preferences.default_proxy_resolution
-        hdri_settings.proxy_mode = preferences.default_proxy_mode
+        hdri_settings.proxy_viewport_only = preferences.default_proxy_viewport_only
 
         # Mark as initialized
         hdri_settings.proxy_initialized = True
 
         print(f"Initialized proxy_resolution to {preferences.default_proxy_resolution}")
-        print(f"Initialized proxy_mode to {preferences.default_proxy_mode}")
+        print(f"Initialized proxy_viewport_only to {preferences.default_proxy_viewport_only}")
     except Exception as e:
         print(f"Error initializing proxy settings: {str(e)}")
 

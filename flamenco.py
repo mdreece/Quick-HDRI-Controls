@@ -22,7 +22,7 @@ proxy_state = {
 }
 
 def switch_to_full_resolution_hdri(context):
-    if not hasattr(context.scene, "hdri_settings") or context.scene.hdri_settings.proxy_mode != 'VIEWPORT':
+    if not hasattr(context.scene, "hdri_settings") or not context.scene.hdri_settings.proxy_viewport_only:
         print("HDRI Controls: No proxy conversion needed for Flamenco submission")
         return
 
@@ -155,7 +155,7 @@ def switch_to_full_resolution_hdri(context):
 
 
 def restore_hdri_proxies(context):
-    if not hasattr(context.scene, "hdri_settings") or context.scene.hdri_settings.proxy_mode != 'VIEWPORT':
+    if not hasattr(context.scene, "hdri_settings") or not context.scene.hdri_settings.proxy_viewport_only:
         return
 
     render_engine = context.scene.render.engine

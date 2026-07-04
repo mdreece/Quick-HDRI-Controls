@@ -217,9 +217,9 @@ def setup_hdri_system(context):
     if len(enum_items) > 1:
         hdri_settings.hdri_preview = enum_items[1][0]
 
-    # Register handlers based on proxy mode
+    # Register handlers based on the viewport-only setting
     # This replaces the old register_octane_handlers() call
-    update_proxy_handlers(hdri_settings.proxy_mode)
+    update_proxy_handlers(hdri_settings.proxy_viewport_only)
 
     # Force redraw of UI
     for area in context.screen.areas:
@@ -361,7 +361,7 @@ def set_hdri(context, filepath):
 
 def update_hdri_proxy(self, context):
     """Update handler for proxy resolution and mode changes"""
-    print(f"Octane update_hdri_proxy called: proxy_resolution={self.proxy_resolution}, proxy_mode={self.proxy_mode}")
+    print(f"Octane update_hdri_proxy called: proxy_resolution={self.proxy_resolution}, proxy_viewport_only={self.proxy_viewport_only}")
 
     # Make sure we have a valid world with nodes
     if not context.scene.world or not context.scene.world.use_nodes:
@@ -491,10 +491,10 @@ def update_hdri_proxy(self, context):
         import traceback
         traceback.print_exc()
 
-    # Handle render update - only use handlers for 'VIEWPORT' mode
+    # Handle render update - only use handlers when Viewport Only is enabled
     from ..utils import update_proxy_handlers
-    update_proxy_handlers(settings.proxy_mode)
-    print(f"Updated proxy handlers for mode: {settings.proxy_mode}")
+    update_proxy_handlers(settings.proxy_viewport_only)
+    print(f"Updated proxy handlers, viewport_only={settings.proxy_viewport_only}")
 
     # Force viewport update
     for area in context.screen.areas:
@@ -965,8 +965,8 @@ def reload_original_for_render(dummy):
         if rgb_node and rgb_node.image:
             settings = context.scene.hdri_settings
 
-            # Only reload original for 'VIEWPORT' mode
-            if settings.proxy_mode == 'VIEWPORT':
+            # Only reload original when Viewport Only is enabled
+            if settings.proxy_viewport_only:
                 # Get original path from multiple sources
                 original_path = original_paths.get(rgb_node.image.name)
                 if not original_path and hasattr(rgb_node, 'a_filename'):
@@ -1019,8 +1019,8 @@ def reset_proxy_after_render(dummy):
             if not original_path and hasattr(rgb_node, 'a_filename'):
                 original_path = original_paths.get(os.path.basename(rgb_node.a_filename))
 
-            # Reset to proxy only for 'VIEWPORT' mode
-            if original_path and settings.proxy_mode == 'VIEWPORT':
+            # Reset to proxy only when Viewport Only is enabled
+            if original_path and settings.proxy_viewport_only:
                 proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
                 if proxy_path:
                     # Clear existing image
@@ -1058,7 +1058,7 @@ def reset_proxy_after_render_complete(dummy):
         if rgb_node and rgb_node.image:
             settings = context.scene.hdri_settings
 
-            if settings.proxy_mode == 'VIEWPORT':
+            if settings.proxy_viewport_only:
                 # Check if we stored a proxy path for restoration
                 if hasattr(context.scene, "octane_proxy_restore_path") and context.scene.octane_proxy_restore_path:
                     proxy_path = context.scene.octane_proxy_restore_path

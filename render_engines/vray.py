@@ -796,7 +796,7 @@ def update_hdri_proxy(self, context):
 
         # Update proxy mode handlers
         from ..utils import update_proxy_handlers
-        update_proxy_handlers(context.scene.hdri_settings.proxy_mode)
+        update_proxy_handlers(context.scene.hdri_settings.proxy_viewport_only)
 
         # Force viewport update
         for area in context.screen.areas:
@@ -1206,9 +1206,9 @@ def reload_original_for_render(dummy):
 
     print("V-Ray: reload_original_for_render handler called")
 
-    # Only swap for 'VIEWPORT' proxy mode
-    if settings.proxy_mode != 'VIEWPORT':
-        print("V-Ray: Keeping current HDRI - not in VIEWPORT proxy mode")
+    # Only swap when Viewport Only is enabled
+    if not settings.proxy_viewport_only:
+        print("V-Ray: Keeping current HDRI - Viewport Only is disabled")
         return
 
     vray_collection = bpy.data.collections.get("vRay HDRI Controls")
@@ -1273,8 +1273,8 @@ def reset_proxy_after_render_complete(dummy):
 
     print("V-Ray: reset_proxy_after_render_complete handler called")
 
-    # Only swap back for 'VIEWPORT' proxy mode
-    if settings.proxy_mode != 'VIEWPORT':
+    # Only swap back when Viewport Only is enabled
+    if not settings.proxy_viewport_only:
         return
 
     # Check if we stored a proxy path
@@ -1322,8 +1322,8 @@ def reset_proxy_after_render(dummy):
 
     print("V-Ray: reset_proxy_after_render handler called")
 
-    # Only swap back for 'VIEWPORT' proxy mode
-    if settings.proxy_mode == 'VIEWPORT':
+    # Only swap back when Viewport Only is enabled
+    if settings.proxy_viewport_only:
         vray_collection = bpy.data.collections.get("vRay HDRI Controls")
         if vray_collection:
             for obj in vray_collection.objects:

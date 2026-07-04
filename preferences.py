@@ -11,6 +11,51 @@ from bpy.props import (FloatProperty, StringProperty, EnumProperty,
                      CollectionProperty, PointerProperty, IntProperty,
                      BoolProperty, FloatVectorProperty)
 
+# Maps a panel location identifier (used by ui.py to pick panel classes) to the
+# preferences attribute name and human-readable info for that location's checkbox.
+PANEL_LOCATION_ITEMS = [
+    ('VIEW3D_HEADER', 'panel_show_view3d_header', '3D Viewport Header',
+        "Appears as a popup in the 3D Viewport header"),
+    ('VIEW3D_UI', 'panel_show_view3d_sidebar', '3D Viewport Sidebar (N-Panel)',
+        "Appears in the 3D Viewport sidebar (press N to toggle)"),
+    ('PROPERTIES_WORLD', 'panel_show_properties_world', 'Properties Panel - World',
+        "Appears in the World properties panel"),
+    ('PROPERTIES_MATERIAL', 'panel_show_properties_material', 'Properties Panel - Material',
+        "Appears in the Material properties panel"),
+    ('PROPERTIES_RENDER', 'panel_show_properties_render', 'Properties Panel - Render',
+        "Appears in the Render properties panel"),
+    ('NODE_EDITOR', 'panel_show_node_editor', 'Shader Editor Sidebar',
+        "Appears in the Shader Editor sidebar"),
+    ('IMAGE_EDITOR', 'panel_show_image_editor', 'Image Editor Sidebar',
+        "Appears in the Image Editor sidebar"),
+]
+
+def get_selected_panel_locations(preferences):
+    """Return a set of location identifiers currently checked in preferences"""
+    return {
+        identifier for identifier, attr, _label, _desc in PANEL_LOCATION_ITEMS
+        if getattr(preferences, attr, False)
+    }
+
+class HDRI_PT_panel_location_popover(bpy.types.Panel):
+    """Popover with a checkbox for each available panel location.
+    Uses VIEW_3D/UI (rather than PREFERENCES/WINDOW) purely as a popover host -
+    PREFERENCES/WINDOW is the main preferences display region, so Blender would
+    also auto-list this panel there as a standalone section if we used that."""
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_label = "Panel Location(s)"
+    bl_idname = "HDRI_PT_panel_location_popover"
+
+    def draw(self, context):
+        layout = self.layout
+        addon_name = __package__.split('.')[0]
+        preferences = context.preferences.addons[addon_name].preferences
+
+        col = layout.column(align=True)
+        for _identifier, attr, label, _desc in PANEL_LOCATION_ITEMS:
+            col.prop(preferences, attr, text=label)
+
 class QuickHDRIPreferences(AddonPreferences):
     # We need to manually set this for proper detection
     bl_idname = "Quick-HDRI-Controls-main"
@@ -317,14 +362,10 @@ class QuickHDRIPreferences(AddonPreferences):
         max=999999999
     )
 
-    default_proxy_mode: EnumProperty(
-        name="Default Proxy Mode",
-        description="Default proxy application mode",
-        items=[
-            ('VIEWPORT', 'Viewport Only', 'Apply proxy resolution only in viewport'),
-            ('BOTH', 'Both', 'Apply proxy resolution to both viewport and render'),
-        ],
-        default='VIEWPORT'
+    default_proxy_viewport_only: BoolProperty(
+        name="Viewport Only",
+        description="By default, apply proxy resolution only in the viewport. When disabled, proxy resolution is applied to both viewport and render",
+        default=True
     )
 
     # Proxy Generation Settings
@@ -482,25 +523,58 @@ class QuickHDRIPreferences(AddonPreferences):
             ui.unregister_ui()
             ui.register_ui()
 
-            print(f"Panel moved to {self.panel_location}")
+            print(f"Panel locations updated: {get_selected_panel_locations(self)}")
         except Exception as e:
             print(f"Error updating panel location: {str(e)}")
 
-    # Panel Location
-    panel_location: EnumProperty(
-        name="Panel Location",
-        description="Where to display the HDRI controls panel",
-        items=[
-            ('NONE', 'None (Shortcut Only)', 'No permanent panel - use keyboard shortcut only'),
-            ('VIEW3D_HEADER', '3D Viewport Header', 'Show panel in 3D Viewport header (default)'),
-            ('VIEW3D_UI', '3D Viewport Sidebar (N-Panel)', 'Show panel in 3D Viewport sidebar'),
-            ('PROPERTIES_WORLD', 'Properties Panel - World', 'Show panel in World properties'),
-            ('PROPERTIES_MATERIAL', 'Properties Panel - Material', 'Show panel in Material properties'),
-            ('PROPERTIES_RENDER', 'Properties Panel - Render', 'Show panel in Render properties'),
-            ('NODE_EDITOR', 'Shader Editor Sidebar', 'Show panel in Shader Editor sidebar'),
-            ('IMAGE_EDITOR', 'Image Editor Sidebar', 'Show panel in Image Editor sidebar'),
-        ],
-        default='VIEW3D_HEADER',
+    # Panel Location (multi-select via individual checkboxes - the panel can be shown
+    # in more than one place at once)
+    panel_show_view3d_header: BoolProperty(
+        name="3D Viewport Header",
+        description="Show panel in 3D Viewport header (default)",
+        default=True,
+        update=update_panel_location
+    )
+
+    panel_show_view3d_sidebar: BoolProperty(
+        name="3D Viewport Sidebar (N-Panel)",
+        description="Show panel in 3D Viewport sidebar",
+        default=False,
+        update=update_panel_location
+    )
+
+    panel_show_properties_world: BoolProperty(
+        name="Properties Panel - World",
+        description="Show panel in World properties",
+        default=False,
+        update=update_panel_location
+    )
+
+    panel_show_properties_material: BoolProperty(
+        name="Properties Panel - Material",
+        description="Show panel in Material properties",
+        default=False,
+        update=update_panel_location
+    )
+
+    panel_show_properties_render: BoolProperty(
+        name="Properties Panel - Render",
+        description="Show panel in Render properties",
+        default=False,
+        update=update_panel_location
+    )
+
+    panel_show_node_editor: BoolProperty(
+        name="Shader Editor Sidebar",
+        description="Show panel in Shader Editor sidebar",
+        default=False,
+        update=update_panel_location
+    )
+
+    panel_show_image_editor: BoolProperty(
+        name="Image Editor Sidebar",
+        description="Show panel in Image Editor sidebar",
+        default=False,
         update=update_panel_location
     )
 
@@ -1133,8 +1207,10 @@ class QuickHDRIPreferences(AddonPreferences):
 
             # Proxy Settings
             settings_col = col.column(align=True)
-            settings_col.prop(self, "default_proxy_resolution", text="Default Resolution")
-            settings_col.prop(self, "default_proxy_mode", text="Default Application")
+            res_mode_row = settings_col.row(align=True)
+            res_mode_row.prop(self, "default_proxy_resolution", text="Default Resolution")
+            res_mode_row.prop(self, "default_proxy_viewport_only", text="Viewport Only", toggle=True,
+                               icon='RESTRICT_RENDER_ON' if self.default_proxy_viewport_only else 'RESTRICT_RENDER_OFF')
 
             cache_header = settings_col.row()
             cache_header.prop(self, "show_cache_settings",
@@ -1469,32 +1545,34 @@ class QuickHDRIPreferences(AddonPreferences):
             location_header = location_box.row(align=True)
             location_header.label(text="Panel Location", icon='WORKSPACE')
 
-            # Panel location dropdown
+            # Panel location popover (multi-select via checkboxes)
             location_row = location_box.row(align=True)
-            location_row.label(text="Display Location:")
-            location_row.prop(self, "panel_location", text="")
+            location_row.label(text="Display Location(s):")
 
-            # Show description of current location
-            desc_row = location_box.row()
-            desc_row.alignment = 'CENTER'
-            desc_row.scale_y = 0.8
+            selected_locations = get_selected_panel_locations(self)
+            selected_labels = [
+                label for identifier, _attr, label, _desc in PANEL_LOCATION_ITEMS
+                if identifier in selected_locations
+            ]
+            if len(selected_labels) == 0:
+                summary_text = "None Selected"
+            elif len(selected_labels) == 1:
+                summary_text = selected_labels[0]
+            else:
+                summary_text = f"{len(selected_labels)} Locations Selected"
 
-            location_descriptions = {
-                'NONE': "No panel shown - access via keyboard shortcut only",
-                'VIEW3D_HEADER': "Appears as a popup in the 3D Viewport header",
-                'VIEW3D_UI': "Appears in the 3D Viewport sidebar (press N to toggle)",
-                'PROPERTIES_WORLD': "Appears in the World properties panel",
-                'PROPERTIES_MATERIAL': "Appears in the Material properties panel",
-                'PROPERTIES_RENDER': "Appears in the Render properties panel",
-                'NODE_EDITOR': "Appears in the Shader Editor sidebar",
-                'IMAGE_EDITOR': "Appears in the Image Editor sidebar"
-            }
+            location_row.popover(
+                panel="HDRI_PT_panel_location_popover",
+                text=summary_text
+            )
 
-            current_desc = location_descriptions.get(self.panel_location, "")
-            desc_row.label(text=current_desc)
+            if not selected_locations:
+                # Nothing selected - no permanent panel, keyboard shortcut only
+                desc_row = location_box.row()
+                desc_row.alignment = 'CENTER'
+                desc_row.scale_y = 0.8
+                desc_row.label(text="No panel shown - access via keyboard shortcut only")
 
-            # Show shortcut info if NONE is selected
-            if self.panel_location == 'NONE':
                 shortcut_box = location_box.box()
                 shortcut_box.alert = True
 
@@ -1601,6 +1679,12 @@ def refresh_previews(context):
 def register_preferences():
     print("Registering Quick HDRI Controls preferences")
 
+    # Register the panel location popover (checkbox list)
+    try:
+        bpy.utils.register_class(HDRI_PT_panel_location_popover)
+    except (ValueError, RuntimeError):
+        pass
+
     # Check if the class is already registered
     try:
         # Try to unregister first if it exists
@@ -1646,4 +1730,9 @@ def unregister_preferences():
         print("Quick HDRI Controls preferences unregistered successfully")
     except (ValueError, RuntimeError) as e:
         print(f"Error unregistering preferences (may not be registered): {str(e)}")
+        pass
+
+    try:
+        bpy.utils.unregister_class(HDRI_PT_panel_location_popover)
+    except (ValueError, RuntimeError):
         pass

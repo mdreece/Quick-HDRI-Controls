@@ -30,7 +30,30 @@ def get_vray_current_hdri_name(context):
                 break
     return "No HDRI"
 
-_current_panel_class = None
+class HDRI_PT_proxy_settings_popover(Panel):
+    """Popover for HDRI proxy resolution and viewport-only setting, opened from the HDRI Select header"""
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_label = "Proxy Settings"
+    bl_idname = "HDRI_PT_proxy_settings_popover"
+
+    def draw(self, context):
+        layout = self.layout
+        hdri_settings = context.scene.hdri_settings
+
+        col = layout.column(align=True)
+        col.label(text="Proxy Resolution", icon='RENDER_RESULT')
+        col.prop(hdri_settings, "proxy_resolution", text="")
+
+        col.separator()
+        col.prop(
+            hdri_settings, "proxy_viewport_only",
+            text="Viewport Only",
+            toggle=True,
+            icon='RESTRICT_RENDER_ON' if hdri_settings.proxy_viewport_only else 'RESTRICT_RENDER_OFF'
+        )
+
+_current_panel_classes = []
 _current_menu_function = None
 
 class HDRI_PT_controls_header(Panel):
@@ -406,9 +429,6 @@ def draw_hdri_controls(self, context):
 
                 if rgb_node and transform_node and tex_env_node:
                     is_initialized = True
-                    print(f"Octane HDRI system is initialized: RGB={rgb_node}, Transform={transform_node}, TexEnv={tex_env_node}")
-                else:
-                    print("Octane HDRI system is not fully initialized")
 
         # If not initialized, show the initialize button
         if not is_initialized:
@@ -457,7 +477,7 @@ def draw_hdri_controls(self, context):
         sub = header_row.row(align=True)
         sub.alert = False
         sub.active = hdri_settings.show_browser
-        sub.label(text="HDRI Browser", icon='FILE_FOLDER')
+        sub.label(text="Browser", icon='FILE_FOLDER')
 
         #Favorites toggle
         favorites_row = browser_header.row(align=True)
@@ -634,7 +654,18 @@ def draw_hdri_controls(self, context):
             sub = row.row(align=True)
             sub.alert = False
             sub.active = hdri_settings.show_preview
-            sub.label(text="HDRI Select", icon='IMAGE_DATA')
+            sub.label(text="Select", icon='IMAGE_DATA')
+
+            # Proxy resolution / mode popover, shows current resolution when collapsed
+            proxy_popover_row = row.row(align=True)
+            proxy_popover_row.alignment = 'RIGHT'
+            proxy_popover_row.ui_units_x = 5.0
+            resolution_label = utils.get_enum_display_name(hdri_settings, "proxy_resolution")
+            proxy_popover_row.popover(
+                panel="HDRI_PT_proxy_settings_popover",
+                text=resolution_label,
+                icon='RESTRICT_RENDER_ON' if hdri_settings.proxy_viewport_only else 'NONE'
+            )
 
             # Always show preview content if there's a search query or favorites filter active
             if hdri_settings.show_preview or hdri_settings.search_query or hdri_settings.show_favorites_only:
@@ -779,28 +810,6 @@ def draw_hdri_controls(self, context):
                             emboss=True
                         )
                         fav_btn.hdri_path = hdri_settings.hdri_preview
-
-        # Proxy dropdown
-        proxy_row = main_column.row(align=True)
-        proxy_row.label(text="Proxies", icon='RENDER_RESULT')
-        proxy_row.scale_y = 1.0
-        proxy_row.prop(hdri_settings, "show_proxy_settings",
-            icon='TRIA_DOWN' if hdri_settings.show_proxy_settings else 'TRIA_RIGHT',
-            icon_only=True,
-            emboss=False)
-        if hdri_settings.show_proxy_settings:
-            proxy_box = main_column.box()
-            proxy_col = proxy_box.column(align=True)
-            proxy_col.scale_y = 0.9
-            settings = context.scene.hdri_settings
-
-            split = proxy_col.split(factor=0.5)
-
-            mode_col = split.column()
-            mode_col.prop(settings, "proxy_mode", text="Mode")
-
-            res_col = split.column()
-            res_col.prop(settings, "proxy_resolution", text="Resolution")
 
         main_column.separator(factor=0.5 * preferences.spacing_scale)
 
@@ -1182,18 +1191,22 @@ def draw_hdri_menu(self, context):
     layout.separator()
     layout.popover(panel="HDRI_PT_controls_header", text="HDRI Controls")
 
-def get_panel_class_for_location(location):
-    """Get the appropriate panel class for the given location"""
-    panel_classes = {
-        'VIEW3D_HEADER': HDRI_PT_controls_header,
-        'VIEW3D_UI': HDRI_PT_controls_sidebar,
-        'PROPERTIES_WORLD': HDRI_PT_controls_world,
-        'PROPERTIES_MATERIAL': HDRI_PT_controls_material,
-        'PROPERTIES_RENDER': HDRI_PT_controls_render,
-        'NODE_EDITOR': HDRI_PT_controls_shader_editor,
-        'IMAGE_EDITOR': HDRI_PT_controls_image_editor,
-    }
-    return panel_classes.get(location, HDRI_PT_controls_header)
+PANEL_LOCATION_CLASSES = {
+    'VIEW3D_HEADER': HDRI_PT_controls_header,
+    'VIEW3D_UI': HDRI_PT_controls_sidebar,
+    'PROPERTIES_WORLD': HDRI_PT_controls_world,
+    'PROPERTIES_MATERIAL': HDRI_PT_controls_material,
+    'PROPERTIES_RENDER': HDRI_PT_controls_render,
+    'NODE_EDITOR': HDRI_PT_controls_shader_editor,
+    'IMAGE_EDITOR': HDRI_PT_controls_image_editor,
+}
+
+def get_panel_classes_for_locations(locations):
+    """Get the panel classes for all of the given locations (multi-select)"""
+    if not locations:
+        return []
+    classes = [PANEL_LOCATION_CLASSES[loc] for loc in locations if loc in PANEL_LOCATION_CLASSES]
+    return classes
 
 def get_menu_function_for_location(location):
     """Get the appropriate menu function for the given location"""
@@ -1217,36 +1230,46 @@ def register_ui():
         default='CYCLES'
     )
 
-    # Get the user's preferred panel location
+    # Register the proxy settings popover panel (used by the HDRI Select header dropdown)
+    try:
+        bpy.utils.register_class(HDRI_PT_proxy_settings_popover)
+    except (ValueError, RuntimeError):
+        pass
+
+    # Get the user's preferred panel location(s)
     addon_name = utils.get_addon_name()
     try:
         preferences = bpy.context.preferences.addons[addon_name].preferences
-        panel_location = preferences.panel_location
+        from . import preferences as preferences_module
+        panel_locations = preferences_module.get_selected_panel_locations(preferences)
     except:
-        panel_location = 'VIEW3D_HEADER'  # Default fallback
+        panel_locations = {'VIEW3D_HEADER'}  # Default fallback
 
-    # Register the appropriate panel class
-    panel_class = get_panel_class_for_location(panel_location)
-    bpy.utils.register_class(panel_class)
+    # Register a panel class for each selected location
+    panel_classes = get_panel_classes_for_locations(panel_locations)
+    global _current_panel_classes
+    _current_panel_classes = []
+    for panel_class in panel_classes:
+        try:
+            bpy.utils.register_class(panel_class)
+            _current_panel_classes.append(panel_class)
+        except (ValueError, RuntimeError) as e:
+            print(f"Error registering panel class {panel_class}: {str(e)}")
 
-    # Store reference to the registered panel
-    global _current_panel_class
-    _current_panel_class = panel_class
-
-    # Add menu function if needed (only for header location)
-    menu_function = get_menu_function_for_location(panel_location)
+    # Add menu function if needed (only when 3D Viewport Header is one of the selected locations)
+    menu_function = get_menu_function_for_location('VIEW3D_HEADER') if 'VIEW3D_HEADER' in panel_locations else None
     if menu_function:
         bpy.types.VIEW3D_HT_header.append(menu_function)
         global _current_menu_function
         _current_menu_function = menu_function
 
-    print(f"HDRI Controls UI registered successfully at location: {panel_location}")
+    print(f"HDRI Controls UI registered successfully at location(s): {panel_locations}")
 
 def unregister_ui():
     """Unregister UI components for Quick HDRI Controls"""
     print("Unregistering Quick HDRI Controls UI")
 
-    global _current_panel_class, _current_menu_function
+    global _current_panel_classes, _current_menu_function
 
     # Remove menu function if it was added
     if _current_menu_function:
@@ -1256,13 +1279,20 @@ def unregister_ui():
             pass
         _current_menu_function = None
 
-    # Unregister the current panel class
-    if _current_panel_class:
-        try:
-            bpy.utils.unregister_class(_current_panel_class)
-        except:
-            pass
-        _current_panel_class = None
+    # Unregister all currently registered panel classes
+    if _current_panel_classes:
+        for panel_class in _current_panel_classes:
+            try:
+                bpy.utils.unregister_class(panel_class)
+            except:
+                pass
+        _current_panel_classes = []
+
+    # Unregister the proxy settings popover panel
+    try:
+        bpy.utils.unregister_class(HDRI_PT_proxy_settings_popover)
+    except (ValueError, RuntimeError):
+        pass
 
     # Remove the temp_engine property
     if hasattr(bpy.types.Scene, "temp_engine"):

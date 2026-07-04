@@ -114,8 +114,8 @@ def ensure_world_nodes():
         # Initialize proxy settings from preferences if not already set
         if not hdri_settings.is_property_set("proxy_resolution"):
             hdri_settings.proxy_resolution = preferences.default_proxy_resolution
-        if not hdri_settings.is_property_set("proxy_mode"):
-            hdri_settings.proxy_mode = preferences.default_proxy_mode
+        if not hdri_settings.is_property_set("proxy_viewport_only"):
+            hdri_settings.proxy_viewport_only = preferences.default_proxy_viewport_only
 
     return node_mapping, node_env, node_background
 
@@ -177,8 +177,8 @@ def reload_original_for_render(dummy):
                 settings = context.scene.hdri_settings
                 original_path = original_paths.get(node.image.name)
 
-                # Only reload original for 'VIEWPORT' mode
-                if original_path and settings.proxy_mode == 'VIEWPORT':
+                # Only reload original when Viewport Only is enabled
+                if original_path and settings.proxy_viewport_only:
                     node.image = bpy.data.images.load(original_path, check_existing=True)
                 break
 
@@ -191,8 +191,8 @@ def reset_proxy_after_render(dummy):
                 settings = context.scene.hdri_settings
                 original_path = original_paths.get(node.image.name)
 
-                # Reset to proxy only for 'VIEWPORT' mode
-                if original_path and settings.proxy_mode == 'VIEWPORT':
+                # Reset to proxy only when Viewport Only is enabled
+                if original_path and settings.proxy_viewport_only:
                     proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
                     if proxy_path:
                         node.image = bpy.data.images.load(proxy_path, check_existing=True)
@@ -212,7 +212,7 @@ def reset_proxy_after_render_complete(dummy):
             settings = context.scene.hdri_settings
             original_path = original_paths.get(env_tex.image.name, env_tex.image.filepath)
 
-            if settings.proxy_mode == 'VIEWPORT':
+            if settings.proxy_viewport_only:
                 proxy_path = create_hdri_proxy(original_path, settings.proxy_resolution)
                 if proxy_path:
                     # Clear existing image to ensure clean reload

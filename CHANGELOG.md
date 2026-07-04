@@ -1,5 +1,18 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 04-07-26:  Quick HDRI Controls: v3.0.2
+### Information ⚠️:
+• I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.
+• OCTANE: Updated for v5.1.2 (31.9) - Thank you to 'mohammad' on SuperHive for reporting this issue. In Blender 5.0+ Octane was not being detected properly. Adjustments have been made to maintain detection on older blender versions as well as 5.0+. Changes applied to octane.py, perferences.py and utils.py.
+
+### Changes 🛠️:
+• Proxy options on the main panel has moved to the Select header. Within this is the proxy resolution options as well as 'viewport only' selection. 'Both' has been removed in preference to a single button to determine if a proxy instance is used for rendering/animation or the original resolution HDRI.
+
+### Known Issues ⚠️:
+• None
+##
+
+
 ## 01-07-26:  Quick HDRI Controls: v3.0.1
 ### Information ⚠️:
 • I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.

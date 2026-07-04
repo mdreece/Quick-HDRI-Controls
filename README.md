@@ -165,7 +165,7 @@ Options:
 ##
 ## Full Dropdown Panel
 
-![image](https://github.com/user-attachments/assets/3a43bfb3-8a9d-4527-8a35-7a06d329fda0)
+<img width="216" height="526" alt="image" src="https://github.com/user-attachments/assets/6f46aedb-8e2e-41c1-842a-ebc0fe95edc9" />
 
 
 

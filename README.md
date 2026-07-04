@@ -1,6 +1,6 @@
 # Quick HDRI Controls | Cycles | Octane | V-Ray | v3.0.1
-![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
-![QHDRIC Version](https://img.shields.io/badge/QHDRIC-3.0.0-blue.svg)
+![Blender Version](https://img.shields.io/badge/Blender-4.2.0-green.svg)
+![QHDRIC Version](https://img.shields.io/badge/QHDRIC-3.0.1-blue.svg)
 
 ### Cycles up to 5.1.2 | V-Ray up to 5.0.1 (7.10.00) | Octane up to 5.1.2 (31.9) ###
 
@@ -400,7 +400,7 @@ When set to V-Ray and the HDRI System is initialized:
 ##
 ## Requirements
 
-- Blender v4.0.0 - v5.1.2
+- Blender v4.2.0 - v5.1.2
 - Supported Operation Systems & Render Engine
      - Windows 10/11: Cycles, V-Ray, Octane
      - Linux: Cycles, Octane

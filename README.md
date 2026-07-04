@@ -107,7 +107,7 @@ Click it and then 'Initialize HDRI System'
  - IF set to V-Ray, the View Transform changes to Standard (can be adjusted in panel)
 
    
-2. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
+2. You'll be prompted with your HDRI folders/main directory in the "Browser" section
    
 <img width="232" height="242" alt="image" src="https://github.com/user-attachments/assets/76b663cf-d554-40ef-a308-cdbcffc7f536" />
 
@@ -116,7 +116,7 @@ Click it and then 'Initialize HDRI System'
  - 'HEART' shows only saved 'favorite' HDRIs. (more below)
  - Choose a proxy resolution if desired for faster viewport rendering (a proxy will generate if one does not exist)
 
-3. Once a folder has been selected, 'HDRI Select' appears.
+3. Once a folder has been selected, 'Select' panel appears.
 
 <img width="226" height="297" alt="image" src="https://github.com/user-attachments/assets/85e4e3ca-b42d-433f-8244-3047ccdc690c" />
 

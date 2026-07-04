@@ -99,7 +99,7 @@ v2.7.0 Video Demonstration: https://youtu.be/J7YdZQ2oxQA?si=_VRiLHIhQbZ1yVK4
 
 1. Look for "HDRI Controls" in your 3D viewport header (top bar)
    
-![Screenshot_20250510_142404](https://github.com/user-attachments/assets/88377152-0d50-40dc-a10e-e62d203bd4f8)
+<img width="219" height="163" alt="image" src="https://github.com/user-attachments/assets/a3428cdf-3ad1-4901-a08c-95d0223f90c7" />
 
 Click it and then 'Initialize HDRI System'
  - IF set to Cycles, the View Transform changes to AgX (can be adjusted in panel)
@@ -109,7 +109,7 @@ Click it and then 'Initialize HDRI System'
    
 2. You'll be prompted with your HDRI folders/main directory in the "HDRI Browser" section
    
-![image](https://github.com/user-attachments/assets/c2b6f039-16ca-4cc5-9263-794ca19c0dbe)
+<img width="232" height="242" alt="image" src="https://github.com/user-attachments/assets/76b663cf-d554-40ef-a308-cdbcffc7f536" />
 
  - Click a folder to browse the HDRIs
  - Use the search option to find HDRIs (use clear button to enter new search)
@@ -118,9 +118,9 @@ Click it and then 'Initialize HDRI System'
 
 3. Once a folder has been selected, 'HDRI Select' appears.
 
-![Screenshot 2024-12-13 181705](https://github.com/user-attachments/assets/b78a08f4-1d95-4696-a8fe-e69b5cd65b22)
+<img width="226" height="297" alt="image" src="https://github.com/user-attachments/assets/85e4e3ca-b42d-433f-8244-3047ccdc690c" />
 
-![Screenshot 2024-12-13 181739](https://github.com/user-attachments/assets/30e1fc8e-9206-4611-984f-106fd93752f9)
+<img width="384" height="437" alt="image" src="https://github.com/user-attachments/assets/da61313d-0621-4949-a184-1585318e9d71" />
 
 - Click the box to see thumbnails of your HDRIs
 - Click on the desired HDRI to load it to use it
@@ -130,6 +130,17 @@ Click it and then 'Initialize HDRI System'
 ![image](https://github.com/user-attachments/assets/257f5120-cd10-400d-94af-da1d730128ed)
 
 - Once more than one HDRI has been selected, a reset button will appear to reset to the previously selected HDRI
+
+<img width="333" height="298" alt="image" src="https://github.com/user-attachments/assets/a23cb55e-d943-46c1-a4eb-a8f4923b1d6d" />
+
+Use the dropdown to choose a proxy resolution:
+- Original: The original quality HDRI file will be loaded
+- 1K, 2K, 4K: A proxy of the selected HDRI will be generated (or loaded if one exists already).
+
+<img width="297" height="131" alt="image" src="https://github.com/user-attachments/assets/ab7c1f90-7eef-4b2b-a893-0ad7b1d0211e" />
+
+Click the 'Viewport Only' button for the proxy file to only show during viewport rendering. If deselected, when a render (single image or animation as well as flamenc network rendering) the original quality HDRI file will be loaded for the render. Once the render is completed, the previously chosen proxy instance will be reloaded.
+
 
 4. 'Settings' will appear once an HDRI has been loaded.
 

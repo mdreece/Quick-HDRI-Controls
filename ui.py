@@ -664,7 +664,7 @@ def draw_hdri_controls(self, context):
             proxy_popover_row.popover(
                 panel="HDRI_PT_proxy_settings_popover",
                 text=resolution_label,
-                icon='RESTRICT_RENDER_ON' if hdri_settings.proxy_viewport_only else 'NONE'
+                icon='RESTRICT_RENDER_OFF' if hdri_settings.proxy_viewport_only else 'NONE'
             )
 
             # Always show preview content if there's a search query or favorites filter active

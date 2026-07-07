@@ -142,7 +142,7 @@ Use the dropdown to choose a proxy resolution:
 
 <img width="297" height="131" alt="image" src="https://github.com/user-attachments/assets/ab7c1f90-7eef-4b2b-a893-0ad7b1d0211e" />
 
-Click the 'Viewport Only' button for the proxy file to only show during viewport rendering. If deselected, when a render (single image or animation as well as flamenco network rendering) the original quality HDRI file will be loaded for the render. Once the render is completed, the previously chosen proxy instance will be reloaded.
+Click the 'Viewport Only' button for the proxy file to only show during viewport rendering. If selected, when a render (single image or animation as well as flamenco network rendering) the original quality HDRI file will be loaded for the render. Once the render is completed, the previously chosen proxy instance will be reloaded.
 
 
 4. 'Settings' will appear once an HDRI has been loaded.

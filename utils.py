@@ -883,20 +883,19 @@ def get_support_blend_path():
 
     # Method 2: Try using __file__ as fallback
     try:
+        # utils.py lives directly inside the addon folder, so file_dir IS the addon root.
         file_dir = os.path.dirname(os.path.realpath(__file__))
-        parent_dir = os.path.dirname(file_dir)
 
         print(f"Fallback method - File directory: {file_dir}")
-        print(f"Fallback method - Parent directory: {parent_dir}")
 
         # Check misc folder with fallback method
-        fallback_new = os.path.join(parent_dir, "misc", "Preview.blend")
+        fallback_new = os.path.join(file_dir, "misc", "Preview.blend")
         if os.path.exists(fallback_new):
             print(f"Found Preview.blend at fallback path: {fallback_new}")
             return fallback_new
 
         # Check root folder with fallback method
-        fallback_old = os.path.join(parent_dir, "Preview.blend")
+        fallback_old = os.path.join(file_dir, "Preview.blend")
         if os.path.exists(fallback_old):
             print(f"Found Preview.blend at fallback path: {fallback_old}")
             return fallback_old
@@ -916,7 +915,10 @@ def ensure_addon_structure():
     import shutil
 
     # Get the addon's root directory
-    addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    # NOTE: utils.py lives directly inside the addon folder (e.g. .../addons/Quick-HDRI-Controls-main/utils.py),
+    # so a single dirname() gives the addon root. A second dirname() would incorrectly
+    # land one level up in the parent "addons" folder.
+    addon_dir = os.path.dirname(os.path.realpath(__file__))
 
     # Create the misc folder if it doesn't exist
     misc_dir = os.path.join(addon_dir, "misc")

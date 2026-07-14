@@ -1,5 +1,14 @@
 # QUICK HDRI CONTROLS CHANGELOG
 
+## 13-07-26:  Quick HDRI Controls: v3.0.3
+### Information ⚠️:
+• I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.
+
+
+### Fixes 🛠️:
+• Corrected addon-root path resolution in `utils.py`/`vray.py` that was creating an empty `misc/icons/` folder in the `addons/` directory instead of inside the addon's own folder.
+##
+
 ## 04-07-26:  Quick HDRI Controls: v3.0.2
 ### Information ⚠️:
 • I do not personally use V-Ray or Octane as a primary render engine. If things could be setup in a different way, don't hesitate to let me know.

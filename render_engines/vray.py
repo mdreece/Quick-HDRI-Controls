@@ -149,7 +149,9 @@ def ensure_vray_setup():
 
     if not vray_collection:
         # Append V-Ray collection from consolidated support file
-        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        # NOTE: vray.py lives directly inside the addon folder, so a single dirname()
+        # gives the addon root (a second dirname() would land one level too high).
+        addon_dir = os.path.dirname(os.path.realpath(__file__))
         support_file = os.path.join(addon_dir, "misc", "support.blend")
 
         # Ensure the support file exists

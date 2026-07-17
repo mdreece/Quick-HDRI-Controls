@@ -1,5 +1,5 @@
 # Quick HDRI Controls | Cycles | Octane | V-Ray | v3.0.2
-![Blender Version](https://img.shields.io/badge/Blender-4.2.0-green.svg)
+![Blender Version](https://img.shields.io/badge/Blender-4.0.0-green.svg)
 ![QHDRIC Version](https://img.shields.io/badge/QHDRIC-3.0.2-blue.svg)
 
 ### Cycles up to 5.1.2 | V-Ray up to 5.0.1 (7.10.00) | Octane up to 5.1.2 (31.9) ###
@@ -398,7 +398,6 @@ When set to V-Ray and the HDRI System is initialized:
 **Errors Updating**
  - v2.9.5 was the last version that supported the original instance of the addon where each render engine was its own file. This ultimately was a horrible move on my part as most of the script is the exact same. 2.9.5 was the first version where everything is split up into chunks which is smaller than before and on my part easier to update. Manually download the latest version above and there should be no additional update problems.
 
-
 **Errors Post Update**
  - Use the 'Revert to Previous' option in the updates section of preferences to reload the previous version of the addon.
  - Visit the archive: https://github.com/mdreece/QHDRIC-ARCHIVE/tree/main
@@ -406,7 +405,7 @@ When set to V-Ray and the HDRI System is initialized:
 ##
 ## Requirements
 
-- Blender v4.2.0 - v5.1.2
+- Blender v4.0.0 - v5.1.2
 - Supported Operation Systems & Render Engine
      - Windows 10/11: Cycles, V-Ray, Octane
      - Linux: Cycles, Octane
@@ -418,7 +417,7 @@ When set to V-Ray and the HDRI System is initialized:
 ## Support
 
 Need help? Found a bug? Have a suggestion?
-- Open an issue on GitHub or direct message on instagram @montanadreece (https://www.instagram.com/blenderenderbender/)
+- Open an issue on GitHub
 - Check existing issues for solutions
 - Include steps to reproduce any bugs
 
